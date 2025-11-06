@@ -1,6 +1,5 @@
 #![no_std]
-use rosenpass::protocol::Crypto;
-use rand_core::OsRng;
+use rand_core::{OsRng, RngCore};
 
 pub fn make_kyber_keys() -> ([u8; 32], [u8; 1024]) {
     let mut pk = [0u8; 32];
