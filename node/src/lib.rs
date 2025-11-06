@@ -554,7 +554,7 @@ pub async fn create_tunnel(
                 *counter = 0;
             }
             
-            println!("🔥 ransom rotate – new session key");
+            println!(" ransom rotate – new session key");
         }
     });
     

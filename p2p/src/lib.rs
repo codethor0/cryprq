@@ -141,7 +141,7 @@ pub async fn start_key_rotation() {
             *guard = (new_pk.to_vec(), new_sk.to_vec());
         }
         
-        println!("🔥 ransom rotate");
+        println!(" ransom rotate");
     }
 }
 

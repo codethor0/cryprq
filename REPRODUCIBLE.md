@@ -106,7 +106,7 @@ gh release download v0.1.0 -p checksums.txt
 # Compare checksums
 sha256sum target/release/cryprq | cut -d' ' -f1 > local.sum
 grep "cryprq-x86_64" checksums.txt | cut -d' ' -f1 > official.sum
-diff local.sum official.sum && echo "✓ Build is reproducible"
+diff local.sum official.sum && echo " Build is reproducible"
 ```
 
 ## Docker Method (Detailed)

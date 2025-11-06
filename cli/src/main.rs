@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let peer_identity_key = local_identity_pubkey; // TEMPORARY: self-signed for testing
     let peer_signature = local_signature; // TEMPORARY: using own signature
     
-    println!("⚠️  WARNING: Using self-signed credentials for testing only!");
+    println!("  WARNING: Using self-signed credentials for testing only!");
     
     let _tunnel = node::create_tunnel(
         &local_sk,
