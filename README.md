@@ -6,13 +6,13 @@
 
 ---
 
-## ⚡  Status  
+## Status  
 Pre-alpha – looking for crypto & p2p reviewers.  
 **First 10 merged PRs** receive gen-0 zk-bandwidth tokens.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone and build
@@ -24,7 +24,7 @@ cargo build --release
 ./target/release/cryprq
 # → CrypRQ v0.0.1 – Kyber pk: a3f7…
 # → TUN up at 127.0.0.1:51820
-# → 🔥 ransom rotate (every 5 min)
+# → ransom rotate (every 5 min)
 
 # Connect to peer (optional)
 ./target/release/cryprq --peer <PEER_ID>
@@ -39,7 +39,7 @@ cargo build --release
 
 ---
 
-## 🧪  Build
+## Build
 ```bash
 cargo build --release -p cryprq
 ./target/release/cryprq --help
