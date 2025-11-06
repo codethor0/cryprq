@@ -12,3 +12,4 @@ tokio = { version = "1", features = ["full"] }
 clap = { version = "4", features = ["derive"] }
 libp2p = "0.54"
 ed25519-dalek = "2.1"
+pqcrypto-mlkem = "0.1.1"
