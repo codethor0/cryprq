@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024 Thorsten Behrens
 //! Peer-to-peer networking for VPN tunnels
 //!
 //! This crate provides libp2p-based peer discovery and connection management.

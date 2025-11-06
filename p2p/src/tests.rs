@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024 Thorsten Behrens
 #[cfg(test)]
 mod p2p_tests {
     use crate::{init_swarm, get_current_pk, dial_peer, P2PError};

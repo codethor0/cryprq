@@ -15,6 +15,8 @@
 //! - Public key: 1184 bytes
 //! - Secret key: 2400 bytes
 
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2024 CrypRQ Contributors
 #![no_std]
 
 extern crate alloc;
