@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024 Thorsten Behrens
 use std::fmt;
 
 #[derive(Debug)]

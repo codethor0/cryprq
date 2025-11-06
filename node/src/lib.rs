@@ -39,6 +39,8 @@
 //! # }
 //! ```
 
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2024 CrypRQ Contributors
 use chacha20poly1305::{
     aead::{Aead, KeyInit, Payload},
     ChaCha20Poly1305, Nonce,
@@ -554,7 +556,7 @@ pub async fn create_tunnel(
                 *counter = 0;
             }
             
-            println!("🔥 ransom rotate – new session key");
+            println!(" ransom rotate – new session key");
         }
     });
     

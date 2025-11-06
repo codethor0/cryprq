@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2024 Thorsten Behrens
 #[cfg(test)]
 mod tunnel_tests {
     use crate::{create_tunnel, TunnelError, MAX_NONCE_VALUE, generate_handshake_auth};

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2024 CrypRQ Contributors
 #[cfg(test)]
 mod crypto_tests {
     use crate::make_kyber_keys;
