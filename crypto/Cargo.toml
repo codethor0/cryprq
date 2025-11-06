@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
+pqcrypto-kyber = { version = "0.8", default-features = false }
+pqcrypto-traits = { version = "0.3", default-features = false }

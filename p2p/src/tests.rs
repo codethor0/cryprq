@@ -16,7 +16,7 @@ mod p2p_tests {
         
         if let Ok(pk) = result {
             assert!(!pk.is_empty(), "Public key should not be empty");
-            assert_eq!(pk.len(), 32, "Public key should be 32 bytes");
+            assert_eq!(pk.len(), 1184, "Kyber768 public key should be 1184 bytes");
         }
     }
 
@@ -72,7 +72,7 @@ mod p2p_tests {
     #[test]
     fn test_pk_length() {
         if let Ok(pk) = get_current_pk() {
-            assert_eq!(pk.len(), 32, "Kyber stub public key should be 32 bytes");
+            assert_eq!(pk.len(), 1184, "Kyber768 public key should be 1184 bytes");
         }
     }
 }
