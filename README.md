@@ -12,6 +12,33 @@ Pre-alpha – looking for crypto & p2p reviewers.
 
 ---
 
+## 🚀 Quick Start
+
+```bash
+# Clone and build
+git clone https://github.com/codethor0/cryprq.git
+cd cryprq
+cargo build --release
+
+# Run node (generates PQ Kyber keys, starts WireGuard tunnel)
+./target/release/cryprq
+# → CrypRQ v0.0.1 – Kyber pk: a3f7…
+# → TUN up at 127.0.0.1:51820
+# → 🔥 ransom rotate (every 5 min)
+
+# Connect to peer (optional)
+./target/release/cryprq --peer <PEER_ID>
+# → PQ handshake complete – tunnel ready
+```
+
+### Architecture
+- **crypto**: no-std Kyber768 stub (rand_core)
+- **p2p**: libp2p QUIC + mDNS discovery
+- **node**: userspace WireGuard (ChaCha20-Poly1305, BLAKE3 KDF, X25519)
+- **cli**: tokio runtime, 5-min key rotation
+
+---
+
 ## 🧪  Build
 ```bash
 cargo build --release -p cryprq

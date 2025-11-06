@@ -1,0 +1,8 @@
+disallowed-methods = [
+    { path = "std::panic::panic", reason = "use Result instead" },
+    { path = "std::option::Option::unwrap", reason = "use expect or pattern matching" },
+    { path = "std::result::Result::unwrap", reason = "use expect or pattern matching" },
+    { path = "std::result::Result::unwrap_err", reason = "use expect or pattern matching" },
+]
+
+cognitive-complexity-threshold = 15

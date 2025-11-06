@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build Static Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-zigbuild
+        run: |
+          pip3 install ziglang
+          cargo install cargo-zigbuild --locked
+      
+      - name: Build static binary
+        run: |
+          cargo zigbuild --release --target ${{ matrix.target }} --locked
+          cp target/${{ matrix.target }}/release/cryprq cryprq-${{ matrix.target }}
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cryprq-${{ matrix.target }}
+          path: cryprq-${{ matrix.target }}
+  
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked
+      
+      - name: Generate SBOM
+        run: cargo cyclonedx --format json --output-pattern bom.json
+      
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: bom.json
+  
+  sign-release:
+    name: Sign and Release
+    needs: [build, sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      
+      - name: Sign binaries with cosign
+        run: |
+          for binary in cryprq-*/cryprq-*; do
+            cosign sign-blob --yes --output-signature=${binary}.sig ${binary}
+          done
+      
+      - name: Sign SBOM
+        run: cosign sign-blob --yes --output-signature=sbom/bom.json.sig sbom/bom.json
+      
+      - name: Generate checksums
+        run: |
+          cd cryprq-x86_64-unknown-linux-musl && sha256sum cryprq-* >> ../checksums.txt && cd ..
+          cd cryprq-aarch64-unknown-linux-musl && sha256sum cryprq-* >> ../checksums.txt && cd ..
+          cd sbom && sha256sum bom.json >> ../checksums.txt && cd ..
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            cryprq-x86_64-unknown-linux-musl/cryprq-x86_64-unknown-linux-musl
+            cryprq-x86_64-unknown-linux-musl/cryprq-x86_64-unknown-linux-musl.sig
+            cryprq-aarch64-unknown-linux-musl/cryprq-aarch64-unknown-linux-musl
+            cryprq-aarch64-unknown-linux-musl/cryprq-aarch64-unknown-linux-musl.sig
+            sbom/bom.json
+            sbom/bom.json.sig
+            checksums.txt
+          body: |
+            ## Verification
+            
+            ```bash
+            # Verify checksums
+            sha256sum -c checksums.txt
+            
+            # Verify cosign signatures
+            cosign verify-blob --signature cryprq-x86_64-unknown-linux-musl.sig \
+              --certificate-identity=${{ github.actor }}@users.noreply.github.com \
+              --certificate-oidc-issuer=https://github.com/login/oauth \
+              cryprq-x86_64-unknown-linux-musl
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
