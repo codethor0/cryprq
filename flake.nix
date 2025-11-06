@@ -17,73 +17,69 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        
-        rustToolchain = pkgs.rust-bin.stable."1.83.0".default.override {
-          targets = [ "x86_64-unknown-linux-musl" ];
-        };
+
+        isLinux = pkgs.stdenv.isLinux;
+
+        rustToolchain = if isLinux then
+          pkgs.rust-bin.stable."1.83.0".default.override {
+            targets = [ "x86_64-unknown-linux-musl" ];
+          }
+        else
+          pkgs.rust-bin.stable."1.83.0".default;
 
         nativeBuildInputs = with pkgs; [
           rustToolchain
-          cargo-zigbuild
           pkg-config
-        ];
+        ] ++ (if isLinux then [ cargo-zigbuild ] else []);
 
         buildInputs = with pkgs; [
           openssl
-          musl
-        ];
+        ] ++ (if isLinux then [ musl ] else []);
 
       in {
         devShells.default = pkgs.mkShell {
           inherit nativeBuildInputs buildInputs;
-          
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${pkgs.zigpkgs.master}/bin/zig";
-          
           shellHook = ''
             echo "CrypRQ development environment"
             echo "Rust version: $(rustc --version)"
             echo ""
-            echo "Build reproducible musl binary:"
-            echo "  cargo zigbuild --release --target x86_64-unknown-linux-musl"
-            echo ""
-            echo "Strip and compress:"
-            echo "  strip target/x86_64-unknown-linux-musl/release/cryprq"
-            echo "  upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq"
+            if ${toString isLinux}; then
+              echo "Build reproducible musl binary:"
+              echo "  cargo zigbuild --release --target x86_64-unknown-linux-musl"
+              echo ""
+              echo "Strip and compress:"
+              echo "  strip target/x86_64-unknown-linux-musl/release/cryprq"
+              echo "  upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq"
+            else
+              echo "Build native macOS binary:"
+              echo "  cargo build --release"
+            fi
           '';
         };
 
         packages = rec {
-          cryprq-musl = pkgs.rustPlatform.buildRustPackage {
+          cryprq = pkgs.rustPlatform.buildRustPackage {
             pname = "cryprq";
             version = "0.1.0";
-            
             src = ./.;
-            
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
-            
+            cargoLock = { lockFile = ./Cargo.lock; };
             nativeBuildInputs = nativeBuildInputs;
             buildInputs = buildInputs;
-            
-            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static -C link-arg=-s";
-            
+            CARGO_BUILD_TARGET = if isLinux then "x86_64-unknown-linux-musl" else null;
+            CARGO_BUILD_RUSTFLAGS = if isLinux then "-C target-feature=+crt-static -C link-arg=-s" else null;
             postInstall = ''
-              strip $out/bin/cryprq
+              strip $out/bin/cryprq || true
               ${pkgs.upx}/bin/upx --best --lzma $out/bin/cryprq || true
             '';
-            
-            meta = with pkgs.lib; {
+            meta = {
               description = "Post-quantum VPN with 5-minute key rotation";
               homepage = "https://github.com/codethor0/cryprq";
-              license = licenses.gpl3Only;
+              license = pkgs.lib.licenses.gpl3Only;
               maintainers = [];
-              platforms = platforms.linux;
+              platforms = pkgs.lib.platforms.all;
             };
           };
-          
-          default = cryprq-musl;
+          default = cryprq;
         };
       }
     );
