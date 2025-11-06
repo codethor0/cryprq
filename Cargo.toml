@@ -1,0 +1,17 @@
+[workspace]
+members = ["crypto", "p2p", "node", "cli"]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+authors  = ["CrypRQ Contributors"]
+edition  = "2021"
+license  = "GPL-3.0"
+repository = "https://github.com/codethor0/cryprq"
+rust-version = "1.75"
+
+[profile.release]
+lto       = true
+strip     = true
+codegen-units = 1
+panic     = "abort"

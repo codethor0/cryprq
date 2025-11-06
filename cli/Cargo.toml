@@ -1,1 +1,10 @@
-cryprq_crypto = { path = "../crypto" }
+[package]
+name = "cryprq"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[dependencies]
+cryprq-crypto = { path = "../crypto" }
+rand = "0.8"
