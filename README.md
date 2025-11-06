@@ -40,9 +40,51 @@ cargo build --release
 ---
 
 ## Build
+
+### Standard Build
 ```bash
 cargo build --release -p cryprq
 ./target/release/cryprq --help
+```
+
+### Reproducible musl Build (4 MB static binary)
+
+Using the build script:
+```bash
+./scripts/build-musl.sh
+```
+
+Using Nix flake:
+```bash
+nix build
+./result/bin/cryprq --help
+```
+
+Using Docker:
+```bash
+docker build -t cryprq .
+docker run --rm cryprq --help
+```
+
+Manual build:
+```bash
+# Install musl target
+rustup target add x86_64-unknown-linux-musl
+
+# Build with reproducible flags
+export SOURCE_DATE_EPOCH=0
+export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
+cargo build --release --target x86_64-unknown-linux-musl -p cryprq
+
+# Strip and compress (optional)
+strip target/x86_64-unknown-linux-musl/release/cryprq
+upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq
+```
+
+---
+
+## Workspace Structure
+```bash
 cat > Cargo.toml <<'EOF'
 [workspace]
 members = ["crypto","p2p","node","cli"]
@@ -60,3 +102,4 @@ rust-version = "1.75"
 lto = "thin"
 strip = true
 codegen-units = 1
+
