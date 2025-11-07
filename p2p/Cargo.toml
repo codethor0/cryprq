@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 
+
 [dependencies]
 anyhow = "1"
 tokio = { version = "1", features = ["full"] }
 libp2p = { version = "0.54", features = ["tcp", "tls", "noise", "yamux", "quic", "tokio"] }
+libp2p-kad = { version = "0.54", features = ["ipfs"] }

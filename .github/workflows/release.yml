@@ -10,35 +10,25 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    name: Build Static Binaries
+  musl:
+    name: Build and Release Static musl Binary
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      
-      - name: Install cargo-zigbuild
-        run: |
-          pip3 install ziglang
-          cargo install cargo-zigbuild --locked
-      
-      - name: Build static binary
-        run: |
-          cargo zigbuild --release --target ${{ matrix.target }} --locked
-          cp target/${{ matrix.target }}/release/cryprq cryprq-${{ matrix.target }}
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          name: cryprq-${{ matrix.target }}
-          path: cryprq-${{ matrix.target }}
+          targets: x86_64-unknown-linux-musl
+      - name: Build static musl binary
+        run: |
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
+          cargo build --release --target x86_64-unknown-linux-musl -p cryprq
+          strip target/x86_64-unknown-linux-musl/release/cryprq
+          upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq || true
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/x86_64-unknown-linux-musl/release/cryprq
   
   sbom:
     name: Generate SBOM

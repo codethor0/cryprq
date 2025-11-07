@@ -1,5 +1,6 @@
+
 [workspace]
-members = ["crypto", "p2p", "node", "cli"]
+members = ["crypto", "p2p", "node", "cli", "xtask"]
 resolver = "2"
 
 [workspace.package]

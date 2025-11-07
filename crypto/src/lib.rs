@@ -17,10 +17,13 @@
 
 #![no_std]
 
+
 extern crate alloc;
 use alloc::vec::Vec;
 use pqcrypto_kyber::kyber768;
 use pqcrypto_traits::kem::{PublicKey, SecretKey};
+
+pub use crate::hybrid::{HybridHandshake, SharedSecret32};
 
 /// Generate Kyber768 key pair
 ///
