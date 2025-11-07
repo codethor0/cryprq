@@ -2,7 +2,19 @@
 *Post-quantum, zero-trust, ransom-timer VPN that burns every key after 5 min.*
 
 [![CI](https://github.com/cryprq/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/cryprq/cryprq/actions)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE-GPL)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20MIT-blue)](LICENSE)
+
+---
+
+## Security Features
+- Post-quantum key exchange (Kyber768, X25519)
+- Ed25519 peer authentication
+- ChaCha20-Poly1305 AEAD encryption
+- BLAKE3 key derivation
+- 5-minute key rotation (ransom-timer)
+- Replay attack protection (sliding window)
+- Rate limiting and buffer pooling
+- All dependencies audited with `cargo-deny` and CI
 
 ---
 
@@ -103,4 +115,11 @@ lto = "thin"
 strip = true
 codegen-units = 1
 ```
+
+### Contributor Notes
+- The `node` crate requires `tokio` with the `full` feature set:
+  ```toml
+  tokio = { version = "1", features = ["full"] }
+  ```
+- See SECURITY.md for more details on cryptography and audit practices.
 
