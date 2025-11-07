@@ -1,8 +1,7 @@
 # CrypRQ  
 *Post-quantum, zero-trust, ransom-timer VPN that burns every key after 5 min.*
 
-
-[![CI](https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/codethor0/cryprq/actions)
+[![CI](https://github.com/cryprq/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/cryprq/cryprq/actions)
 [![License](https://img.shields.io/badge/license-Apache%202.0%20%7C%20MIT-blue)](LICENSE)
 
 ---
