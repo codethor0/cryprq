@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crypto",
+    "p2p",
+    "node",
+    "cli",
+]

@@ -47,7 +47,6 @@ use libp2p::futures::StreamExt;
 
 use log;
 use void;
-use void::Void;
 use libp2p::{
     identity, mdns, PeerId, Swarm, SwarmBuilder,
     swarm::{dummy, NetworkBehaviour},
@@ -228,7 +227,7 @@ impl From<mdns::Event> for MyBehaviourEvent {
         MyBehaviourEvent::Mdns(event)
     }
 }
-    pub async fn init_swarm() -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error>> {
+    pub async fn init_swarm() -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error + Send + Sync + 'static>> {
         let local_key = identity::Keypair::generate_ed25519();
         let local_peer_id = PeerId::from(local_key.public());
         let behaviour = MyBehaviour {
