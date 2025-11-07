@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl build-essential git pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust toolchain (components must be added separately)
+# Install Rust toolchain (components added separately)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal
 
