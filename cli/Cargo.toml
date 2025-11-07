@@ -3,13 +3,14 @@ name = "cryprq"
 version = "0.1.0"
 edition = "2021"
 
+
 [dependencies]
 cryprq-crypto = { path = "../crypto" }
 p2p = { path = "../p2p" }
-node = { path = "../node" }
 rand = "0.8"
 tokio = { version = "1", features = ["full"] }
 clap = { version = "4", features = ["derive"] }
 libp2p = "0.54"
 ed25519-dalek = "2.1"
-pqcrypto-mlkem = "0.1.1"
+# pqcrypto-mlkem = "0.1.1"
+anyhow = "1"

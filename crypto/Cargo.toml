@@ -1,3 +1,4 @@
+pqcrypto-mlkem = { version = "0.1", default-features = false }
 [package]
 name = "cryprq-crypto"
 version = "0.1.0"
