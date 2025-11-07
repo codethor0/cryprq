@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /// Peer-to-peer networking for VPN tunnels
 use anyhow::Result;
 use libp2p::{
@@ -9,7 +8,6 @@ use libp2p::{
 	Transport,
 };
 use libp2p::futures::StreamExt;
-=======
 //! Peer-to-peer networking for VPN tunnels
 //!
 //! This crate provides libp2p-based peer discovery and connection management.
@@ -55,10 +53,8 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use tokio::time;
 use cryprq_crypto::make_kyber_keys;
->>>>>>> 504720d (p2p: move crate doc to top of file)
 
 
-<<<<<<< HEAD
 pub async fn start_listener(addr: &str) -> Result<()> {
 	let id_keys = identity::Keypair::generate_ed25519();
 	let peer_id = PeerId::from(id_keys.public());
@@ -94,7 +90,6 @@ pub async fn dial_peer(addr: String) -> Result<()> {
 
 	let quic_config = quic::Config::new(&id_keys);
 	let transport = quic::tokio::Transport::new(quic_config);
-=======
 #[derive(NetworkBehaviour)]
 pub struct Behaviour {
     pub mdns: mdns::tokio::Behaviour,
@@ -102,7 +97,6 @@ pub struct Behaviour {
 
 type KeyPair = (Vec<u8>, Vec<u8>);
 type SharedKeys = Arc<RwLock<KeyPair>>;
->>>>>>> 504720d (p2p: move crate doc to top of file)
 
 	let behaviour = libp2p::swarm::dummy::Behaviour;
 	let boxed_transport = libp2p::Transport::map(
@@ -111,7 +105,6 @@ type SharedKeys = Arc<RwLock<KeyPair>>;
 	).boxed();
 	let mut swarm = Swarm::new(boxed_transport, behaviour, peer_id, libp2p::swarm::Config::with_tokio_executor());
 
-<<<<<<< HEAD
 	let dial_addr: Multiaddr = addr.parse()?;
 	swarm.dial(dial_addr)?;
 
@@ -129,7 +122,6 @@ type SharedKeys = Arc<RwLock<KeyPair>>;
 	}
 	Ok(())
 }
-=======
 /// Establish connection to remote peer
 ///
 /// # Arguments
@@ -265,4 +257,3 @@ impl From<mdns::Event> for MyBehaviourEvent {
 
 #[cfg(test)]
 mod tests;
->>>>>>> 504720d (p2p: move crate doc to top of file)

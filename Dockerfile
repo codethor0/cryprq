@@ -1,5 +1,4 @@
 
-<<<<<<< Updated upstream
 # --- build stage ---------------------------------------------------------
 FROM rust:1.83.0-alpine AS builder
 
@@ -15,23 +14,19 @@ RUN mkdir -p /usr/local/include && \
     echo '#define __GNUC_PREREQ(maj,min) 1' > /usr/local/include/compat.h
 ENV CFLAGS="-include /usr/local/include/compat.h"
 # --------------------------------------------------------------------------
-=======
 FROM messense/rust-musl-cross:x86_64-musl AS builder
 
 
 ## messense/rust-musl-cross already includes musl cross-compiler and build tools
->>>>>>> Stashed changes
 
 WORKDIR /build
 COPY . .
 RUN cargo build --release -p cryprq
 
-<<<<<<< Updated upstream
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /build/target/release/cryprq /usr/local/bin/cryprq
 ENTRYPOINT ["cryprq"]
-=======
 # Copy manifests
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 COPY cli/Cargo.toml ./cli/
@@ -61,4 +56,3 @@ FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/cryprq /usr/local/bin/cryprq
 ENTRYPOINT ["/usr/local/bin/cryprq"]
->>>>>>> Stashed changes

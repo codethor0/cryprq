@@ -8,11 +8,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 tokio = { version = "1", features = ["full"] }
-<<<<<<< Updated upstream
 libp2p = { version = "0.54", features = ["tcp", "tls", "noise", "yamux", "quic", "tokio"] }
 libp2p-kad = { version = "0.54", features = ["ipfs"] }
-=======
-libp2p = { version = "0.54", features = [
 	"macros",      # SwarmBuilder + NetworkBehaviour derive
 	"tcp",         # tcp transport
 	"noise",       # noise handshake
@@ -26,4 +23,3 @@ zeroize = "1.8"
 once_cell = "1.21"
 log = "0.4"
 void = "1"
->>>>>>> Stashed changes

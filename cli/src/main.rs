@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 use clap::Parser;
 use std::process;
 use p2p::{start_listener, dial_peer};
@@ -20,7 +19,6 @@ async fn main() -> anyhow::Result<()> {
     if args.listen.is_some() == args.peer.is_some() {
         eprintln!("Error: supply exactly one of --listen or --peer");
         process::exit(1);
-=======
 use anyhow::Result;
 // use clap::{Parser, Subcommand}; // Not used
 use p2p::{get_current_pk, start_key_rotation, init_swarm, MyBehaviourEvent};
@@ -45,7 +43,6 @@ async fn main() -> Result<()> {
             }
             _ => {}
         }
->>>>>>> Stashed changes
     }
 
     if let Some(addr) = args.listen {
