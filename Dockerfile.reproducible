@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust toolchain (components added separately)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs  | \
     sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal
 
 RUN rustup component add clippy rustfmt
