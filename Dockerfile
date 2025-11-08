@@ -17,6 +17,7 @@ COPY cli/src ./cli/src
 COPY crypto/src ./crypto/src
 COPY node/src ./node/src
 COPY p2p/src ./p2p/src
+COPY third_party/if-watch ./third_party/if-watch
 
 # Build optimized binary for Linux
 RUN cargo build --release -p cryprq
