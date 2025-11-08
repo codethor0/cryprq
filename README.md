@@ -1,132 +1,156 @@
-# CrypRQ: Post-Quantum, Zero-Trust VPN
+# CrypRQ: Post-Quantum, Zero-Trust VPN  
+[![CI](https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml)
+[![CodeQL](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Reproducible Builds](https://img.shields.io/badge/builds-reproducible-brightgreen.svg)](REPRODUCIBLE.md)
 
-CrypRQ explores hybrid (Kyber768 + X25519) handshakes, 5-minute “ransom timer” key rotation, and libp2p QUIC transport. Today the workspace delivers the cryptography and peer-to-peer control plane; a full userspace VPN tunnel is still under construction.
+> Post-quantum, zero-trust VPN with five-minute ephemeral key rotation.
 
-## Contact & SPDX
+## Table of Contents
+1. [Features](#features)
+2. [Anti-features](#anti-features)
+3. [Quickstart](#quickstart)
+4. [Deploy](#deploy)
+5. [Configuration](#configuration)
+6. [Security Model](#security-model)
+7. [Reproducible Builds](#reproducible-builds)
+8. [Roadmap](#roadmap)
+9. [Contributing](#contributing)
+10. [License](#license)
 
-- © 2025 Thor Thor  
-- Contact: [codethor@gmail.com](mailto:codethor@gmail.com)  
-- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
-- SPDX-License-Identifier: MIT
-
-> **Status:** Prototype. The CLI generates post-quantum keys, rotates them on a schedule, and can listen or dial peers over QUIC. No packet forwarding yet.
+---
 
 ## Features
+- Hybrid ML-KEM (Kyber768-compatible) + X25519 handshake over libp2p QUIC.
+- Five-minute key rotation with secure zeroization of prior keys.
+- Userspace WireGuard prototype using ChaCha20-Poly1305 and BLAKE3 KDF.
+- Dedicated crates: `crypto` (`no_std` ML-KEM), `p2p` (libp2p swarm), `node` (tunnel), `cli`.
+- Supply-chain hardening: vendored dependencies, `cargo audit`, `cargo deny`, `CodeQL`.
+- Reproducible build scripts for Linux (musl), macOS, Nix, and Docker.
 
-- Hybrid ML-KEM (Kyber768-compatible) + X25519 secrets via `pqcrypto-mlkem` and `x25519-dalek`
-- Asynchronous key rotation task that burns the previous key pair every 300 s
-- libp2p QUIC transport with mDNS discovery stubs
-- `no_std` crypto crate suitable for embedded usage
-- Reproducible build scripts (musl + Docker)
+## Anti-features
+- No production data-plane yet; packet forwarding is incomplete.
+- No automatic peer discovery or centralized management plane.
+- No legacy cipher or insecure transport support.
+- No claims of FIPS/CC compliance; crypto remains experimental.
+- No DoS protections beyond basic libp2p limits.
 
-## Quick Start
-
+## Quickstart
 ```bash
-# prerequisites
 rustup toolchain install 1.83.0
+git clone https://github.com/codethor0/cryprq.git
 cd cryprq
-
-# start a listener (prints its multiaddr)
-cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
-
-# in another shell, dial the listener
-cargo run --release -- --peer /ip4/127.0.0.1/udp/9001/quic-v1
+cargo build --release -p cryprq
 ```
 
-The CLI:
-
-- requires exactly one of `--listen` or `--peer`;
-- spawns `start_key_rotation` to refresh keys on a 5-minute interval;
-- logs new listen addresses or terminates once a dial succeeds.
-
-## Architecture
-
-```
-workspace/
-├── cli     # cryprq binary: argument parsing, key rotation background task, listener/dialer entry-points
-├── crypto  # no_std Kyber helpers + hybrid handshake struct
-├── p2p     # libp2p QUIC swarm setup and mDNS behaviour
-└── node    # placeholder for future data-plane / tunnel logic
-```
-
-- **Key store:** `tokio::sync::RwLock<Option<(KyberPublicKey, KyberSecretKey)>>`
-- **Networking:** `libp2p::Swarm` built with QUIC transport and dummy + mDNS behaviour
-- **Logging:** use `RUST_LOG=info` (or similar) to see rotation events
-
-## Build
-
-### Standard Cargo build
-
+Start a listener:
 ```bash
-cargo build --release
-./target/release/cryprq --help
+./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
-### Maintain SPDX headers
-
-If you add or rename files, keep SPDX/contact headers consistent:
-
+Dial from another shell or host:
 ```bash
-bash scripts/add-headers.sh
+./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
 ```
 
-The script is idempotent and respects shebangs, XML declarations, and the required MIT license tag.
+Expect logs such as `Local peer id: ...` on the listener and `Connected to ...` on the dialer.
 
-### Static musl binary (Linux)
+## Deploy
+### Bare Metal
+- Linux or macOS with Rust 1.83.0.
+- Open TCP/UDP 9999 inbound on firewalls.
+- Minimal systemd unit:
+```ini
+[Unit]
+Description=CrypRQ Listener
+After=network-online.target
+Wants=network-online.target
 
+[Service]
+User=cryprq
+Group=cryprq
+Environment=RUST_LOG=info
+ExecStart=/usr/local/bin/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Docker
 ```bash
-./scripts/build-linux.sh
-# → target/x86_64-unknown-linux-musl/release/cryprq
+docker build -t cryprq-node .
+docker run --rm -p 9999:9999/udp cryprq-node \
+  --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
-### Native macOS binary
+Compose snippet:
+```yaml
+services:
+  listener:
+    image: cryprq-node:latest
+    build: .
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
+    ports:
+      - "9999:9999/udp"
+    restart: unless-stopped
+```
 
+### Nix
 ```bash
-./scripts/build-macos.sh
-# → target/release/cryprq
+nix build
+./result/bin/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
-### Docker image
+### Cloud Notes
+- Allow TCP/UDP 9999 from trusted peers.
+- Store logs on encrypted volumes; disable unused services.
+- Ensure VM time synchronization for consistent rotation.
 
-```bash
-docker build -t cryprq-cli -f Dockerfile .
-docker run --rm cryprq-cli --help
-```
+## Configuration
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--listen <multiaddr>` | Listener mode multiaddr. | None |
+| `--peer <multiaddr>` | Dialer mode multiaddr (optionally `/p2p/<peer-id>`). | None |
+| `RUST_LOG` | Log level (`error`…`trace`). | `info` |
+| `CRYPRQ_ROTATE_SECS` | Rotation interval in seconds. | `300` |
 
-## Manual Checks (CI currently disabled)
+Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p ping events confirm liveness.
 
-```bash
-cargo test --release
-cargo clippy --all-targets --all-features -- -D warnings
-# optional but recommended
-cargo install cargo-audit
-cargo audit
-./scripts/docker_vpn_test.sh          # listener/dialer smoke test in Docker
-```
+## Security Model
+- Assets: hybrid handshake secrets, tunnel keys (future), logs.
+- Trust boundaries: no implicit trust; all peers authenticate via libp2p identity keys.
+- Post-quantum intent: ML-KEM counters store-now-decrypt-later for key exchange.
+- Rotation rationale: five-minute cadence constrains exposure window.
+- Limitations:
+  - Data-plane encryption still in development.
+  - mDNS discovery disabled in hardened deployments.
+  - No automated peer revocation or ACL enforcement yet.
+  - Dependency `pqcrypto-mlkem` under active review.
+- Responsible disclosure: security@codethor0.com (PGP in SECURITY.md).
+- Supply-chain checks: `cargo audit`, `cargo deny`, `CodeQL`, `scripts/docker_vpn_test.sh`.
 
-GitHub Actions now runs:
-- `CI` on every push/PR (fmt, clippy, tests)
-- `Security Audit` weekly and on push/PR (cargo audit, cargo deny)
-- `CodeQL` weekly and on push/PR (static analysis for Rust)
+## Reproducible Builds
+- Linux: `./scripts/build-linux.sh` (musl).
+- macOS: `./scripts/build-macos.sh`.
+- Docker: `docker build -t cryprq-node .`.
+- See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expectations.
 
-Please still run the local checks above before merging changes.
+## Roadmap
+- Complete userspace WireGuard forwarding.
+- Add peer directory + policy enforcement.
+- Expose metrics/health endpoints.
+- Explore PQ data-plane ciphers.
+- Publish crates with versioned releases.
 
 ## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). In short:
-
-- SSH-sign commits when possible.
-- Add SPDX headers to new Rust files.
-- Document which manual checks you ran in your PR description.
+1. `cargo fmt --all`
+2. `cargo clippy --all-targets --all-features -- -D warnings`
+3. `cargo test --release`
+4. `cargo audit --deny warnings` & `cargo deny check ...`
+5. `./scripts/docker_vpn_test.sh`
+6. See [CONTRIBUTING.md](CONTRIBUTING.md) for full workflow and doc updates.
 
 ## License
-
-Dual-licensed under Apache 2.0 and MIT. See [LICENSE](LICENSE) for the MIT terms, [LICENSE-APACHE](LICENSE-APACHE) for Apache 2.0, and [DUAL_LICENSE.md](DUAL_LICENSE.md) for details.
-
-## Acknowledgments
-
-- [`libp2p`](https://libp2p.io/) for the modular P2P stack.
-- [`pqcrypto`](https://crates.io/crates/pqcrypto-kyber) maintainers for the Kyber implementation.
-- [`tokio`](https://tokio.rs/) for powering the async runtime.
-
-If you experiment with CrypRQ, please open an issue or PR—we’d love to hear what you build.
+CrypRQ is licensed under the [MIT License](LICENSE). Apache 2.0 text is kept for reference; MIT is authoritative.
