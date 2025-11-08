@@ -62,7 +62,7 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
     KEYS.read()
         .await
         .as_ref()
-        .map(|(pk, _)| pk.clone())
+        .map(|(pk, _)| *pk)
         .ok_or(P2PError::NotInitialized)
 }
 
@@ -108,7 +108,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
     let mut swarm = init_swarm()
         .await
         .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
-    let local_peer_id = swarm.local_peer_id().clone();
+    let local_peer_id = *swarm.local_peer_id();
     println!("Local peer id: {local_peer_id}");
 
     let listen_addr: Multiaddr = addr.parse()?;
@@ -145,7 +145,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
     let mut swarm = init_swarm()
         .await
         .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
-    let local_peer_id = swarm.local_peer_id().clone();
+    let local_peer_id = *swarm.local_peer_id();
     println!("Local peer id: {local_peer_id}");
 
     let mut dial_addr: Multiaddr = addr.parse()?;
