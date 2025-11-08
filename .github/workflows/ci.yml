@@ -8,32 +8,27 @@ on:
 
 jobs:
   test:
-    name: Test
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Install Rust toolchain
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain-file: rust-toolchain.toml
       
-      - name: Cache cargo registry
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
       
       - name: Build
-        run: cargo build --release --verbose
+        run: cargo build --release
       
       - name: Test
-        run: cargo test --release --verbose
+        run: cargo test --release

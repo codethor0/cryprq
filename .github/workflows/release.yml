@@ -3,30 +3,29 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
-  build-linux:
-    name: Build Linux (musl)
+  build:
+    name: Build Linux Binary
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Install Rust toolchain
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain-file: rust-toolchain.toml
           targets: x86_64-unknown-linux-musl
       
-      - name: Build static musl binary
+      - name: Install musl target
+        run: rustup target add x86_64-unknown-linux-musl
+      
+      - name: Build
         run: |
-          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
-          export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
           cargo build --release --target x86_64-unknown-linux-musl -p cryprq
           strip target/x86_64-unknown-linux-musl/release/cryprq || true
       
@@ -35,45 +34,30 @@ jobs:
         with:
           name: cryprq-linux-x86_64
           path: target/x86_64-unknown-linux-musl/release/cryprq
-          retention-days: 30
 
   release:
     name: Create Release
-    needs: [build-linux]
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Download artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
+        with:
+          name: cryprq-linux-x86_64
       
-      - name: Generate checksums
-        run: |
-          cd cryprq-linux-x86_64
-          sha256sum cryprq > ../checksums.txt
-          cd ..
+      - name: Generate checksum
+        run: sha256sum cryprq-linux-x86_64/cryprq > checksums.txt
       
-      - name: Create GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             cryprq-linux-x86_64/cryprq
             checksums.txt
-          body: |
-            ## Release ${{ github.ref_name }}
-            
-            ### Linux (x86_64)
-            
-            Static musl binary for Linux x86_64.
-            
-            ### Verification
-            
-            ```bash
-            # Verify checksum
-            sha256sum -c checksums.txt
-            ```
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
