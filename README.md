@@ -90,6 +90,7 @@ cargo audit
 GitHub Actions now runs:
 - `CI` on every push/PR (fmt, clippy, tests)
 - `Security Audit` weekly and on push/PR (cargo audit, cargo deny)
+- `CodeQL` weekly and on push/PR (static analysis for Rust)
 
 Please still run the local checks above before merging changes.
 
