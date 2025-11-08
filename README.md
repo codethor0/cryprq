@@ -1,125 +1,154 @@
-# CrypRQ  
-*Post-quantum, zero-trust, ransom-timer VPN that burns every key after 5 min.*
+# CrypRQ: Post-Quantum, Zero-Trust VPN
 
-[![CI](https://github.com/cryprq/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/cryprq/cryprq/actions)
-[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20MIT-blue)](LICENSE)
+CrypRQ is a Rust-based, post-quantum VPN solution that implements ephemeral key rotation and utilizes the Kyber768 cryptographic algorithm for secure handshakes. This project aims to provide a secure and efficient way to establish VPN connections while ensuring that keys are regularly rotated to enhance security.
 
----
+## Features
 
-## Security Features
-- Post-quantum key exchange (Kyber768, X25519)
-- Ed25519 peer authentication
-- ChaCha20-Poly1305 AEAD encryption
-- BLAKE3 key derivation
-- 5-minute key rotation (ransom-timer)
-- Replay attack protection (sliding window)
-- Rate limiting and buffer pooling
-- All dependencies audited with `cargo-deny` and CI
+- Post-quantum cryptography using Kyber768 KEM
+- Ephemeral key rotation (every 5 minutes)
+- libp2p-based peer-to-peer networking
+- QUIC transport protocol
+- mDNS local network discovery
+- Zero-trust architecture
+- Static binary builds for Linux and macOS
 
----
+## Requirements
 
-## Status  
-Pre-alpha – looking for crypto & p2p reviewers.  
-**First 10 merged PRs** receive gen-0 zk-bandwidth tokens.
+- Rust toolchain 1.83.0 or later
+- Docker (optional, for containerized builds)
 
----
+## Project Structure
 
-## Quick Start
+The project is organized as a Rust workspace with the following modules:
+
+- **crypto**: Cryptographic functions and types using Kyber768 and X25519
+- **p2p**: Peer-to-peer networking using libp2p
+- **node**: Core VPN node implementation
+- **cli**: Command-line interface for interacting with VPN nodes
+
+## Building
+
+### Linux (Static Binary)
+
+To build a static binary for Linux using musl:
 
 ```bash
-# Clone and build
-git clone https://github.com/codethor0/cryprq.git
-cd cryprq
+./scripts/build-linux.sh
+```
+
+The binary will be located at: `target/x86_64-unknown-linux-musl/release/cryprq`
+
+### macOS
+
+To build for macOS:
+
+```bash
+./scripts/build-macos.sh
+```
+
+The binary will be located at: `target/release/cryprq`
+
+### Standard Cargo Build
+
+```bash
 cargo build --release
-
-# Run node (generates PQ Kyber keys, starts WireGuard tunnel)
-./target/release/cryprq
-# → CrypRQ v0.0.1 – Kyber pk: a3f7…
-# → TUN up at 127.0.0.1:51820
-# → ransom rotate (every 5 min)
-
-# Connect to peer (optional)
-./target/release/cryprq --peer <PEER_ID>
-# → PQ handshake complete – tunnel ready
 ```
 
-### Architecture
-- **crypto**: no-std Kyber768 stub (rand_core)
-- **p2p**: libp2p QUIC + mDNS discovery
-- **node**: userspace WireGuard (ChaCha20-Poly1305, BLAKE3 KDF, X25519)
-- **cli**: tokio runtime, 5-min key rotation
+The binary will be located at: `target/release/cryprq`
 
----
+## Usage
 
-## Build
+### Starting a Listener
 
-### Standard Build
+To start a node that listens for incoming connections:
+
 ```bash
-cargo build --release -p cryprq
-./target/release/cryprq --help
+cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
 ```
 
-### Reproducible musl Build (4 MB static binary)
+### Connecting to a Peer
 
-Using the build script:
+To connect to a peer:
+
 ```bash
-./scripts/build-musl.sh
+cargo run --release -- --peer /ip4/<PEER_IP>/udp/9001/quic-v1
 ```
 
-Using Nix flake:
+### Docker Usage
+
+Build the Docker image:
+
 ```bash
-nix build
-./result/bin/cryprq --help
+docker build -f Dockerfile.reproducible -t cryprq-dev .
 ```
 
-Using Docker:
+Run a listener node:
+
 ```bash
-docker build -t cryprq .
-docker run --rm cryprq --help
+docker run -d --name cryprq-listener --network cryprq-test \
+  cryprq-dev cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
 ```
 
-Manual build:
+Connect to a peer:
+
 ```bash
-# Install musl target
-rustup target add x86_64-unknown-linux-musl
-
-# Build with reproducible flags
-export SOURCE_DATE_EPOCH=0
-export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
-cargo build --release --target x86_64-unknown-linux-musl -p cryprq
-
-# Strip and compress (optional)
-strip target/x86_64-unknown-linux-musl/release/cryprq
-upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq
+docker run --rm --network cryprq-test \
+  cryprq-dev cargo run --release -- --peer /ip4/<LISTENER_IP>/udp/9001/quic-v1
 ```
 
----
+## Testing
 
-## Workspace Structure
+Run the test suite:
+
 ```bash
-cat > Cargo.toml <<'EOF'
-[workspace]
-members = ["crypto","p2p","node","cli"]
-resolver = "2"
-
-[workspace.package]
-version = "0.0.1"
-authors = ["CrypRQ Contributors"]
-edition = "2021"
-license = "Apache-2.0 OR MIT"
-repository = "https://github.com/codethor0/cryprq"
-rust-version = "1.75"
-
-[profile.release]
-lto = "thin"
-strip = true
-codegen-units = 1
+cargo test
 ```
 
-### Contributor Notes
-- The `node` crate requires `tokio` with the `full` feature set:
-  ```toml
-  tokio = { version = "1", features = ["full"] }
-  ```
-- See SECURITY.md for more details on cryptography and audit practices.
+Or using Docker:
 
+```bash
+docker run --rm cryprq-dev cargo test
+```
+
+### Integration Testing
+
+Test two nodes connecting to each other:
+
+```bash
+# Create network
+docker network create cryprq-test
+
+# Start listener
+docker run -d --name listener --network cryprq-test \
+  cryprq-dev cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
+
+# Get listener IP and connect
+LISTENER_IP=$(docker inspect listener --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+docker run --rm --network cryprq-test \
+  cryprq-dev cargo run --release -- --peer /ip4/$LISTENER_IP/udp/9001/quic-v1
+```
+
+## Architecture
+
+- **Transport**: QUIC over UDP for low latency and multiplexing
+- **Discovery**: mDNS for local network peer discovery
+- **Cryptography**: 
+  - Kyber768 for post-quantum key exchange
+  - X25519 for classical key exchange
+  - Hybrid approach for maximum security
+- **Key Rotation**: Automatic rotation every 5 minutes for forward secrecy
+
+## Security
+
+- Uses NIST-standardized Kyber768 for post-quantum security
+- Ephemeral key rotation prevents long-term key exposure
+- Zero-trust architecture - no central authority
+- Keys are securely zeroized on rotation
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for more details.
+
+## Contributing
+
+Contributions are welcome! Please ensure all tests pass and code follows Rust best practices.
