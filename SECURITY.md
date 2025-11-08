@@ -1,34 +1,43 @@
 # Security Policy
 
-## Cryptography & Security Features
-- Post-quantum key exchange (Kyber768, X25519)
-- Ed25519 peer authentication
-- ChaCha20-Poly1305 AEAD encryption
-- BLAKE3 key derivation
-- 5-minute key rotation (ransom-timer)
-- Replay attack protection (sliding window)
-- Rate limiting and buffer pooling
-
-## Build & Dependency Audits
-- Contributors SHOULD run `cargo test --release` and `cargo clippy --all-targets --all-features` locally.
-- Running `cargo audit` before submitting changes is strongly encouraged.
-- Automated CI pipelines were removed temporarily; until they return, these checks are manual.
-- Docker and Nix builds are recommended for reproducible deployments.
-
-## Reporting Vulnerabilities
-If you discover a security vulnerability in CrypRQ, please report it by emailing codethor@gmail.com or opening a private issue on GitHub. Do not disclose vulnerabilities publicly until they have been reviewed and addressed.
-
 ## Supported Versions
-Only the latest stable release is supported for security updates. Older versions may not receive patches.
+- `main`: actively maintained.
+- Future tagged releases: latest patch only.
 
-## Responsible Disclosure
-We ask that you give us a reasonable time to respond and address the issue before public disclosure. We will coordinate with you to release a fix and acknowledge your contribution if desired.
+No other branches receive security fixes.
 
-## Contact
-- © 2025 Thor Thor  
-- Email: [codethor@gmail.com](mailto:codethor@gmail.com)  
-- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
-- GitHub Issues: https://github.com/codethor0/cryprq/issues
+## Reporting a Vulnerability
+- Email: `security@codethor0.com`
+- Optional PGP encryption (replace with production key before publishing):
+  ```
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+  Version: GnuPG v2
+
+  mQENBFbj0hABCAC5Pqg0l4COREPLACEWITHREALKEYEXAMPLE==
+  -----END PGP PUBLIC KEY BLOCK-----
+  ```
+
+### Disclosure Process
+1. Acknowledge receipt within **72 hours**.
+2. Provide triage status and remediation plan within **7 days**.
+3. Coordinate fix release and public advisory with the reporter.
+
+### Safe Harbor
+We welcome good-faith research. Activities that follow this policy and avoid user data exfiltration or service disruption will not trigger legal action.
+
+## Security Practices
+- CI enforces `cargo fmt`, `cargo clippy`, `cargo test`, `cargo audit`, `cargo deny`, and CodeQL.
+- Vendored `third_party/if-watch` reduces supply-chain drift.
+- Reproducible build instructions are documented in `REPRODUCIBLE.md`.
+
+## Contact Preferences
+- Language: English.
+- Include affected commit/tag, reproduction steps, and impact assessment.
+- Encrypt sensitive details with the PGP key above when possible.
 
 ---
-SPDX-License-Identifier: Apache-2.0 OR MIT
+
+**Checklist**
+- [ ] Report sent to `security@codethor0.com`.
+- [ ] (Optional) Payload encrypted with PGP.
+- [ ] Disclosure timeline agreed with maintainers.
