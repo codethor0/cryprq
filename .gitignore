@@ -27,8 +27,6 @@ target
 *.temp
 *.log
 pasted_content*.txt
-lib.rs
-main.rs
 
 # Script backups
 *.sh.bak
