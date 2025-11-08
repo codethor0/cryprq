@@ -1,105 +1,132 @@
-# CrypRQ  
-*Post-quantum, zero-trust, ransom-timer VPN that burns every key after 5 min.*
+# CrypRQ: Post-Quantum, Zero-Trust VPN
 
-[![CI](https://github.com/cryprq/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/cryprq/cryprq/actions)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE-GPL)
+CrypRQ explores hybrid (Kyber768 + X25519) handshakes, 5-minute “ransom timer” key rotation, and libp2p QUIC transport. Today the workspace delivers the cryptography and peer-to-peer control plane; a full userspace VPN tunnel is still under construction.
 
----
+## Contact & SPDX
 
-## Status  
-Pre-alpha – looking for crypto & p2p reviewers.  
-**First 10 merged PRs** receive gen-0 zk-bandwidth tokens.
+- © 2025 Thor Thor  
+- Contact: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
+- SPDX-License-Identifier: MIT
 
----
+> **Status:** Prototype. The CLI generates post-quantum keys, rotates them on a schedule, and can listen or dial peers over QUIC. No packet forwarding yet.
+
+## Features
+
+- Hybrid Kyber768 + X25519 secrets via `pqcrypto-kyber` and `x25519-dalek`
+- Asynchronous key rotation task that burns the previous key pair every 300 s
+- libp2p QUIC transport with mDNS discovery stubs
+- `no_std` crypto crate suitable for embedded usage
+- Reproducible build scripts (musl + Docker)
 
 ## Quick Start
 
 ```bash
-# Clone and build
-git clone https://github.com/codethor0/cryprq.git
+# prerequisites
+rustup toolchain install 1.83.0
 cd cryprq
-cargo build --release
 
-# Run node (generates PQ Kyber keys, starts WireGuard tunnel)
-./target/release/cryprq
-# → CrypRQ v0.0.1 – Kyber pk: a3f7…
-# → TUN up at 127.0.0.1:51820
-# → ransom rotate (every 5 min)
+# start a listener (prints its multiaddr)
+cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
 
-# Connect to peer (optional)
-./target/release/cryprq --peer <PEER_ID>
-# → PQ handshake complete – tunnel ready
+# in another shell, dial the listener
+cargo run --release -- --peer /ip4/127.0.0.1/udp/9001/quic-v1
 ```
 
-### Architecture
-- **crypto**: no-std Kyber768 stub (rand_core)
-- **p2p**: libp2p QUIC + mDNS discovery
-- **node**: userspace WireGuard (ChaCha20-Poly1305, BLAKE3 KDF, X25519)
-- **cli**: tokio runtime, 5-min key rotation
+The CLI:
 
----
+- requires exactly one of `--listen` or `--peer`;
+- spawns `start_key_rotation` to refresh keys on a 5-minute interval;
+- logs new listen addresses or terminates once a dial succeeds.
+
+## Architecture
+
+```
+workspace/
+├── cli     # cryprq binary: argument parsing, key rotation background task, listener/dialer entry-points
+├── crypto  # no_std Kyber helpers + hybrid handshake struct
+├── p2p     # libp2p QUIC swarm setup and mDNS behaviour
+└── node    # placeholder for future data-plane / tunnel logic
+```
+
+- **Key store:** `tokio::sync::RwLock<Option<(KyberPublicKey, KyberSecretKey)>>`
+- **Networking:** `libp2p::Swarm` built with QUIC transport and dummy + mDNS behaviour
+- **Logging:** use `RUST_LOG=info` (or similar) to see rotation events
 
 ## Build
 
-### Standard Build
+### Standard Cargo build
+
 ```bash
-cargo build --release -p cryprq
+cargo build --release
 ./target/release/cryprq --help
 ```
 
-### Reproducible musl Build (4 MB static binary)
+### Maintain SPDX headers
 
-Using the build script:
+If you add or rename files, keep SPDX/contact headers consistent:
+
 ```bash
-./scripts/build-musl.sh
+bash scripts/add-headers.sh
 ```
 
-Using Nix flake:
+The script is idempotent and respects shebangs, XML declarations, and the required MIT license tag.
+
+### Static musl binary (Linux)
+
 ```bash
-nix build
-./result/bin/cryprq --help
+./scripts/build-linux.sh
+# → target/x86_64-unknown-linux-musl/release/cryprq
 ```
 
-Using Docker:
+### Native macOS binary
+
 ```bash
-docker build -t cryprq .
-docker run --rm cryprq --help
+./scripts/build-macos.sh
+# → target/release/cryprq
 ```
 
-Manual build:
+### Docker image
+
 ```bash
-# Install musl target
-rustup target add x86_64-unknown-linux-musl
-
-# Build with reproducible flags
-export SOURCE_DATE_EPOCH=0
-export RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
-cargo build --release --target x86_64-unknown-linux-musl -p cryprq
-
-# Strip and compress (optional)
-strip target/x86_64-unknown-linux-musl/release/cryprq
-upx --best --lzma target/x86_64-unknown-linux-musl/release/cryprq
+docker build -t cryprq-cli -f Dockerfile .
+docker run --rm cryprq-cli --help
 ```
 
----
+## Manual Checks (CI currently disabled)
 
-## Workspace Structure
 ```bash
-cat > Cargo.toml <<'EOF'
-[workspace]
-members = ["crypto","p2p","node","cli"]
-resolver = "2"
+cargo test --release
+cargo clippy --all-targets --all-features -- -D warnings
+# optional but recommended
+cargo install cargo-audit
+cargo audit
+./scripts/docker_vpn_test.sh          # listener/dialer smoke test in Docker
+```
 
-[workspace.package]
-version = "0.0.1"
-authors = ["CrypRQ Contributors"]
-edition = "2021"
-license = "GPL-3.0"
-repository = "https://github.com/cryprq/cryprq"
-rust-version = "1.75"
+GitHub Actions now runs:
+- `CI` on every push/PR (fmt, clippy, tests)
+- `Security Audit` weekly and on push/PR (cargo audit, cargo deny)
+- `CodeQL` weekly and on push/PR (static analysis for Rust)
 
-[profile.release]
-lto = "thin"
-strip = true
-codegen-units = 1
+Please still run the local checks above before merging changes.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). In short:
+
+- SSH-sign commits when possible.
+- Add SPDX headers to new Rust files.
+- Document which manual checks you ran in your PR description.
+
+## License
+
+Dual-licensed under Apache 2.0 and MIT. See [LICENSE](LICENSE) for the MIT terms, [LICENSE-APACHE](LICENSE-APACHE) for Apache 2.0, and [DUAL_LICENSE.md](DUAL_LICENSE.md) for details.
+
+## Acknowledgments
+
+- [`libp2p`](https://libp2p.io/) for the modular P2P stack.
+- [`pqcrypto`](https://crates.io/crates/pqcrypto-kyber) maintainers for the Kyber implementation.
+- [`tokio`](https://tokio.rs/) for powering the async runtime.
+
+If you experiment with CrypRQ, please open an issue or PR—we’d love to hear what you build.

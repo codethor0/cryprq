@@ -1,39 +1,27 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 FROM debian:bookworm-slim
 
-# Pin Rust version
-ENV RUST_VERSION=1.82.0
-ENV RUSTUP_HOME=/usr/local/rustup
-ENV CARGO_HOME=/usr/local/cargo
-ENV PATH=/usr/local/cargo/bin:$PATH
+ENV RUST_VERSION=1.83.0
+ENV PATH="/root/.cargo/bin:$PATH"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    git \
-    pkg-config \
-    libssl-dev \
+    curl build-essential git pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust with pinned version
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal --component clippy rustfmt
+# Install Rust toolchain (components added separately)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs  | \
+    sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal
 
-# Set working directory
-WORKDIR /build
+RUN rustup component add clippy rustfmt
 
-# Copy project files
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
-COPY crypto ./crypto
-COPY p2p ./p2p
-COPY node ./node
-COPY cli ./cli
+# Copy source and build
+COPY . /usr/src/cryprq
+WORKDIR /usr/src/cryprq
+RUN cargo build --release
 
-# Build with locked dependencies
-RUN cargo build --release --locked
-
-# Generate checksum
-RUN sha256sum target/release/cryprq > /checksum.txt
-
-# Default command
-CMD ["cat", "/checksum.txt"]
+CMD ["cargo", "test"]

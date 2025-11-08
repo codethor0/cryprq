@@ -1,3 +1,8 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 disallowed-methods = [
     { path = "std::panic::panic", reason = "use Result instead" },
     { path = "std::option::Option::unwrap", reason = "use expect or pattern matching" },

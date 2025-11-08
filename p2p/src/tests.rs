@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 #[cfg(test)]
 mod p2p_tests {
     use crate::{init_swarm, get_current_pk, dial_peer, P2PError};

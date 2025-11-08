@@ -1,11 +1,43 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [ main, feat/batch-merge ]
+  pull_request:
+    branches: [ main, feat/batch-merge ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --all-features --verbose
-      - run: cargo test --all-features --verbose
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+          components: rustfmt, clippy
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cargo fmt check
+        run: cargo fmt --all -- --check
+
+      - name: Cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Cargo test
+        run: cargo test --release

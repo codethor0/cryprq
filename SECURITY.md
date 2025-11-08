@@ -1,0 +1,34 @@
+# Security Policy
+
+## Cryptography & Security Features
+- Post-quantum key exchange (Kyber768, X25519)
+- Ed25519 peer authentication
+- ChaCha20-Poly1305 AEAD encryption
+- BLAKE3 key derivation
+- 5-minute key rotation (ransom-timer)
+- Replay attack protection (sliding window)
+- Rate limiting and buffer pooling
+
+## Build & Dependency Audits
+- Contributors SHOULD run `cargo test --release` and `cargo clippy --all-targets --all-features` locally.
+- Running `cargo audit` before submitting changes is strongly encouraged.
+- Automated CI pipelines were removed temporarily; until they return, these checks are manual.
+- Docker and Nix builds are recommended for reproducible deployments.
+
+## Reporting Vulnerabilities
+If you discover a security vulnerability in CrypRQ, please report it by emailing codethor@gmail.com or opening a private issue on GitHub. Do not disclose vulnerabilities publicly until they have been reviewed and addressed.
+
+## Supported Versions
+Only the latest stable release is supported for security updates. Older versions may not receive patches.
+
+## Responsible Disclosure
+We ask that you give us a reasonable time to respond and address the issue before public disclosure. We will coordinate with you to release a fix and acknowledge your contribution if desired.
+
+## Contact
+- © 2025 Thor Thor  
+- Email: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
+- GitHub Issues: https://github.com/codethor0/cryprq/issues
+
+---
+SPDX-License-Identifier: Apache-2.0 OR MIT

@@ -1,14 +1,23 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 [package]
 name = "cryprq"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 cryprq-crypto = { path = "../crypto" }
 p2p = { path = "../p2p" }
-node = { path = "../node" }
 rand = "0.8"
 tokio = { version = "1", features = ["full"] }
 clap = { version = "4", features = ["derive"] }
-libp2p = "0.54"
 ed25519-dalek = "2.1"
+anyhow = "1"
+hex = "0.4"
+futures = "0.3"
+void = "1"
+log = "0.4"

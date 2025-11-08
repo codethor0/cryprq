@@ -1,9 +1,19 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 [package]
 name = "cryprq-crypto"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
-rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
-pqcrypto-kyber = { version = "0.8", default-features = false }
-pqcrypto-traits = { version = "0.3", default-features = false }
+rand = "0.8"
+blake3 = "1.0"
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+pqcrypto-mlkem = "0.1.1"
+
+[features]
+std = []

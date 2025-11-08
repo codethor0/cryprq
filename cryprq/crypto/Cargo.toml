@@ -1,0 +1,15 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "crypto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8"
+aes = "0.7"
+sha2 = "0.10"
+kyber = { git = "https://github.com/codethor0/kyber", branch = "main" }

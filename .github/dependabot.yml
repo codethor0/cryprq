@@ -1,3 +1,8 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 version: 2
 updates:
   - package-ecosystem: "cargo"
@@ -12,6 +17,12 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+    ignore:
+      - dependency-name: "libp2p"
+        versions:
+          - ">=0.55"
+        reason: "Pending manual review before adopting new libp2p majors"
+
     
   - package-ecosystem: "github-actions"
     directory: "/"
