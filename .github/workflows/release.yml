@@ -10,58 +10,58 @@ permissions:
 
 jobs:
   build:
+    if: startsWith(github.ref, 'refs/tags/')
     name: Build Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools pkg-config
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
           targets: x86_64-unknown-linux-musl
-      
-      - name: Build
+
+      - name: Build Linux binary
         run: |
-          cargo build --release --target x86_64-unknown-linux-musl --package cryprq-node
-          cargo build --release --target x86_64-unknown-linux-musl --package cli
-          strip target/x86_64-unknown-linux-musl/release/cryprq-node || true
-          strip target/x86_64-unknown-linux-musl/release/cli || true
-          mkdir -p artifacts
-          cp target/x86_64-unknown-linux-musl/release/cryprq-node artifacts/cryprq-node-x86_64-unknown-linux-musl
-          cp target/x86_64-unknown-linux-musl/release/cli artifacts/cryprq-cli-x86_64-unknown-linux-musl
-      
-      - name: Upload artifacts
+          chmod +x scripts/build-linux.sh
+          scripts/build-linux.sh
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-binaries
-          path: artifacts/*
+          name: cryprq-linux-x86_64
+          path: target/x86_64-unknown-linux-musl/release/cryprq
 
   release:
-    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Publish Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Download artifacts
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-binaries
+          name: cryprq-linux-x86_64
           path: artifacts
-      
+
       - name: Generate checksums
-        run: sha256sum artifacts/* > checksums.txt
-      
+        run: sha256sum artifacts/cryprq > checksums.txt
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/*
+            artifacts/cryprq
             checksums.txt
           generate_release_notes: true
         env:
