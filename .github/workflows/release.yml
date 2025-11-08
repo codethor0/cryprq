@@ -20,7 +20,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.83.0
+          toolchain-file: rust-toolchain.toml
           targets: x86_64-unknown-linux-musl
       
       - name: Build static musl binary
