@@ -5,11 +5,12 @@
 
 [workspace]
 members = [
-    "crypto",
-    "p2p",
-    "node",
-    "cli",
-]
+        "crypto",
+        "p2p",
+        "node",
+        "cli",
+    ]
+resolver = "2"
 
 [patch.crates-io]
 if-watch = { path = "third_party/if-watch" }
