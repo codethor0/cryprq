@@ -24,14 +24,19 @@ jobs:
       
       - name: Build
         run: |
-          cargo build --release --target x86_64-unknown-linux-musl -p cryprq
-          strip target/x86_64-unknown-linux-musl/release/cryprq || true
+          cargo build --release --target x86_64-unknown-linux-musl --package cryprq-node
+          cargo build --release --target x86_64-unknown-linux-musl --package cli
+          strip target/x86_64-unknown-linux-musl/release/cryprq-node || true
+          strip target/x86_64-unknown-linux-musl/release/cli || true
+          mkdir -p artifacts
+          cp target/x86_64-unknown-linux-musl/release/cryprq-node artifacts/cryprq-node-x86_64-unknown-linux-musl
+          cp target/x86_64-unknown-linux-musl/release/cli artifacts/cryprq-cli-x86_64-unknown-linux-musl
       
-      - name: Upload
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binary
-          path: target/x86_64-unknown-linux-musl/release/cryprq
+          name: release-binaries
+          path: artifacts/*
 
   release:
     name: Create Release
@@ -43,19 +48,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Download
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binary
+          name: release-binaries
+          path: artifacts
       
-      - name: Checksum
-        run: sha256sum binary/cryprq > checksums.txt
+      - name: Generate checksums
+        run: sha256sum artifacts/* > checksums.txt
       
-      - name: Release
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            binary/cryprq
+            artifacts/*
             checksums.txt
           generate_release_notes: true
         env:
