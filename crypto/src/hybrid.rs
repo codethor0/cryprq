@@ -1,6 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-extern crate alloc;
-
 use x25519_dalek::StaticSecret;
 use pqcrypto_kyber::kyber768::{
     keypair as kyber_keypair,
@@ -9,6 +6,7 @@ use pqcrypto_kyber::kyber768::{
 };
 use rand::rngs::OsRng;
 
+#[allow(dead_code)]
 pub struct SharedSecret32([u8; 32]);
 
 pub struct HybridHandshake {
@@ -25,6 +23,18 @@ impl HybridHandshake {
             kyber_pk: pk,
             kyber_sk: sk,
         }
+    }
+
+    pub fn x25519_secret(&self) -> &StaticSecret {
+        &self.x25519
+    }
+
+    pub fn kyber_public_key(&self) -> &KyberPublicKey {
+        &self.kyber_pk
+    }
+
+    pub fn kyber_secret_key(&self) -> &KyberSecretKey {
+        &self.kyber_sk
     }
 }
 

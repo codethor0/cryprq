@@ -8,13 +8,13 @@ anyhow = "1"
 tokio = { version = "1", features = ["full"] }
 libp2p = { version = "0.54", features = [
     "tcp",
-    "tls",
     "noise",
     "yamux",
     "quic",
     "tokio",
     "macros",
-    "mdns"
+    "mdns",
+    "ping"
 ] }
 libp2p-kad = { version = "0.48.0" }
 cryprq-crypto = { path = "../crypto" }
