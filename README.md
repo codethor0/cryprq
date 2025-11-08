@@ -87,7 +87,11 @@ cargo audit
 ./scripts/docker_vpn_test.sh          # listener/dialer smoke test in Docker
 ```
 
-GitHub Actions workflows were removed while stabilising the project; please run these checks locally before merging changes.
+GitHub Actions now runs:
+- `CI` on every push/PR (fmt, clippy, tests)
+- `Security Audit` weekly and on push/PR (cargo audit, cargo deny)
+
+Please still run the local checks above before merging changes.
 
 ## Contributing
 
