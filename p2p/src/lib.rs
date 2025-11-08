@@ -4,23 +4,20 @@
 
 use anyhow::Result;
 use libp2p::{
-    identity, mdns, PeerId, Swarm, SwarmBuilder,
-    swarm::{NetworkBehaviour, SwarmEvent, dial_opts::DialOpts},
-    Multiaddr,
-    ping,
-    tcp,
-    noise,
-    yamux,
+    identity, mdns,
     multiaddr::Protocol,
+    noise, ping,
+    swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
+    tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
 };
 use log::info;
-use std::time::Duration;
-use tokio::sync::RwLock;
 use once_cell::sync::Lazy;
+use std::time::Duration;
 use thiserror::Error;
+use tokio::sync::RwLock;
 
 // Import the *public* items from the crypto crate
-use cryprq_crypto::{KyberPublicKey, KyberSecretKey, kyber_keypair};
+use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey};
 
 // Define the error type correctly
 #[derive(Debug, Error)]
@@ -83,7 +80,8 @@ pub async fn start_key_rotation() {
     }
 }
 
-pub async fn init_swarm() -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub async fn init_swarm(
+) -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error + Send + Sync + 'static>> {
     let local_key = identity::Keypair::generate_ed25519();
     let swarm = SwarmBuilder::with_existing_identity(local_key)
         .with_tokio()
@@ -107,7 +105,9 @@ pub async fn init_swarm() -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Erro
 }
 
 pub async fn start_listener(addr: &str) -> Result<()> {
-    let mut swarm = init_swarm().await.map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
+    let mut swarm = init_swarm()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
     let local_peer_id = swarm.local_peer_id().clone();
     println!("Local peer id: {local_peer_id}");
 
@@ -120,7 +120,9 @@ pub async fn start_listener(addr: &str) -> Result<()> {
             SwarmEvent::NewListenAddr { address, .. } => {
                 println!("Listening on {address}");
             }
-            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
+            SwarmEvent::ConnectionEstablished {
+                peer_id, endpoint, ..
+            } => {
                 println!("Inbound connection established with {peer_id} via {endpoint:?}");
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
@@ -140,7 +142,9 @@ pub async fn start_listener(addr: &str) -> Result<()> {
 }
 
 pub async fn dial_peer(addr: String) -> Result<()> {
-    let mut swarm = init_swarm().await.map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
+    let mut swarm = init_swarm()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
     let local_peer_id = swarm.local_peer_id().clone();
     println!("Local peer id: {local_peer_id}");
 
@@ -166,7 +170,11 @@ pub async fn dial_peer(addr: String) -> Result<()> {
     use libp2p::futures::StreamExt;
     loop {
         match swarm.select_next_some().await {
-            SwarmEvent::ConnectionEstablished { peer_id: remote, endpoint, .. } => {
+            SwarmEvent::ConnectionEstablished {
+                peer_id: remote,
+                endpoint,
+                ..
+            } => {
                 println!("Connected to {remote} via {endpoint:?}");
                 break;
             }
@@ -176,7 +184,10 @@ pub async fn dial_peer(addr: String) -> Result<()> {
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
             }
-            SwarmEvent::Dialing { peer_id, connection_id } => {
+            SwarmEvent::Dialing {
+                peer_id,
+                connection_id,
+            } => {
                 println!("Dialing {peer_id:?} (connection {connection_id:?})");
             }
             other => {

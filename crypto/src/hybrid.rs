@@ -1,10 +1,8 @@
-use x25519_dalek::StaticSecret;
 use pqcrypto_kyber::kyber768::{
-    keypair as kyber_keypair,
-    PublicKey as KyberPublicKey,
-    SecretKey as KyberSecretKey,
+    keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };
 use rand::rngs::OsRng;
+use x25519_dalek::StaticSecret;
 
 #[allow(dead_code)]
 pub struct SharedSecret32([u8; 32]);

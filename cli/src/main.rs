@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use p2p::{start_key_rotation, start_listener, dial_peer};
+use p2p::{dial_peer, start_key_rotation, start_listener};
 use std::process;
 
 #[derive(Parser, Debug)]

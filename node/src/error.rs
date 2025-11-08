@@ -21,7 +21,9 @@ impl fmt::Display for TunnelError {
             TunnelError::EncryptionFailed => write!(f, "Packet encryption failed"),
             TunnelError::DecryptionFailed => write!(f, "Packet decryption failed"),
             TunnelError::InvalidNonce => write!(f, "Invalid nonce in packet"),
-            TunnelError::NonceOverflow => write!(f, "Nonce counter overflow - key rotation required"),
+            TunnelError::NonceOverflow => {
+                write!(f, "Nonce counter overflow - key rotation required")
+            }
             TunnelError::ReplayDetected => write!(f, "Replay attack detected - nonce already seen"),
             TunnelError::RateLimitExceeded => write!(f, "Rate limit exceeded - too many packets"),
             TunnelError::InvalidPeerIdentity => write!(f, "Peer identity verification failed"),
