@@ -17,7 +17,7 @@ impl HybridHandshake {
     pub fn new() -> Self {
         let (pk, sk) = kyber_keypair();
         Self {
-            x25519: StaticSecret::random_from_rng(&mut OsRng),
+            x25519: StaticSecret::random_from_rng(OsRng),
             kyber_pk: pk,
             kyber_sk: sk,
         }
