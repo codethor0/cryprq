@@ -5,7 +5,7 @@ Thank you for your interest in contributing! Please follow these guidelines to h
 ## How to Contribute
 - Fork the repository and create your branch from `main`.
 - Sign all commits using SSH when possible (see SECURITY.md).
-- Add SPDX headers to all new Rust source files.
+- Add SPDX headers to all new source files (`bash scripts/add-headers.sh`).
 - Write clear, descriptive commit messages.
 - Run `cargo test --release` and `cargo clippy --all-targets --all-features`.
 - Run `cargo audit` (optional, but strongly encouraged).
@@ -22,6 +22,12 @@ All contributors must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 By contributing, you agree that your code may be licensed under the Apache 2.0 or MIT license.
+
+## Contact
+
+- © 2025 Thor Thor  
+- Email: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)
 
 ---
 SPDX-License-Identifier: Apache-2.0 OR MIT

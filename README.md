@@ -2,6 +2,13 @@
 
 CrypRQ explores hybrid (Kyber768 + X25519) handshakes, 5-minute “ransom timer” key rotation, and libp2p QUIC transport. Today the workspace delivers the cryptography and peer-to-peer control plane; a full userspace VPN tunnel is still under construction.
 
+## Contact & SPDX
+
+- © 2025 Thor Thor  
+- Contact: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
+- SPDX-License-Identifier: MIT
+
 > **Status:** Prototype. The CLI generates post-quantum keys, rotates them on a schedule, and can listen or dial peers over QUIC. No packet forwarding yet.
 
 ## Features
@@ -54,6 +61,16 @@ workspace/
 cargo build --release
 ./target/release/cryprq --help
 ```
+
+### Maintain SPDX headers
+
+If you add or rename files, keep SPDX/contact headers consistent:
+
+```bash
+bash scripts/add-headers.sh
+```
+
+The script is idempotent and respects shebangs, XML declarations, and the required MIT license tag.
 
 ### Static musl binary (Linux)
 

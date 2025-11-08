@@ -25,7 +25,9 @@ Only the latest stable release is supported for security updates. Older versions
 We ask that you give us a reasonable time to respond and address the issue before public disclosure. We will coordinate with you to release a fix and acknowledge your contribution if desired.
 
 ## Contact
-- Email: codethor@gmail.com
+- © 2025 Thor Thor  
+- Email: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
 - GitHub Issues: https://github.com/codethor0/cryprq/issues
 
 ---

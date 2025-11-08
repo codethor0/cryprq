@@ -2,6 +2,13 @@
 
 CrypRQ is a Rust-based, post-quantum VPN solution that implements ephemeral key rotation and utilizes the Kyber768 cryptographic algorithm for secure handshakes. This project aims to provide a secure and efficient way to establish VPN connections while ensuring that keys are regularly rotated to enhance security.
 
+## Contact & SPDX
+
+- © 2025 Thor Thor  
+- Contact: [codethor@gmail.com](mailto:codethor@gmail.com)  
+- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
+- SPDX-License-Identifier: MIT
+
 ## Project Structure
 
 The project is organized as a Rust workspace with the following modules:
@@ -59,6 +66,14 @@ bash scripts/docker_vpn_test.sh
 ```
 
 This script will build the Docker image, create a network, and start two VPN nodes to test the peer connection functionality.
+
+## Maintain SPDX headers
+
+Run the helper whenever you add new files so every source retains the required Thor Thor SPDX metadata:
+
+```
+bash scripts/add-headers.sh
+```
 
 ## License
 
