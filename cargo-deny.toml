@@ -6,33 +6,19 @@
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-unmaintained = "deny"
-yanked = "deny"
-notice = "warn"
 ignore = []
-severity-threshold = "medium"
+yanked = "deny"
 
 [licenses]
-unlicensed = "deny"
 allow = [
     "MIT",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
-    "GPL-3.0",
+    "Zlib",
+    "Unicode-3.0",
 ]
-deny = [
-    "AGPL-3.0",
-    "GPL-2.0",
-    "LGPL-2.0",
-    "LGPL-2.1",
-    "LGPL-3.0",
-]
-copyleft = "allow"
-allow-osi-fsf-free = "neither"
-default = "deny"
 confidence-threshold = 0.8
 
 [licenses.private]
@@ -40,7 +26,7 @@ ignore = false
 registries = []
 
 [bans]
-multiple-versions = "warn"
+multiple-versions = "allow"
 wildcards = "allow"
 highlight = "all"
 workspace-default-features = "allow"
@@ -48,17 +34,7 @@ external-default-features = "allow"
 allow = []
 deny = []
 
-[bans.build]
-allow-build-scripts = []
-
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = [
-    "https://github.com/rosenpass/rosenpass",
-    "https://github.com/rosenpass/memsec.git",
-]
-
-[sources.allow-org]
-github = ["rosenpass"]

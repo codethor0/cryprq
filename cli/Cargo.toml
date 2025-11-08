@@ -7,6 +7,7 @@
 name = "cryprq"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 cryprq-crypto = { path = "../crypto" }

@@ -45,4 +45,9 @@ jobs:
         run: cargo install cargo-deny --version 0.17.0 --locked
 
       - name: Run cargo deny
-        run: cargo deny check advisories bans sources licenses
+        run: >
+          cargo deny check advisories bans sources licenses
+          --deny vulnerability
+          --deny unmaintained
+          --deny unsound
+          --warn notice
