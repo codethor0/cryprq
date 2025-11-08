@@ -10,29 +10,27 @@ permissions:
 
 jobs:
   build:
-    name: Build Linux Binary
+    name: Build Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
-      - name: Setup Rust
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain-file: rust-toolchain.toml
+          toolchain: 1.83.0
           targets: x86_64-unknown-linux-musl
-      
-      - name: Install musl target
-        run: rustup target add x86_64-unknown-linux-musl
       
       - name: Build
         run: |
           cargo build --release --target x86_64-unknown-linux-musl -p cryprq
           strip target/x86_64-unknown-linux-musl/release/cryprq || true
       
-      - name: Upload artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: cryprq-linux-x86_64
+          name: binary
           path: target/x86_64-unknown-linux-musl/release/cryprq
 
   release:
@@ -42,21 +40,22 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
-      - name: Download artifact
+      - name: Download
         uses: actions/download-artifact@v4
         with:
-          name: cryprq-linux-x86_64
+          name: binary
       
-      - name: Generate checksum
-        run: sha256sum cryprq-linux-x86_64/cryprq > checksums.txt
+      - name: Checksum
+        run: sha256sum binary/cryprq > checksums.txt
       
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            cryprq-linux-x86_64/cryprq
+            binary/cryprq
             checksums.txt
           generate_release_notes: true
         env:
