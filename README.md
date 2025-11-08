@@ -13,7 +13,7 @@ CrypRQ explores hybrid (Kyber768 + X25519) handshakes, 5-minute “ransom timer�
 
 ## Features
 
-- Hybrid Kyber768 + X25519 secrets via `pqcrypto-kyber` and `x25519-dalek`
+- Hybrid ML-KEM (Kyber768-compatible) + X25519 secrets via `pqcrypto-mlkem` and `x25519-dalek`
 - Asynchronous key rotation task that burns the previous key pair every 300 s
 - libp2p QUIC transport with mDNS discovery stubs
 - `no_std` crypto crate suitable for embedded usage
