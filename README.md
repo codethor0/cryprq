@@ -96,37 +96,30 @@ docker run --rm --network cryprq-test \
   cryprq-dev cargo run --release -- --peer /ip4/<LISTENER_IP>/udp/9001/quic-v1
 ```
 
-## Testing
+## Testing & Quality Checks
 
-Run the test suite:
+- **Unit / integration tests**
+  ```bash
+  cargo test --release
+  ```
 
-```bash
-cargo test
-```
+- **Clippy (optional but recommended)**
+  ```bash
+  cargo clippy --all-targets --all-features -- -D warnings
+  ```
 
-Or using Docker:
+- **Cargo Audit (optional)**
+  ```bash
+  cargo install cargo-audit
+  cargo audit
+  ```
 
-```bash
-docker run --rm cryprq-dev cargo test
-```
+- **Two-node smoke test (Docker)**
+  ```bash
+  ./scripts/docker_vpn_test.sh
+  ```
 
-### Integration Testing
-
-Test two nodes connecting to each other:
-
-```bash
-# Create network
-docker network create cryprq-test
-
-# Start listener
-docker run -d --name listener --network cryprq-test \
-  cryprq-dev cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
-
-# Get listener IP and connect
-LISTENER_IP=$(docker inspect listener --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-docker run --rm --network cryprq-test \
-  cryprq-dev cargo run --release -- --peer /ip4/$LISTENER_IP/udp/9001/quic-v1
-```
+💡 We previously ran these automatically in GitHub Actions, but workflows were removed to unblock the repository. Until automation is reinstated, please run the checks above manually before merging changes.
 
 ## Architecture
 
@@ -147,7 +140,7 @@ docker run --rm --network cryprq-test \
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+This project is dual-licensed under Apache 2.0 or MIT. You may choose either (or both) licenses at your option. See `LICENSE`, `LICENSE-APACHE`, and `LICENSE-MIT` for the full text.
 
 ## Contributing
 

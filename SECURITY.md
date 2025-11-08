@@ -9,10 +9,11 @@
 - Replay attack protection (sliding window)
 - Rate limiting and buffer pooling
 
-## CI & Dependency Audits
-- All dependencies are checked with `cargo-deny` and security audit tools
-- CI runs on every PR and commit, including reproducible builds and musl targets
-- Docker and Nix builds recommended for secure deployment
+## Build & Dependency Audits
+- Contributors SHOULD run `cargo test --release` and `cargo clippy --all-targets --all-features` locally.
+- Running `cargo audit` before submitting changes is strongly encouraged.
+- Automated CI pipelines were removed temporarily; until they return, these checks are manual.
+- Docker and Nix builds are recommended for reproducible deployments.
 
 ## Reporting Vulnerabilities
 If you discover a security vulnerability in CrypRQ, please report it by emailing codethor@gmail.com or opening a private issue on GitHub. Do not disclose vulnerabilities publicly until they have been reviewed and addressed.
