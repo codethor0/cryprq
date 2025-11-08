@@ -12,7 +12,7 @@ mod hybrid;
 
 // Publicly export items needed by other crates
 pub use crate::hybrid::{HybridHandshake, SharedSecret32};
-pub use kyber768::kyber768::{
+pub use pqcrypto_kyber::kyber768::{
     keypair as kyber_keypair, 
     PublicKey as KyberPublicKey, 
     SecretKey as KyberSecretKey

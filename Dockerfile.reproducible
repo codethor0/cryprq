@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-ENV RUST_VERSION=1.82.0
+ENV RUST_VERSION=1.83.0
 ENV PATH="/root/.cargo/bin:$PATH"
 
 # Install system dependencies

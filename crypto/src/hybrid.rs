@@ -1,8 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
-use x25519-dalek::StaticSecret;
-use kyber768::kyber768::{
+use x25519_dalek::StaticSecret;
+use pqcrypto_kyber::kyber768::{
     keypair as kyber_keypair,
     PublicKey as KyberPublicKey,
     SecretKey as KyberSecretKey,

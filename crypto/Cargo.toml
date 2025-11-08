@@ -7,7 +7,7 @@ edition = "2021"
 rand = "0.8"
 blake3 = "1.0"
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }
-kyber768 = { package = "pqcrypto-kyber", version = "0.8.1" }
+pqcrypto-kyber = "0.8.1"
 
 [features]
 std = []
