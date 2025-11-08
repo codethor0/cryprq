@@ -42,7 +42,7 @@ jobs:
         run: cargo audit --deny warnings
 
       - name: Install cargo-deny
-        run: cargo install cargo-deny --locked
+        run: cargo install cargo-deny --version 0.17.0 --locked
 
       - name: Run cargo deny
         run: cargo deny check advisories bans sources licenses
