@@ -1,147 +1,110 @@
 # CrypRQ: Post-Quantum, Zero-Trust VPN
 
-CrypRQ is a Rust-based, post-quantum VPN solution that implements ephemeral key rotation and utilizes the Kyber768 cryptographic algorithm for secure handshakes. This project aims to provide a secure and efficient way to establish VPN connections while ensuring that keys are regularly rotated to enhance security.
+CrypRQ explores hybrid (Kyber768 + X25519) handshakes, 5-minute “ransom timer” key rotation, and libp2p QUIC transport. Today the workspace delivers the cryptography and peer-to-peer control plane; a full userspace VPN tunnel is still under construction.
+
+> **Status:** Prototype. The CLI generates post-quantum keys, rotates them on a schedule, and can listen or dial peers over QUIC. No packet forwarding yet.
 
 ## Features
 
-- Post-quantum cryptography using Kyber768 KEM
-- Ephemeral key rotation (every 5 minutes)
-- libp2p-based peer-to-peer networking
-- QUIC transport protocol
-- mDNS local network discovery
-- Zero-trust architecture
-- Static binary builds for Linux and macOS
+- Hybrid Kyber768 + X25519 secrets via `pqcrypto-kyber` and `x25519-dalek`
+- Asynchronous key rotation task that burns the previous key pair every 300 s
+- libp2p QUIC transport with mDNS discovery stubs
+- `no_std` crypto crate suitable for embedded usage
+- Reproducible build scripts (musl + Docker)
 
-## Requirements
-
-- Rust toolchain 1.83.0 or later
-- Docker (optional, for containerized builds)
-
-## Project Structure
-
-The project is organized as a Rust workspace with the following modules:
-
-- **crypto**: Cryptographic functions and types using Kyber768 and X25519
-- **p2p**: Peer-to-peer networking using libp2p
-- **node**: Core VPN node implementation
-- **cli**: Command-line interface for interacting with VPN nodes
-
-## Building
-
-### Linux (Static Binary)
-
-To build a static binary for Linux using musl:
+## Quick Start
 
 ```bash
-./scripts/build-linux.sh
-```
+# prerequisites
+rustup toolchain install 1.83.0
+cd cryprq
 
-The binary will be located at: `target/x86_64-unknown-linux-musl/release/cryprq`
-
-### macOS
-
-To build for macOS:
-
-```bash
-./scripts/build-macos.sh
-```
-
-The binary will be located at: `target/release/cryprq`
-
-### Standard Cargo Build
-
-```bash
-cargo build --release
-```
-
-The binary will be located at: `target/release/cryprq`
-
-## Usage
-
-### Starting a Listener
-
-To start a node that listens for incoming connections:
-
-```bash
+# start a listener (prints its multiaddr)
 cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
+
+# in another shell, dial the listener
+cargo run --release -- --peer /ip4/127.0.0.1/udp/9001/quic-v1
 ```
 
-### Connecting to a Peer
+The CLI:
 
-To connect to a peer:
-
-```bash
-cargo run --release -- --peer /ip4/<PEER_IP>/udp/9001/quic-v1
-```
-
-### Docker Usage
-
-Build the Docker image:
-
-```bash
-docker build -f Dockerfile.reproducible -t cryprq-dev .
-```
-
-Run a listener node:
-
-```bash
-docker run -d --name cryprq-listener --network cryprq-test \
-  cryprq-dev cargo run --release -- --listen /ip4/0.0.0.0/udp/9001/quic-v1
-```
-
-Connect to a peer:
-
-```bash
-docker run --rm --network cryprq-test \
-  cryprq-dev cargo run --release -- --peer /ip4/<LISTENER_IP>/udp/9001/quic-v1
-```
-
-## Testing & Quality Checks
-
-- **Unit / integration tests**
-  ```bash
-  cargo test --release
-  ```
-
-- **Clippy (optional but recommended)**
-  ```bash
-  cargo clippy --all-targets --all-features -- -D warnings
-  ```
-
-- **Cargo Audit (optional)**
-  ```bash
-  cargo install cargo-audit
-  cargo audit
-  ```
-
-- **Two-node smoke test (Docker)**
-  ```bash
-  ./scripts/docker_vpn_test.sh
-  ```
-
-💡 We previously ran these automatically in GitHub Actions, but workflows were removed to unblock the repository. Until automation is reinstated, please run the checks above manually before merging changes.
+- requires exactly one of `--listen` or `--peer`;
+- spawns `start_key_rotation` to refresh keys on a 5-minute interval;
+- logs new listen addresses or terminates once a dial succeeds.
 
 ## Architecture
 
-- **Transport**: QUIC over UDP for low latency and multiplexing
-- **Discovery**: mDNS for local network peer discovery
-- **Cryptography**: 
-  - Kyber768 for post-quantum key exchange
-  - X25519 for classical key exchange
-  - Hybrid approach for maximum security
-- **Key Rotation**: Automatic rotation every 5 minutes for forward secrecy
+```
+workspace/
+├── cli     # cryprq binary: argument parsing, key rotation background task, listener/dialer entry-points
+├── crypto  # no_std Kyber helpers + hybrid handshake struct
+├── p2p     # libp2p QUIC swarm setup and mDNS behaviour
+└── node    # placeholder for future data-plane / tunnel logic
+```
 
-## Security
+- **Key store:** `tokio::sync::RwLock<Option<(KyberPublicKey, KyberSecretKey)>>`
+- **Networking:** `libp2p::Swarm` built with QUIC transport and dummy + mDNS behaviour
+- **Logging:** use `RUST_LOG=info` (or similar) to see rotation events
 
-- Uses NIST-standardized Kyber768 for post-quantum security
-- Ephemeral key rotation prevents long-term key exposure
-- Zero-trust architecture - no central authority
-- Keys are securely zeroized on rotation
+## Build
 
-## License
+### Standard Cargo build
 
-This project is dual-licensed under Apache 2.0 or MIT. You may choose either (or both) licenses at your option. See `LICENSE`, `LICENSE-APACHE`, and `LICENSE-MIT` for the full text.
+```bash
+cargo build --release
+./target/release/cryprq --help
+```
+
+### Static musl binary (Linux)
+
+```bash
+./scripts/build-linux.sh
+# → target/x86_64-unknown-linux-musl/release/cryprq
+```
+
+### Native macOS binary
+
+```bash
+./scripts/build-macos.sh
+# → target/release/cryprq
+```
+
+### Docker image
+
+```bash
+docker build -t cryprq-cli -f Dockerfile .
+docker run --rm cryprq-cli --help
+```
+
+## Manual Checks (CI currently disabled)
+
+```bash
+cargo test --release
+cargo clippy --all-targets --all-features -- -D warnings
+# optional but recommended
+cargo install cargo-audit
+cargo audit
+./scripts/docker_vpn_test.sh          # listener/dialer smoke test in Docker
+```
+
+GitHub Actions workflows were removed while stabilising the project; please run these checks locally before merging changes.
 
 ## Contributing
 
-Contributions are welcome! Please ensure all tests pass and code follows Rust best practices.
+See [CONTRIBUTING.md](CONTRIBUTING.md). In short:
+
+- SSH-sign commits when possible.
+- Add SPDX headers to new Rust files.
+- Document which manual checks you ran in your PR description.
+
+## License
+
+Dual-licensed under Apache 2.0 and MIT. See [LICENSE](LICENSE), [LICENSE-APACHE](LICENSE-APACHE), and [LICENSE-MIT](LICENSE-MIT).
+
+## Acknowledgments
+
+- [`libp2p`](https://libp2p.io/) for the modular P2P stack.
+- [`pqcrypto`](https://crates.io/crates/pqcrypto-kyber) maintainers for the Kyber implementation.
+- [`tokio`](https://tokio.rs/) for powering the async runtime.
+
+If you experiment with CrypRQ, please open an issue or PR—we’d love to hear what you build.
