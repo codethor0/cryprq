@@ -26,7 +26,7 @@ CrypRQ targets adversaries capable of capturing encrypted traffic today and decr
 - Rotation logs available at `info` level for monitoring.
 
 ## Responsible Disclosure
-- Email `security@codethor0.com` (see [SECURITY.md](../SECURITY.md) for PGP).
+- Email `codethor@gmail.com` (see [SECURITY.md](../SECURITY.md) for PGP).
 - Acknowledge within 72 hours; plan shared within 7 days.
 
 ## Supply-Chain Hygiene
@@ -39,5 +39,5 @@ CrypRQ targets adversaries capable of capturing encrypted traffic today and decr
 **Checklist**
 - [ ] Reviewed current limitations before deployment.
 - [ ] Configured rotation interval and monitoring.
-- [ ] Established disclosure channel with `security@codethor0.com`.
+- [ ] Established disclosure channel with `codethor@gmail.com`.
 

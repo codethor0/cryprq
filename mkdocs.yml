@@ -48,6 +48,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/codethor0/cryprq
+    - icon: material/email
+      link: mailto:codethor@gmail.com
   edit_uri: edit/main/docs/
 plugins:
   - search

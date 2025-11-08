@@ -7,7 +7,7 @@
 No other branches receive security fixes.
 
 ## Reporting a Vulnerability
-- Email: `security@codethor0.com`
+- Email: `codethor@gmail.com`
 - Optional PGP encryption (replace with production key before publishing):
   ```
   -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -38,6 +38,6 @@ We welcome good-faith research. Activities that follow this policy and avoid use
 ---
 
 **Checklist**
-- [ ] Report sent to `security@codethor0.com`.
+- [ ] Report sent to `codethor@gmail.com`.
 - [ ] (Optional) Payload encrypted with PGP.
 - [ ] Disclosure timeline agreed with maintainers.
