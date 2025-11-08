@@ -128,7 +128,7 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
   - mDNS discovery disabled in hardened deployments.
   - No automated peer revocation or ACL enforcement yet.
   - Dependency `pqcrypto-mlkem` under active review.
-- Responsible disclosure: security@codethor0.com (PGP in SECURITY.md).
+- Responsible disclosure: codethor@gmail.com (PGP in SECURITY.md).
 - Supply-chain checks: `cargo audit`, `cargo deny`, `CodeQL`, `scripts/docker_vpn_test.sh`.
 
 ## Reproducible Builds
