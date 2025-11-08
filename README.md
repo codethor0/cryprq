@@ -121,7 +121,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). In short:
 
 ## License
 
-Dual-licensed under Apache 2.0 and MIT. See [LICENSE](LICENSE), [LICENSE-APACHE](LICENSE-APACHE), and [LICENSE-MIT](LICENSE-MIT).
+Dual-licensed under Apache 2.0 and MIT. See [LICENSE](LICENSE) for the MIT terms, [LICENSE-APACHE](LICENSE-APACHE) for Apache 2.0, and [DUAL_LICENSE.md](DUAL_LICENSE.md) for details.
 
 ## Acknowledgments
 

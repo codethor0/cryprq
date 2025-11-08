@@ -77,4 +77,4 @@ bash scripts/add-headers.sh
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+This project is licensed under the MIT License by default (see [LICENSE](../LICENSE)). An Apache 2.0 alternative is available in [LICENSE-APACHE](../LICENSE-APACHE); see [DUAL_LICENSE.md](../DUAL_LICENSE.md) for details.
