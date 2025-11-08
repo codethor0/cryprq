@@ -12,6 +12,12 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+    ignore:
+      - dependency-name: "libp2p"
+        versions:
+          - ">=0.55"
+        reason: "Pending manual review before adopting new libp2p majors"
+
     
   - package-ecosystem: "github-actions"
     directory: "/"
