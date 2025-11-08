@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 // This file is the entry point for the node application. It initializes the VPN node and handles the main logic for running the node.
 
 fn main() {

@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 use anyhow::Result;
 use clap::Parser;
 use p2p::{dial_peer, start_key_rotation, start_listener};

@@ -1,3 +1,8 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 # ---- builder ----
 FROM messense/rust-musl-cross:x86_64-musl AS builder
 WORKDIR /build

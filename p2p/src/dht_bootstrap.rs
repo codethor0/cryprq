@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 #[cfg(feature = "dht-bootstrap")]
 pub const IPNS_KEY: &str = "/ipns/k51qzi5uqu5d...";
 

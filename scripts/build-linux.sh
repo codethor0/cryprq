@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
 set -euo pipefail
 
 # Build script for Linux (musl static binary)

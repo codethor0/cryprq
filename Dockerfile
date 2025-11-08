@@ -1,5 +1,10 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
 # ---- builder ----
-FROM messense/rust-musl-cross:x86_64-musl AS builder
+FROM rust:1.83 AS builder
 WORKDIR /build
 
 # Minimal, cache-friendly copies
@@ -13,12 +18,13 @@ COPY crypto/src ./crypto/src
 COPY node/src ./node/src
 COPY p2p/src ./p2p/src
 
-# Build static binary for Linux
-RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo build --release --target x86_64-unknown-linux-musl -p cryprq
+# Build optimized binary for Linux
+RUN cargo build --release -p cryprq
 
 # ---- runtime ----
-FROM alpine:3.19
-RUN apk add --no-cache ca-certificates
-COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/cryprq /usr/local/bin/cryprq
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /build/target/release/cryprq /usr/local/bin/cryprq
 ENTRYPOINT ["/usr/local/bin/cryprq"]

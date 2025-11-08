@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 pub const OUTER_LEN: usize = 1480;
 
 pub fn pad_to_1480(plain: &[u8]) -> [u8; OUTER_LEN] {

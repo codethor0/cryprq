@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 use blake3::Hasher;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::device_id::AnonId;

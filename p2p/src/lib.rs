@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 //! Peer-to-peer networking for VPN tunnels
 //!
 //! This crate provides libp2p-based peer discovery and connection management.
@@ -129,7 +134,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                 println!("Incoming connection attempt from {send_back_addr}");
             }
             SwarmEvent::IncomingConnectionError { error, .. } => {
-                println!("Incoming connection error: {error}");
+                println!("Incoming connection error: {error:?}");
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
@@ -179,7 +184,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 break;
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {
-                anyhow::bail!("Dial error: {error}");
+                anyhow::bail!("Dial error: {error:?}");
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");

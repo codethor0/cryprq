@@ -1,3 +1,8 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
 use pqcrypto_kyber::kyber768::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };
