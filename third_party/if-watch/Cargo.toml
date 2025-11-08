@@ -1,0 +1,27 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "if-watch"
+version = "3.2.1+cryprq.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Minimal tokio-based IP address watcher (vendored for CrypRQ)"
+repository = "https://github.com/codethor0/cryprq"
+
+[lib]
+name = "if_watch"
+path = "src/lib.rs"
+
+[features]
+default = ["tokio"]
+tokio = []
+smol = []
+
+[dependencies]
+futures = "0.3"
+if-addrs = "0.10"
+ipnet = "2.3"
+tokio = { version = "1", features = ["time"] }

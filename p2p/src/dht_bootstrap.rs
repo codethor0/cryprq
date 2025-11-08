@@ -8,9 +8,9 @@ pub const IPNS_KEY: &str = "/ipns/k51qzi5uqu5d...";
 
 #[cfg(feature = "dht-bootstrap")]
 pub async fn fetch_bootstrap_list() -> Vec<libp2p::Multiaddr> {
-    use libp2p_kad::record::Key;
-    use libp2p_kad::store::MemoryStore;
-    use libp2p_kad::{Kademlia, KademliaConfig, Quorum};
+    use libp2p::kad::record::Key;
+    use libp2p::kad::store::MemoryStore;
+    use libp2p::kad::{Kademlia, KademliaConfig, Quorum};
     use libp2p::{identity, PeerId};
     use anyhow::Result;
     use std::str::FromStr;

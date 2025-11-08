@@ -14,7 +14,6 @@ p2p = { path = "../p2p" }
 rand = "0.8"
 tokio = { version = "1", features = ["full"] }
 clap = { version = "4", features = ["derive"] }
-libp2p = { version = "0.54", features = ["macros", "tcp", "noise", "yamux", "mdns", "quic", "tokio"] }
 ed25519-dalek = "2.1"
 anyhow = "1"
 hex = "0.4"

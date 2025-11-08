@@ -3,7 +3,7 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // SPDX-License-Identifier: MIT
 
-use pqcrypto_kyber::kyber768::{
+use pqcrypto_mlkem::mlkem768::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };
 use rand::rngs::OsRng;

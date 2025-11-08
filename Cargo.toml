@@ -10,3 +10,6 @@ members = [
     "node",
     "cli",
 ]
+
+[patch.crates-io]
+if-watch = { path = "third_party/if-watch" }
