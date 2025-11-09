@@ -4,6 +4,9 @@
 [![CodeQL](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Reproducible Builds](https://img.shields.io/badge/builds-reproducible-brightgreen.svg)](REPRODUCIBLE.md)
+[![Tip](https://img.shields.io/badge/Tip-❤-brightgreen)](https://buy.stripe.com/00w6oA7kM4wc4co5RB3Nm01)
+[![Monthly](https://img.shields.io/badge/Monthly-♻️-blue)](https://buy.stripe.com/7sY3cobB2bYEdMYa7R3Nm00)
+
 
 > Post-quantum, zero-trust VPN with five-minute ephemeral key rotation.
 
@@ -154,3 +157,14 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
 
 ## License
 CrypRQ is licensed under the [MIT License](LICENSE). Apache 2.0 text is kept for reference; MIT is authoritative.
+
+## Support
+
+If this project helps you, consider supporting ongoing maintenance:
+
+- ❤️ **One-time tip:** https://buy.stripe.com/00w6oA7kM4wc4co5RB3Nm01  
+- ♻️ **Monthly support:** https://buy.stripe.com/7sY3cobB2bYEdMYa7R3Nm00
+
+**What you fund:** maintenance, docs, roadmap experiments, and new features.
+
+Thank you! 🙌🏿
