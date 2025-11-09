@@ -1,0 +1,128 @@
+name: Fuzz Nightly
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  fuzz-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          cargo install cargo-fuzz
+
+      - name: Run fuzzers
+        run: |
+          set -uo pipefail
+          rm -rf fuzz/artifacts
+          declare -a targets=("multiaddr_parse" "handshake_state")
+          failures=()
+          for target in "${targets[@]}"; do
+            echo "== Running $target =="
+            if ! cargo +nightly fuzz run "$target" -- -max_total_time=600; then
+              failures+=("$target")
+            fi
+          done
+          if [ ${#failures[@]} -gt 0 ]; then
+            printf '%s
+' "${failures[@]}" > fuzz/failures.txt
+            exit 1
+          fi
+
+      - name: Upload fuzz artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts
+          if-no-files-found: warn
+
+      - name: Create issues for fuzz crashes
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -f fuzz/failures.txt ]; then
+            echo "No fuzz failures detected."
+            exit 0
+          fi
+          python3 - <<'PY'
+import json
+import os
+import pathlib
+import urllib.request
+
+failures_file = pathlib.Path('fuzz/failures.txt')
+if not failures_file.exists():
+    raise SystemExit(0)
+
+failures = failures_file.read_text().splitlines()
+if not failures:
+    raise SystemExit(0)
+
+token = os.environ['GITHUB_TOKEN']
+repo = os.environ['GITHUB_REPOSITORY']
+run_url = os.environ.get('GITHUB_RUN_URL', '')
+
+headers = {
+    'Authorization': f'Bearer {token}',
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'ci-fuzz-bot'
+}
+
+request = urllib.request.Request(
+    f'https://api.github.com/repos/{repo}/issues?state=open&per_page=100',
+    headers=headers
+)
+with urllib.request.urlopen(request) as response:
+    existing = json.loads(response.read().decode())
+existing_titles = {issue['title'] for issue in existing}
+
+artifacts_dir = pathlib.Path('fuzz/artifacts')
+
+for target in failures:
+    title = f'QA: fuzz crash in {target}'
+    if title in existing_titles:
+        continue
+    artifact_paths = []
+    target_dir = artifacts_dir / target
+    if target_dir.exists():
+        for path in target_dir.iterdir():
+            if path.is_file():
+                artifact_paths.append(path.name)
+    body_lines = [
+        f'Fuzz target `{target}` crashed during nightly fuzzing.',
+        '',
+        f'- artifacts: {", ".join(artifact_paths) if artifact_paths else "(none recorded)"}',
+        f'- run: {run_url}',
+    ]
+    payload = json.dumps({
+        'title': title,
+        'body': '\n'.join(body_lines),
+        'labels': ['qa', 'fuzz']
+    }).encode()
+    req = urllib.request.Request(
+        f'https://api.github.com/repos/{repo}/issues',
+        data=payload,
+        headers=headers,
+        method='POST'
+    )
+    with urllib.request.urlopen(req) as resp:
+        resp.read()
+PY

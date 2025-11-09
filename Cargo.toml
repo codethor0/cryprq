@@ -10,6 +10,7 @@ members = [
         "node",
         "cli",
     ]
+exclude = ["fuzz"]
 resolver = "2"
 
 [workspace.package]

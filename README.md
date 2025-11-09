@@ -115,6 +115,10 @@ nix build
 | `--peer <multiaddr>` | Dialer mode multiaddr (optionally `/p2p/<peer-id>`). | None |
 | `RUST_LOG` | Log level (`error`…`trace`). | `info` |
 | `CRYPRQ_ROTATE_SECS` | Rotation interval in seconds. | `300` |
+| `CRYPRQ_MAX_INBOUND` | Maximum simultaneous inbound handshakes. | `64` |
+| `CRYPRQ_BACKOFF_BASE_MS` | Initial exponential backoff for repeated failures (ms). | `500` |
+| `CRYPRQ_BACKOFF_MAX_MS` | Ceiling for inbound backoff delay (ms). | `30000` |
+| `CRYPRQ_METRICS_ADDR` | Bind address for `/metrics` & `/healthz`. | `127.0.0.1:9464` |
 
 Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p ping events confirm liveness.
 
@@ -143,6 +147,25 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
 - Expose metrics/health endpoints.
 - Explore PQ data-plane ciphers.
 - Publish crates with versioned releases.
+
+## Observability
+- Metrics: `http://127.0.0.1:9464/metrics` (override with `--metrics-addr` or `CRYPRQ_METRICS_ADDR`).
+- Health check: `http://127.0.0.1:9464/healthz` returns `200 OK` once the swarm is initialized.
+- Sample scrape: `curl -s localhost:9464/metrics | head`.
+- Version / build metadata:
+  ```bash
+  $ ./target/release/cryprq --version
+  cryprq 0.1.0 (abc1234)
+
+  $ ./target/release/cryprq --build-info
+  {
+    "version": "0.1.0",
+    "git_sha": "abc1234",
+    "built_at": "2025-11-08T01:23:45Z",
+    "rustc": "rustc 1.83.0 (123abc456 2025-10-10)",
+    "features": ["default"]
+  }
+  ```
 
 ## Contributing
 1. `cargo fmt --all`

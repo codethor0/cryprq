@@ -18,6 +18,7 @@ Guidance for monitoring, upgrading, and maintaining CrypRQ deployments.
 |---------|--------------|------------|
 | `Select(Failed)` transport errors | QUIC retry / port blocked | Ensure UDP 9999 reachable; verify firewall rules. |
 | Dialer never connects | Incorrect multiaddr or missing `/p2p/<id>` | Use listener’s logged address and peer ID. |
+| Warning `event=inbound_backoff` | Repeated inbound failures hitting exponential backoff | Inspect remote address, consider raising `CRYPRQ_BACKOFF_*` or blocking offender. |
 | Excessive logs | `RUST_LOG` set to `debug` in production | Reduce to `info` after troubleshooting. |
 
 ## Upgrades
@@ -31,6 +32,18 @@ Guidance for monitoring, upgrading, and maintaining CrypRQ deployments.
 - Retain prior binary or image.
 - Repoint systemd service or container tag to previous version.
 - Re-run smoke test to confirm handshake succeeds.
+
+## Metrics & Health
+- Default endpoint: `http://127.0.0.1:9464`.
+- `/metrics` exposes Prometheus counters (`handshakes_*`, `rotations_total`) and the `current_peers` gauge.
+- `/healthz` returns `200 OK` once the libp2p swarm is initialized, `503` otherwise.
+- Override address via `--metrics-addr` CLI flag or `CRYPRQ_METRICS_ADDR`.
+- Docker check: `docker exec <container> curl -s localhost:9464/healthz`.
+
+## Build Diagnostics
+- `cryprq --version` prints `<semver> (<git-sha>)`.
+- `cryprq --build-info` emits JSON (version, git SHA, Rust toolchain, features, build timestamp).
+- CI can override metadata via `CRYPRQ_VERSION_STRING` inputs (set automatically by build script).
 
 ---
 

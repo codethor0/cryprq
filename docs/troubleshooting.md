@@ -8,6 +8,11 @@
 - Ensure multiaddr includes correct IP and optional `/p2p/<peer-id>` segment.
 - Verify listener is running and logging `Listening on ...`.
 
+## Listener Drops Connections Immediately
+- Logs show `event=inbound_backoff` or `event=inbound_rate_limit`.
+- A peer exceeded the handshake concurrency cap (`CRYPRQ_MAX_INBOUND`) or triggered exponential backoff.
+- Wait for the cooldown to expire or adjust the relevant environment variables for trusted peers.
+
 ## Docker Build Fails (`if-watch` missing)
 - Update to latest `main`; Dockerfile copies `third_party/if-watch`.
 - Ensure repository cloned with subdirectories intact.

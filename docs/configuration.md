@@ -15,6 +15,9 @@ Exactly one flag must be provided.
 |----------|---------|---------|
 | `RUST_LOG` | `info` | Log verbosity (`error`, `warn`, `info`, `debug`, `trace`). |
 | `CRYPRQ_ROTATE_SECS` | `300` | Key rotation interval in seconds. |
+| `CRYPRQ_MAX_INBOUND` | `64` | Maximum concurrent inbound handshake attempts. |
+| `CRYPRQ_BACKOFF_BASE_MS` | `500` | Initial backoff delay for repeated inbound failures (milliseconds). |
+| `CRYPRQ_BACKOFF_MAX_MS` | `30000` | Upper bound for inbound backoff delay (milliseconds). |
 
 ## Key Rotation
 - Background task rotates ML-KEM and X25519 secrets every `CRYPRQ_ROTATE_SECS`.

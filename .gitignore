@@ -30,3 +30,6 @@ pasted_content*.txt
 
 # Script backups
 *.sh.bak
+
+# Perf gate artifacts
+perf/

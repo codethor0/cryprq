@@ -1,0 +1,28 @@
+[package]
+name = "cryprq-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+multiaddr = "0.18"
+once_cell = "1.19"
+snow = "0.9"
+
+[[bin]]
+name = "multiaddr_parse"
+path = "fuzz_targets/multiaddr_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "handshake_state"
+path = "fuzz_targets/handshake_state.rs"
+test = false
+doc = false
+bench = false

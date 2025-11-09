@@ -32,6 +32,8 @@ cargo build --release -p cryprq
 ## Verify
 - Listener prints ping events after handshake.
 - `RUST_LOG=debug` shows rotation events every 300 seconds.
+- Metrics respond locally: `curl -s localhost:9464/healthz`.
+- Build metadata available: `./target/release/cryprq --build-info`.
 
 ---
 
@@ -39,4 +41,5 @@ cargo build --release -p cryprq
 - [ ] Built CLI with Rust 1.83.0.
 - [ ] Listener produced a peer ID and listened on desired port.
 - [ ] Dialer connected and logged success.
+- [ ] `/metrics` and `/healthz` reachable on expected address.
 

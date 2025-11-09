@@ -1,0 +1,911 @@
+name: QA Smoke
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Smoke test listener ↔ dialer handshake
+        run: |
+          set -euo pipefail
+          docker network create cryprq-ci || true
+          cleanup() {
+            docker rm -f cryprq-listener cryprq-dialer >/dev/null 2>&1 || true
+            docker network rm cryprq-ci >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run -d --name cryprq-listener --network cryprq-ci cryprq-node:ci --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+          # Allow the listener to announce its address
+          sleep 5
+
+          LISTENER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' cryprq-listener)
+          if [ -z "$LISTENER_IP" ]; then
+            echo "Failed to determine listener IP"
+            docker logs cryprq-listener || true
+            exit 1
+          fi
+
+          docker run -d --name cryprq-dialer --network cryprq-ci cryprq-node:ci --peer /ip4/${LISTENER_IP}/udp/9999/quic-v1
+
+          # Poll dialer logs for successful handshake
+          attempts=15
+          while [ $attempts -gt 0 ]; do
+            if docker logs cryprq-dialer 2>&1 | grep -q "Connected to"; then
+              echo "Handshake succeeded"
+              exit 0
+            fi
+            sleep 2
+            attempts=$((attempts - 1))
+          done
+
+          echo "Dialer did not log a successful connection"
+          docker logs cryprq-dialer || true
+          docker logs cryprq-listener || true
+          exit 1
+
+  docker-rotation-restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-rotation
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Rotation and restart resilience
+        run: |
+          set -euo pipefail
+
+          mkdir -p logs
+          network=cryprq-ci
+          containers="rotation-listener rotation-dialer restart-listener restart-dialer1 restart-dialer2"
+
+          collect_logs() {
+            for c in rotation-listener rotation-dialer restart-listener restart-dialer1 restart-dialer2; do
+              docker logs "$c" > "logs/${c}.log" 2>&1 || true
+            done
+          }
+
+          cleanup() {
+            for c in $containers; do
+              docker rm -f "$c" >/dev/null 2>&1 || true
+            done
+            docker network rm "$network" >/dev/null 2>&1 || true
+          }
+
+          trap 'rc=$?; set +e; if [ $rc -ne 0 ]; then collect_logs; fi; cleanup; exit $rc' EXIT
+
+          docker network create "$network"
+
+          # Rotation test: listener rotates every 60s, dialer loops connections for 4 minutes
+          docker run -d --name rotation-listener --network "$network" \
+            -e CRYPRQ_ROTATE_SECS=60 \
+            cryprq-node:ci --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+          sleep 5
+
+          rotation_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' rotation-listener)
+          if [ -z "$rotation_ip" ]; then
+            echo "Failed to determine rotation listener IP"
+            exit 1
+          fi
+
+          docker run -d --name rotation-dialer --network "$network" --entrypoint /bin/sh \
+            cryprq-node:ci -c 'while true; do /usr/local/bin/cryprq --peer /ip4/'"$rotation_ip"'/udp/9999/quic-v1; sleep 5; done'
+
+          sleep 240
+
+          docker logs rotation-dialer > logs/rotation-dialer.log 2>&1
+          docker logs rotation-listener > logs/rotation-listener.log 2>&1
+
+          rotation_connections=$(grep -c "Connected to" logs/rotation-dialer.log || true)
+          if [ "$rotation_connections" -lt 3 ]; then
+            echo "Dialer did not reconnect enough times during rotation (found $rotation_connections entries)"
+            exit 1
+          fi
+
+          docker rm -f rotation-dialer rotation-listener >/dev/null 2>&1 || true
+
+          # Restart test: ensure dialers reconnect after listener restart
+          docker run -d --name restart-listener --network "$network" cryprq-node:ci --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+          sleep 5
+
+          restart_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' restart-listener)
+          if [ -z "$restart_ip" ]; then
+            echo "Failed to determine restart listener IP"
+            exit 1
+          fi
+
+          docker run -d --name restart-dialer1 --network "$network" --entrypoint /bin/sh \
+            cryprq-node:ci -c 'while true; do /usr/local/bin/cryprq --peer /ip4/'"$restart_ip"'/udp/9999/quic-v1; sleep 5; done'
+
+          docker run -d --name restart-dialer2 --network "$network" --entrypoint /bin/sh \
+            cryprq-node:ci -c 'while true; do /usr/local/bin/cryprq --peer /ip4/'"$restart_ip"'/udp/9999/quic-v1; sleep 5; done'
+
+          sleep 20
+
+          dialer1_before=$(docker logs restart-dialer1 2>&1 | grep -c "Connected to" || true)
+          dialer2_before=$(docker logs restart-dialer2 2>&1 | grep -c "Connected to" || true)
+
+          docker restart restart-listener >/dev/null
+
+          success1=0
+          success2=0
+          attempts=60
+          while [ $attempts -gt 0 ]; do
+            current1=$(docker logs restart-dialer1 2>&1 | grep -c "Connected to" || true)
+            current2=$(docker logs restart-dialer2 2>&1 | grep -c "Connected to" || true)
+            if [ $current1 -gt $dialer1_before ]; then success1=1; fi
+            if [ $current2 -gt $dialer2_before ]; then success2=1; fi
+            if [ $success1 -eq 1 ] && [ $success2 -eq 1 ]; then
+              break
+            fi
+            sleep 2
+            attempts=$((attempts - 1))
+          done
+
+          docker logs restart-dialer1 > logs/restart-dialer1.log 2>&1
+          docker logs restart-dialer2 > logs/restart-dialer2.log 2>&1
+          docker logs restart-listener > logs/restart-listener.log 2>&1
+
+          if [ $success1 -ne 1 ] || [ $success2 -ne 1 ]; then
+            echo "Dialers did not reconnect after listener restart (d1=$success1, d2=$success2)"
+            exit 1
+          fi
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-resilience-logs
+          path: logs
+          if-no-files-found: ignore
+
+  docker-chaos-netem:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-chaos
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Run chaos netem suite
+        run: |
+          set -euo pipefail
+
+          runs=1
+          losses=(0 5 10 20)
+          delays=(0 50 100)
+
+          mkdir -p chaos/logs
+          echo "loss,delay,run,connected,time_ms" > chaos/results.csv
+
+          docker network create chaos-net || true
+
+          cleanup() {
+            for c in $(docker ps -aq --filter "name=^chaos_loss"); do
+              docker rm -f "$c" >/dev/null 2>&1 || true
+            done
+            docker network rm chaos-net >/dev/null 2>&1 || true
+          }
+
+          trap cleanup EXIT
+
+          for loss in "${losses[@]}"; do
+            for delay in "${delays[@]}"; do
+              for run in $(seq 1 "$runs"); do
+                prefix="chaos_loss${loss}_delay${delay}_run${run}"
+                listener="${prefix}_listener"
+                dialer="${prefix}_dialer"
+
+                docker run -d --name "$listener" --network chaos-net --cap-add=NET_ADMIN cryprq-node:ci --listen /ip4/0.0.0.0/udp/9999/quic-v1
+                sleep 5
+
+                if [ "$loss" -ne 0 ] || [ "$delay" -ne 0 ]; then
+                  docker exec "$listener" sh -c "apt-get update >/dev/null && apt-get install -y iproute2 >/dev/null"
+                  tc_cmd="tc qdisc add dev eth0 root netem"
+                  if [ "$loss" -ne 0 ]; then
+                    tc_cmd="$tc_cmd loss ${loss}%"
+                  fi
+                  if [ "$delay" -ne 0 ]; then
+                    tc_cmd="$tc_cmd delay ${delay}ms"
+                  fi
+                  docker exec "$listener" sh -c "$tc_cmd"
+                fi
+
+                listener_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$listener")
+
+                start_ms=$(($(date +%s%N)/1000000))
+                docker run -d --name "$dialer" --network chaos-net cryprq-node:ci --peer /ip4/${listener_ip}/udp/9999/quic-v1
+
+                connected=0
+                wait_attempts=90
+                while [ $wait_attempts -gt 0 ]; do
+                  if docker logs "$dialer" 2>&1 | grep -q "Connected to"; then
+                    connected=1
+                    break
+                  fi
+                  sleep 2
+                  wait_attempts=$((wait_attempts - 1))
+                done
+                end_ms=$(($(date +%s%N)/1000000))
+
+                time_ms=""
+                if [ $connected -eq 1 ]; then
+                  time_ms=$((end_ms - start_ms))
+                  sleep 120
+                fi
+
+                docker logs "$listener" > "chaos/logs/${listener}.log" 2>&1 || true
+                docker logs "$dialer" > "chaos/logs/${dialer}.log" 2>&1 || true
+
+                echo "${loss},${delay},${run},${connected},${time_ms}" >> chaos/results.csv
+
+                docker rm -f "$dialer" "$listener" >/dev/null 2>&1 || true
+              done
+            done
+          done
+
+          trap - EXIT
+          cleanup
+
+      - name: Build chaos report
+        run: |
+          python3 - <<'PY'
+import csv
+import statistics
+from pathlib import Path
+import json
+
+results_path = Path("chaos/results.csv")
+if not results_path.exists():
+    raise SystemExit("results.csv missing")
+
+data = {}
+losses = set()
+delays = set()
+
+with results_path.open() as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        loss = int(row["loss"])
+        delay = int(row["delay"])
+        run = int(row["run"])
+        connected = int(row["connected"])
+        time_ms = row["time_ms"]
+        key = (loss, delay)
+        entry = data.setdefault(key, {"runs": 0, "success": 0, "times": []})
+        entry["runs"] += 1
+        if connected:
+            entry["success"] += 1
+            if time_ms:
+                entry["times"].append(int(time_ms))
+        losses.add(loss)
+        delays.add(delay)
+
+losses = sorted(losses)
+delays = sorted(delays)
+
+report = Path("chaos/report.md")
+report.parent.mkdir(parents=True, exist_ok=True)
+
+with report.open("w") as f:
+    f.write("# Chaos Netem Report\n\n")
+    header = "| Loss % \\ Delay ms | " + " | ".join(str(d) for d in delays) + " |\n"
+    f.write(header)
+    f.write("|" + " --- |" * (len(delays) + 1) + "\n")
+    for loss in losses:
+        cells = []
+        for delay in delays:
+            entry = data[(loss, delay)]
+            status = "PASS" if entry["runs"] and entry["success"] == entry["runs"] else "FAIL"
+            if entry["times"]:
+                median = int(statistics.median(entry["times"]))
+                median_str = f"{median} ms"
+            else:
+                median_str = "—"
+            cells.append(f"{status} (median {median_str})")
+        f.write(f"| {loss} | " + " | ".join(cells) + " |\n")
+
+    f.write("\n## Detailed Statistics\n\n")
+    f.write("| Loss (%) | Delay (ms) | Pass Rate | Attempts | Times (ms) |\n")
+    f.write("| --- | --- | --- | --- | --- |\n")
+
+    failures = []
+
+    for loss in losses:
+        for delay in delays:
+            entry = data[(loss, delay)]
+            runs = entry["runs"]
+            success = entry["success"]
+            pass_rate = success / runs if runs else 0.0
+            times = entry["times"]
+            times_str = ", ".join(str(t) for t in times) if times else "—"
+            f.write(f"| {loss} | {delay} | {pass_rate:.2f} ({success}/{runs}) | {runs} | {times_str} |\n")
+            status_fail = runs and success != runs
+            needs_issue = (loss >= 10 or delay >= 100) and status_fail
+            median = int(statistics.median(times)) if times else None
+            if needs_issue:
+                failures.append({
+                    "loss": loss,
+                    "delay": delay,
+                    "pass_rate": pass_rate,
+                    "success": success,
+                    "runs": runs,
+                    "times": times,
+                    "median": median,
+                })
+
+if failures:
+    Path("chaos/failures.json").write_text(json.dumps(failures, indent=2))
+PY
+
+      - name: Upload chaos report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-report
+          path: chaos/report.md
+          if-no-files-found: error
+
+      - name: Create issues for chaos failures
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -f chaos/failures.json ]; then
+            echo "No chaos failures requiring issues."
+            exit 0
+          fi
+          python3 - <<'PY'
+import json
+import os
+import urllib.request
+
+failures_path = "chaos/failures.json"
+if not os.path.exists(failures_path):
+    raise SystemExit(0)
+
+with open(failures_path) as fh:
+    failures = json.load(fh)
+
+token = os.environ["GITHUB_TOKEN"]
+repo = os.environ["GITHUB_REPOSITORY"]
+run_url = os.environ.get("GITHUB_RUN_URL", "")
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "Content-Type": "application/json",
+    "User-Agent": "ci-chaos-bot"
+}
+
+request = urllib.request.Request(
+    f"https://api.github.com/repos/{repo}/issues?state=open&per_page=100",
+    headers=headers
+)
+with urllib.request.urlopen(request) as response:
+    existing = json.loads(response.read().decode())
+
+existing_titles = {issue["title"] for issue in existing}
+
+for failure in failures:
+    loss = failure["loss"]
+    delay = failure["delay"]
+    title = f"QA: chaos regression loss={loss}% delay={delay}ms"
+    if title in existing_titles:
+        continue
+    pass_rate = failure["pass_rate"]
+    success = failure["success"]
+    runs = failure["runs"]
+    times = failure["times"]
+    median = failure["median"]
+    body_lines = [
+        f"Automated chaos test detected instability for loss {loss}% and delay {delay} ms.",
+        "",
+        f"- pass rate: {pass_rate:.2f} ({success}/{runs})",
+        f"- median connect time: {median} ms" if median is not None else "- median connect time: unavailable",
+        f"- connect times (ms): {', '.join(str(t) for t in times) if times else 'none'}",
+        "",
+        f"[Workflow run]({run_url})"
+    ]
+    payload = json.dumps({
+        "title": title,
+        "body": "\n".join(body_lines),
+        "labels": ["qa", "chaos"]
+    }).encode()
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/issues",
+        data=payload,
+        headers=headers,
+        method="POST"
+    )
+    with urllib.request.urlopen(req) as resp:
+        resp.read()
+PY
+
+      - name: Upload chaos logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-logs
+          path: chaos/logs
+          if-no-files-found: ignore
+
+  docker-load-50:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-loadtest
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Listener load test (50 dialers)
+        run: |
+          set -euo pipefail
+
+          mkdir -p load/logs
+          echo "rotation,dialer,success,within_target,elapsed_ms" > load/results.csv
+
+          network=load-net
+          docker network create "$network" || true
+
+          cleanup() {
+            docker ps -aq --filter "name=^load-" | xargs -r docker rm -f >/dev/null 2>&1 || true
+            docker network rm "$network" >/dev/null 2>&1 || true
+          }
+
+          trap cleanup EXIT
+
+          for rotation in 300 60; do
+            listener="load-listener-${rotation}"
+            docker run -d --name "$listener" --network "$network" \
+              -e CRYPRQ_ROTATE_SECS="$rotation" \
+              cryprq-node:ci --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+            sleep 5
+
+            listener_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$listener")
+            if [ -z "$listener_ip" ]; then
+              echo "Failed to determine listener IP for rotation $rotation"
+              exit 1
+            fi
+
+            declare -A start_times=()
+
+            for i in $(seq 1 50); do
+              dialer="load-dialer-${rotation}-${i}"
+              start_times["$dialer"]=$(date +%s%N)
+              docker run -d --name "$dialer" --network "$network" \
+                cryprq-node:ci --peer /ip4/${listener_ip}/udp/9999/quic-v1
+            done
+
+            cpu_file="load/cpu_${rotation}.txt"
+            for sample in $(seq 1 5); do
+              docker stats --no-stream --format '{{.CPUPerc}}' "$listener" >> "$cpu_file"
+              sleep 1
+            done
+
+            for i in $(seq 1 50); do
+              dialer="load-dialer-${rotation}-${i}"
+              start="${start_times[$dialer]}"
+              connected=0
+              for attempt in $(seq 1 10); do
+                if docker logs "$dialer" 2>&1 | grep -q "Connected to"; then
+                  connected=1
+                  break
+                fi
+                sleep 0.5
+              done
+              end=$(date +%s%N)
+              elapsed_ms=""
+              within_target=0
+              if [ "$connected" -eq 1 ] && [ -n "$start" ]; then
+                elapsed_ms=$(( (end - start) / 1000000 ))
+                if [ "$elapsed_ms" -le 5000 ]; then
+                  within_target=1
+                fi
+              fi
+              echo "${rotation},${dialer},${connected},${within_target},${elapsed_ms}" >> load/results.csv
+              docker logs "$dialer" > "load/logs/${dialer}.log" 2>&1 || true
+              docker rm -f "$dialer" >/dev/null 2>&1 || true
+            done
+
+            if ! docker inspect -f '{{.State.Running}}' "$listener" > "load/status_${rotation}.txt"; then
+              echo "false" > "load/status_${rotation}.txt"
+            fi
+            docker logs "$listener" > "load/logs/${listener}.log" 2>&1 || true
+            docker rm -f "$listener" >/dev/null 2>&1 || true
+          done
+
+          trap - EXIT
+          cleanup
+
+      - name: Compile load test report
+        run: |
+          python3 - <<'PY'
+import csv
+import statistics
+from pathlib import Path
+import json
+
+results_path = Path("load/results.csv")
+if not results_path.exists():
+    raise SystemExit("load/results.csv missing")
+
+rows = []
+with results_path.open() as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        rows.append({
+            "rotation": int(row["rotation"]),
+            "dialer": row["dialer"],
+            "success": int(row["success"]),
+            "within_target": int(row["within_target"]),
+            "elapsed_ms": int(row["elapsed_ms"]) if row["elapsed_ms"] else None,
+        })
+
+rotations = sorted({row["rotation"] for row in rows})
+
+report = Path("load/report.md")
+report.parent.mkdir(parents=True, exist_ok=True)
+
+failures = []
+
+with report.open("w") as f:
+    f.write("# Load Test (50 dialers) Summary\n\n")
+    f.write("| Rotation (s) | Success <=5s | Success Rate | Mean connect time (ms) | Max CPU (%) | Listener Running |\n")
+    f.write("| --- | --- | --- | --- | --- | --- |\n")
+
+    for rotation in rotations:
+        subset = [row for row in rows if row["rotation"] == rotation]
+        total = len(subset)
+        success_within = sum(row["within_target"] for row in subset)
+        success_any = sum(row["success"] for row in subset)
+        success_rate = (success_within / total) if total else 0.0
+        times = [row["elapsed_ms"] for row in subset if row["success"] and row["elapsed_ms"] is not None]
+        mean_time = statistics.mean(times) if times else None
+
+        cpu_samples = []
+        cpu_file = Path(f"load/cpu_{rotation}.txt")
+        if cpu_file.exists():
+            for line in cpu_file.read_text().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if line.endswith("%"):
+                    line = line[:-1]
+                try:
+                    cpu_samples.append(float(line))
+                except ValueError:
+                    continue
+        max_cpu = max(cpu_samples) if cpu_samples else 0.0
+
+        status_file = Path(f"load/status_{rotation}.txt")
+        listener_running = status_file.read_text().strip() == "true" if status_file.exists() else False
+
+        mean_str = f"{mean_time:.1f}" if mean_time is not None else "—"
+        f.write(f"| {rotation} | {success_within}/{total} | {success_rate:.2f} | {mean_str} | {max_cpu:.1f} | {listener_running} |\n")
+
+        if success_rate < 0.95 or max_cpu > 100.0 or not listener_running:
+            failures.append({
+                "rotation": rotation,
+                "success_rate": success_rate,
+                "success_within": success_within,
+                "total": total,
+                "mean_time": mean_time,
+                "max_cpu": max_cpu,
+                "listener_running": listener_running,
+            })
+
+if failures:
+    Path("load/failures.json").write_text(json.dumps(failures, indent=2))
+PY
+
+      - name: Upload load test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: |
+            load/report.md
+            load/results.csv
+            load/cpu_*.txt
+            load/status_*.txt
+          if-no-files-found: error
+
+      - name: Upload load logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-logs
+          path: load/logs
+          if-no-files-found: ignore
+
+      - name: Create issues for load failures
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -f load/failures.json ]; then
+            echo "No load test failures requiring issues."
+            exit 0
+          fi
+          python3 - <<'PY'
+import json
+import os
+import urllib.request
+
+path = "load/failures.json"
+if not os.path.exists(path):
+    raise SystemExit(0)
+
+with open(path) as fh:
+    failures = json.load(fh)
+
+token = os.environ["GITHUB_TOKEN"]
+repo = os.environ["GITHUB_REPOSITORY"]
+run_url = os.environ.get("GITHUB_RUN_URL", "")
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "Content-Type": "application/json",
+    "User-Agent": "ci-load-bot"
+}
+
+request = urllib.request.Request(
+    f"https://api.github.com/repos/{repo}/issues?state=open&per_page=100",
+    headers=headers
+)
+with urllib.request.urlopen(request) as response:
+    existing = json.loads(response.read().decode())
+
+existing_titles = {issue["title"] for issue in existing}
+
+for failure in failures:
+    rotation = failure["rotation"]
+    title = f"QA: load regression rotation={rotation}"
+    if title in existing_titles:
+        continue
+    success_rate = failure["success_rate"]
+    success_within = failure["success_within"]
+    total = failure["total"]
+    mean_time = failure["mean_time"]
+    max_cpu = failure["max_cpu"]
+    listener_running = failure["listener_running"]
+    body_lines = [
+        f"Automated load test detected instability for rotation interval {rotation} seconds.",
+        "",
+        f"- success within 5s: {success_within}/{total} ({success_rate:.2f})",
+        f"- mean connect time: {mean_time:.1f} ms" if mean_time is not None else "- mean connect time: unavailable",
+        f"- max listener CPU: {max_cpu:.1f}%",
+        f"- listener running at end: {listener_running}",
+        "",
+        f"[Workflow run]({run_url})"
+    ]
+    payload = json.dumps({
+        "title": title,
+        "body": "\n".join(body_lines),
+        "labels": ["qa", "load"]
+    }).encode()
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/issues",
+        data=payload,
+        headers=headers,
+        method="POST"
+    )
+    with urllib.request.urlopen(req) as resp:
+        resp.read()
+
+  docker-perf-gate:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-perf
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Run performance gate
+        env:
+          PERF_IMAGE: cryprq-node:ci
+        run: |
+          bash scripts/perf_gate.sh
+
+      - name: Upload perf artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate
+          path: perf/
+          if-no-files-found: warn
+
+  sbom-scan-sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-sbom
+
+      - name: Warm cargo cache
+        run: cargo fetch
+
+      - name: Install cargo-cyclonedx
+        run: cargo install --locked cargo-cyclonedx
+
+      - name: Generate CycloneDX SBOM
+        run: |
+          mkdir -p sbom
+          cargo cyclonedx --all-features --format json --output sbom/cyclonedx.json
+        env:
+          CARGO_TERM_COLOR: always
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom/cyclonedx.json
+
+      - name: Build Docker image
+        run: docker build -t cryprq-node:ci .
+
+      - name: Install grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Scan container image (fail on High)
+        run: |
+          grype cryprq-node:ci --fail-on high
+
+      - name: Install cosign
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          COSIGN_VERSION=$(curl -s https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r '.tag_name')
+          curl -sL "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" -o cosign
+          sudo install cosign /usr/local/bin/cosign
+          rm cosign
+
+      - name: Cosign keyless signing (dry-run)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign --keyless --dry-run cryprq-node:ci
+          cosign verify --keyless --dry-run cryprq-node:ci
+
+  fuzz-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Build fuzz targets
+        run: cargo +nightly fuzz build
+PY
