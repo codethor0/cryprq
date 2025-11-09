@@ -69,8 +69,9 @@ start_dialer() {
     docker run -d --name "$name" --network "${BASE_NET}" \
       -e TARGET="${target}" \
       -e RECONNECT_DELAY="${delay}" \
+      --entrypoint /bin/sh \
       "${LOCAL_IMAGE}" \
-      /bin/sh -c 'while true; do cryprq --peer "$TARGET"; sleep "$RECONNECT_DELAY"; done' >/dev/null
+      -c 'while true; do cryprq --peer "$TARGET"; sleep "$RECONNECT_DELAY"; done' >/dev/null
   else
     docker run -d --name "$name" --network "${BASE_NET}" "${LOCAL_IMAGE}" --peer "${target}" >/dev/null
   fi
@@ -105,11 +106,12 @@ rotation_60s() {
   [[ -n "${peer_id}" && -n "${listener_ip}" ]] || { echo "Failed to obtain listener details"; exit 1; }
   local target="/ip4/${listener_ip}/udp/${LISTEN_PORT}/quic-v1/p2p/${peer_id}"
   start_dialer "${DIAL_PREFIX}-rot" "${target}" true
-  if ! timeout "${ROTATE_60_DURATION}" bash -c 'while true; do sleep 5; done'; then
-    status=$?
-    if [[ ${status} -ne 124 ]]; then
-      echo "Rotation wait loop failed (status ${status})" && exit 1
-    fi
+  set +e
+  timeout "${ROTATE_60_DURATION}" bash -c 'while true; do sleep 5; done'
+  status=$?
+  set -e
+  if [[ ${status} -ne 0 && ${status} -ne 124 ]]; then
+    echo "Rotation wait loop failed (status ${status})" && exit 1
   fi
   log "Capturing rotation logs to ${QA_DIR}/rotation60.log"
   docker logs "${DIAL_PREFIX}-rot" > "${QA_DIR}/rotation60.log"
@@ -145,7 +147,8 @@ parallel_dialers() {
 
 soak_test() {
   : "${QA_DIR:?QA_DIR must be set before running scenarios}"
-  log "QA #4 soak ${SOAK_DURATION}s with 3 dialers (rotate ${ROTATE_SOAK})"
+  local dialers="${SOAK_DIALERS:-3}"
+  log "QA #4 soak ${SOAK_DURATION}s with ${dialers} dialers (rotate ${ROTATE_SOAK})"
   cleanup
   create_network
   start_listener "${ROTATE_SOAK}" "0.0.0.0:9464"
@@ -154,18 +157,20 @@ soak_test() {
   listener_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "${LISTENER_NAME}")"
   [[ -n "${peer_id}" && -n "${listener_ip}" ]] || { echo "Failed to obtain listener details"; exit 1; }
   local target="/ip4/${listener_ip}/udp/${LISTEN_PORT}/quic-v1/p2p/${peer_id}"
-  for i in $(seq 1 3); do
+  log "Soak target multiaddr: ${target}"
+  for i in $(seq 1 "${dialers}"); do
     start_dialer "${DIAL_PREFIX}-soak-${i}" "${target}" true
   done
   docker stats --no-stream "${LISTENER_NAME}" > "${QA_DIR}/soak_start_stats.txt"
-  if ! timeout "${SOAK_DURATION}" bash -c 'while true; do sleep 30; done'; then
-    status=$?
-    if [[ ${status} -ne 124 ]]; then
-      echo "Soak wait loop failed (status ${status})" && exit 1
-    fi
+  set +e
+  timeout "${SOAK_DURATION}" bash -c 'while true; do sleep 30; done'
+  status=$?
+  set -e
+  if [[ ${status} -ne 0 && ${status} -ne 124 ]]; then
+    echo "Soak wait loop failed (status ${status})" && exit 1
   fi
   log "Capturing soak logs to ${QA_DIR}/soak-dialer-*.log"
-  for i in $(seq 1 3); do
+  for i in $(seq 1 "${dialers}"); do
     docker logs "${DIAL_PREFIX}-soak-${i}" > "${QA_DIR}/soak-dialer-${i}.log"
     if ! grep -q "Connected to" "${QA_DIR}/soak-dialer-${i}.log"; then
       echo "Soak dialer ${i} missing success log"; exit 1
