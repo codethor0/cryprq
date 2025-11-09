@@ -161,11 +161,13 @@ docker build -f Dockerfile.reproducible -t cryprq-reproducible .
 
 # Extract binary and checksum
 docker run --rm cryprq-reproducible cat /checksum.txt
-docker cp $(docker create cryprq-reproducible):/build/target/release/cryprq ./cryprq-docker
+docker cp $(docker create cryprq-reproducible):/usr/local/bin/cryprq ./cryprq-docker
 
 # Verify
 sha256sum cryprq-docker
 ```
+
+> The builder stage compiles to `/target/release`; the final image installs to `/usr/local/bin`.
 
 ## Troubleshooting
 
