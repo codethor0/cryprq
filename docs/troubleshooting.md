@@ -8,6 +8,13 @@
 - Ensure multiaddr includes correct IP and optional `/p2p/<peer-id>` segment.
 - Verify listener is running and logging `Listening on ...`.
 
+## Dialer Reports `HandshakeTimedOut`
+- UDP 9999 might be blocked—open the port bi-directionally between nodes.
+- Confirm the multiaddr references the listener’s reachable IP (avoid `127.0.0.1` across hosts).
+- Review any `tc netem` loss/latency settings; excessive impairment triggers timeouts.
+- Ensure the listener is still running and logging new `Listening on ...` entries.
+- See [Negative Tests](#negative-tests) for deliberate failure scenarios and recovery tips.
+
 ## Listener Drops Connections Immediately
 - Logs show `event=inbound_backoff` or `event=inbound_rate_limit`.
 - A peer exceeded the handshake concurrency cap (`CRYPRQ_MAX_INBOUND`) or triggered exponential backoff.
@@ -32,6 +39,9 @@
 ## Docker Smoke Test Fails
 - Run `./scripts/docker_vpn_test.sh` locally; inspect listener/dialer logs.
 - Ensure Docker network allows container-to-container UDP.
+
+## Negative Tests
+- Use the chaos smoke workflow (`.github/workflows/qa-smoke.yml`) or `scripts/docker_vpn_test.sh` with loss/delay flags to reproduce expected `HandshakeTimedOut` behaviour before remediation.
 
 ---
 
