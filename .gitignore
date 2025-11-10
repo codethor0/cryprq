@@ -30,3 +30,9 @@ pasted_content*.txt
 
 # Script backups
 *.sh.bak
+
+# Android host generated files
+android/local.properties
+android/.idea/
+android/gradle/wrapper/gradle-wrapper.jar
+android/app/build/

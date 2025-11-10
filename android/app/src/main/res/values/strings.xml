@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">CrypRQ Tunnel</string>
+    <string name="start_tunnel">Start Tunnel</string>
+    <string name="stop_tunnel">Stop Tunnel</string>
+    <string name="disclosure_title">CrypRQ Tunnel</string>
+    <string name="disclosure_text">CrypRQ establishes a local VPN tunnel to connect to peers you configure. No traffic is routed to third-party servers.</string>
+    <string name="notification_channel_name">CrypRQ Tunnel</string>
+    <string name="notification_description">CrypRQ VPN tunnel activity</string>
+    <string name="notification_content">CrypRQ tunnel is active</string>
+    <string name="notification_action_stop">Stop</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting…</string>
+</resources>
+

@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+APP_HOME="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+
+if [ ! -f "$WRAPPER_JAR" ]; then
+  echo "Gradle wrapper JAR not found at $WRAPPER_JAR" >&2
+  echo "Run 'gradle wrapper' from the android/ directory to generate it, or install the official wrapper binaries." >&2
+  exit 1
+fi
+
+JAVA_EXE="${JAVA_HOME}/bin/java"
+if [ -z "$JAVA_HOME" ]; then
+  JAVA_EXE="$(command -v java)"
+fi
+
+if [ ! -x "$JAVA_EXE" ]; then
+  echo "Java executable not found; set JAVA_HOME or install a JDK." >&2
+  exit 1
+fi
+
+exec "$JAVA_EXE" -jar "$WRAPPER_JAR" "$@"
+

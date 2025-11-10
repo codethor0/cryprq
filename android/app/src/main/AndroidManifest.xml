@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CrypRQ">
+
+        <activity
+            android:name="dev.cryprq.app.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.CrypRQ">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name="dev.cryprq.tunnel.CrypRqVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="vpn"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="true" />
+            <meta-data
+                android:name="android.net.VpnService.DISPLAY_NAME"
+                android:resource="@string/app_name" />
+            <meta-data
+                android:name="android.net.VpnService.DESCRIPTION"
+                android:resource="@string/disclosure_text" />
+            <meta-data
+                android:name="android.net.VpnService.PROMPT_RESOURCE"
+                android:resource="@xml/vpn_run_disclosure" />
+        </service>
+
+    </application>
+</manifest>
+

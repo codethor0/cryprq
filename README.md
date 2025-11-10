@@ -37,6 +37,7 @@
 - Supply-chain hardening: vendored dependencies, `cargo audit`, `cargo deny`, `CodeQL`.
 - Release pipeline emits SPDX SBOMs (Syft) and Grype vulnerability reports for container images.
 - Reproducible build scripts for Linux (musl), macOS, Nix, and Docker.
+- Platform hosts underway: Android `VpnService` module (`android/`), Apple Network Extension, Windows MSIX, F-Droid packaging. See `/docs` for plans and status.
 
 ## Anti-features
 - No production data-plane yet; packet forwarding is incomplete.
