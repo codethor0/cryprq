@@ -44,6 +44,7 @@ nav:
   - Apple Host: apple.md
   - Windows Packaging: windows.md
   - macOS Notarization: macos-notarization.md
+  - F-Droid Inclusion: fdroid.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
