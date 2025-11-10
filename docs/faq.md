@@ -28,7 +28,7 @@ Run `cargo audit` and `cargo deny check ...` (also enforced in CI).
 Linux and macOS are tested. Windows is unverified.
 
 **How do I report vulnerabilities?**  
-Email `security@codethor0.com` (PGP in SECURITY.md).
+Email `codethor@gmail.com` (PGP in SECURITY.md).
 
 ---
 
