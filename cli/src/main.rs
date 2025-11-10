@@ -25,6 +25,13 @@ struct Args {
 
     #[arg(long, help = "Override rotation interval in seconds (defaults to 300)")]
     rotate_secs: Option<u64>,
+
+    #[arg(
+        long = "allow-peer",
+        help = "Allowlisted peer ID (may be supplied multiple times)",
+        action = clap::ArgAction::Append
+    )]
+    allow_peers: Vec<String>,
 }
 
 #[tokio::main]
@@ -65,6 +72,27 @@ async fn main() -> Result<()> {
                 );
             }
         });
+    }
+
+    let env_allow: Vec<String> = env::var("CRYPRQ_ALLOW_PEERS")
+        .ok()
+        .map(|v| {
+            v.split(',')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+                .collect()
+        })
+        .unwrap_or_default();
+    let combined_allow = args
+        .allow_peers
+        .into_iter()
+        .chain(env_allow.into_iter())
+        .collect::<Vec<_>>();
+    if !combined_allow.is_empty() {
+        p2p::set_allowed_peers(&combined_allow)
+            .await
+            .with_context(|| "Failed to configure allowed peers")?;
     }
 
     // Start key rotation task

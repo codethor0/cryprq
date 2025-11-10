@@ -7,7 +7,7 @@
 //!
 //! This crate provides libp2p-based peer discovery and connection management.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use libp2p::{
     identity, mdns,
     multiaddr::Protocol,
@@ -15,9 +15,13 @@ use libp2p::{
     swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
     tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
 };
-use log::info;
+use log::{info, warn};
 use once_cell::sync::Lazy;
-use std::time::{Duration, Instant};
+use std::{
+    collections::HashSet,
+    str::FromStr,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::time::MissedTickBehavior;
@@ -40,6 +44,7 @@ pub enum P2PError {
 // Define the global key store
 static KEYS: Lazy<RwLock<Option<(KyberPublicKey, KyberSecretKey)>>> =
     Lazy::new(|| RwLock::new(None));
+static ALLOWED_PEERS: Lazy<RwLock<Option<HashSet<PeerId>>>> = Lazy::new(|| RwLock::new(None));
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "MyBehaviourEvent")]
@@ -73,6 +78,27 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
         .as_ref()
         .map(|(pk, _)| *pk)
         .ok_or(P2PError::NotInitialized)
+}
+
+pub async fn set_allowed_peers(peers: &[String]) -> anyhow::Result<()> {
+    let mut set = HashSet::with_capacity(peers.len());
+    for entry in peers {
+        let peer_id =
+            PeerId::from_str(entry).with_context(|| format!("invalid peer id '{}'", entry))?;
+        set.insert(peer_id);
+    }
+    let mut guard = ALLOWED_PEERS.write().await;
+    *guard = Some(set);
+    Ok(())
+}
+
+async fn peer_is_allowed(peer_id: &PeerId) -> bool {
+    ALLOWED_PEERS
+        .read()
+        .await
+        .as_ref()
+        .map(|set| set.contains(peer_id))
+        .unwrap_or(true)
 }
 
 // Public function to start key rotation
@@ -157,9 +183,18 @@ pub async fn start_listener(addr: &str) -> Result<()> {
             SwarmEvent::ConnectionEstablished {
                 peer_id, endpoint, ..
             } => {
-                metrics::record_handshake_success();
-                metrics::inc_active_peers();
-                println!("Inbound connection established with {peer_id} via {endpoint:?}");
+                if !peer_is_allowed(&peer_id).await {
+                    metrics::record_handshake_failure();
+                    warn!(
+                        "event=peer_denied peer_id={} reason=not_allowlisted",
+                        peer_id
+                    );
+                    let _ = swarm.disconnect_peer_id(peer_id);
+                } else {
+                    metrics::record_handshake_success();
+                    metrics::inc_active_peers();
+                    println!("Inbound connection established with {peer_id} via {endpoint:?}");
+                }
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
                 metrics::record_handshake_attempt();
@@ -200,6 +235,9 @@ pub async fn dial_peer(addr: String) -> Result<()> {
     };
 
     if let Some(peer_id) = peer_id {
+        if !peer_is_allowed(&peer_id).await {
+            anyhow::bail!("Peer {peer_id} is not in the allow list");
+        }
         let opts = DialOpts::peer_id(peer_id)
             .addresses(vec![dial_addr])
             .build();
@@ -218,9 +256,18 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 endpoint,
                 ..
             } => {
-                metrics::record_handshake_success();
-                println!("Connected to {remote} via {endpoint:?}");
-                break;
+                if !peer_is_allowed(&remote).await {
+                    metrics::record_handshake_failure();
+                    warn!(
+                        "event=peer_denied peer_id={} reason=not_allowlisted",
+                        remote
+                    );
+                    let _ = swarm.disconnect_peer_id(remote);
+                } else {
+                    metrics::record_handshake_success();
+                    println!("Connected to {remote} via {endpoint:?}");
+                    break;
+                }
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {
                 metrics::record_handshake_failure();
