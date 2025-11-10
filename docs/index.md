@@ -2,7 +2,7 @@
 
 ![CrypRQ logo](./_assets/logo.svg)
 
-CrypRQ is a post-quantum, zero-trust VPN stack that couples ML-KEM (Kyber768-compatible) with X25519 over libp2p QUIC transport. The project emphasizes rapid key rotation and reproducible builds for high-assurance environments.
+CrypRQ is a post-quantum, zero-trust VPN stack that couples ML-KEM (Kyber768-compatible) with X25519 over libp2p QUIC transport. The project emphasizes rapid key rotation, enforceable peer allowlists, and reproducible builds for high-assurance environments.
 
 ## What’s Inside
 - Architecture overview spanning crypto, P2P coordination, and userspace WireGuard.

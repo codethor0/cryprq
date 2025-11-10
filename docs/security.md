@@ -16,8 +16,8 @@ CrypRQ targets adversaries capable of capturing encrypted traffic today and decr
 
 ### Limitations
 - Data-plane (userspace WireGuard) is experimental; packet forwarding is incomplete.
-- No automated peer revocation list or ACLs.
-- DoS protection limited to basic libp2p behaviour.
+- Allowlists must be managed manually (`--allow-peer`, `CRYPRQ_ALLOW_PEERS`).
+- DoS protection currently covers inbound connection caps (`CRYPRQ_MAX_INBOUND`) and exponential backoff, but lacks reputation scoring.
 - Dependency `pqcrypto-mlkem` requires continuous review.
 
 ## Key Rotation

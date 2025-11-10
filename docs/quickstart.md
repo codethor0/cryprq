@@ -17,7 +17,10 @@ cargo build --release -p cryprq
 
 ## Start a Listener
 ```bash
-./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+./target/release/cryprq \
+  --listen /ip4/0.0.0.0/udp/9999/quic-v1 \
+  --allow-peer 12D3KooExamplePeerID \
+  --metrics-addr 127.0.0.1:9464
 # Logs include:
 # Local peer id: 12D3Koo...
 # Listening on /ip4/0.0.0.0/udp/9999/quic-v1
@@ -32,6 +35,8 @@ cargo build --release -p cryprq
 ## Verify
 - Listener prints ping events after handshake.
 - `RUST_LOG=debug` shows rotation events every 300 seconds.
+- `curl http://127.0.0.1:9464/metrics` returns rotation counters and handshake stats.
+- `curl http://127.0.0.1:9464/healthz` returns `ok` once the swarm is ready.
 
 ---
 
