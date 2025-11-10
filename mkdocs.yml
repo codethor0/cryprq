@@ -48,6 +48,7 @@ nav:
   - Privacy Policy: privacy.md
   - Store Listings: stores.md
   - Pricing & Tiers: pricing.md
+  - QA Playbook: qa-playbook.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
