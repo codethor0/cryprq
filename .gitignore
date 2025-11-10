@@ -38,3 +38,6 @@ android/gradle/wrapper/gradle-wrapper.jar
 android/app/build/
 android/rust/libs/
 android/rust/include/cryprq_core.h
+apple/build/
+apple/Shared/include/
+apple/.build/
