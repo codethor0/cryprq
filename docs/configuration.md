@@ -7,6 +7,8 @@ CrypRQ uses CLI flags and environment variables for runtime configuration.
 |------|-------------|
 | `--listen <multiaddr>` | Start listener mode on the given multiaddr. |
 | `--peer <multiaddr>` | Dial a remote peer (optionally include `/p2p/<peer-id>`). |
+| `--allow-peer <peer-id>` | Allowlist specific peers (repeatable). |
+| `--metrics-addr <addr>` | Bind Prometheus metrics and `/healthz` endpoint. |
 
 Exactly one flag must be provided.
 
@@ -15,6 +17,10 @@ Exactly one flag must be provided.
 |----------|---------|---------|
 | `RUST_LOG` | `info` | Log verbosity (`error`, `warn`, `info`, `debug`, `trace`). |
 | `CRYPRQ_ROTATE_SECS` | `300` | Key rotation interval in seconds. |
+| `CRYPRQ_MAX_INBOUND` | `64` | Max pending/established inbound handshakes. |
+| `CRYPRQ_BACKOFF_BASE_MS` | `500` | Initial backoff (ms) when peers repeatedly fail handshakes. |
+| `CRYPRQ_BACKOFF_MAX_MS` | `30000` | Backoff ceiling (ms) for abusive peers. |
+| `CRYPRQ_ALLOW_PEERS` | *(unset)* | Comma-separated allowlist of peer IDs. |
 
 ## Key Rotation
 - Background task rotates ML-KEM and X25519 secrets every `CRYPRQ_ROTATE_SECS`.

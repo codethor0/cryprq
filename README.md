@@ -122,8 +122,13 @@ nix build
 |--------|-------------|---------|
 | `--listen <multiaddr>` | Listener mode multiaddr. | None |
 | `--peer <multiaddr>` | Dialer mode multiaddr (optionally `/p2p/<peer-id>`). | None |
+| `--allow-peer <peer-id>` | Allowlist specific peer IDs (repeatable). | Allow all |
+| `--metrics-addr <addr>` | Bind Prometheus metrics/health server. | `127.0.0.1:9464` |
 | `RUST_LOG` | Log level (`error`…`trace`). | `info` |
 | `CRYPRQ_ROTATE_SECS` | Rotation interval in seconds. | `300` |
+| `CRYPRQ_MAX_INBOUND` | Max pending/established inbound handshakes. | `64` |
+| `CRYPRQ_BACKOFF_BASE_MS` | Initial inbound backoff (ms) after failures. | `500` |
+| `CRYPRQ_BACKOFF_MAX_MS` | Max inbound backoff (ms). | `30000` |
 
 Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p ping events confirm liveness.
 

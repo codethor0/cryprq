@@ -9,6 +9,7 @@
 
 use anyhow::{Context, Result};
 use libp2p::{
+    connection_limits::{Behaviour as ConnectionLimitBehaviour, ConnectionLimits},
     identity, mdns,
     multiaddr::Protocol,
     noise, ping,
@@ -18,8 +19,11 @@ use libp2p::{
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+    env,
     str::FromStr,
+    sync::Mutex,
     time::{Duration, Instant},
 };
 use thiserror::Error;
@@ -45,18 +49,26 @@ pub enum P2PError {
 static KEYS: Lazy<RwLock<Option<(KyberPublicKey, KyberSecretKey)>>> =
     Lazy::new(|| RwLock::new(None));
 static ALLOWED_PEERS: Lazy<RwLock<Option<HashSet<PeerId>>>> = Lazy::new(|| RwLock::new(None));
+static BACKOFF_CONFIG: Lazy<BackoffConfig> = Lazy::new(|| BackoffConfig {
+    base_ms: read_env_u64("CRYPRQ_BACKOFF_BASE_MS").unwrap_or(500),
+    max_ms: read_env_u64("CRYPRQ_BACKOFF_MAX_MS").unwrap_or(30_000),
+});
+static BACKOFF: Lazy<Mutex<HashMap<String, BackoffState>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "MyBehaviourEvent")]
 pub struct MyBehaviour {
     mdns: mdns::tokio::Behaviour,
     ping: ping::Behaviour,
+    limits: ConnectionLimitBehaviour,
 }
 
 #[derive(Debug)]
 pub enum MyBehaviourEvent {
     Mdns(mdns::Event),
     Ping(ping::Event),
+    Limits(Infallible),
 }
 
 impl From<mdns::Event> for MyBehaviourEvent {
@@ -68,6 +80,12 @@ impl From<mdns::Event> for MyBehaviourEvent {
 impl From<ping::Event> for MyBehaviourEvent {
     fn from(event: ping::Event) -> Self {
         MyBehaviourEvent::Ping(event)
+    }
+}
+
+impl From<Infallible> for MyBehaviourEvent {
+    fn from(_: Infallible) -> Self {
+        unreachable!("connection limit behaviour is infallible")
     }
 }
 
@@ -156,6 +174,7 @@ pub async fn init_swarm(
             Ok(MyBehaviour {
                 mdns: mdns_behaviour,
                 ping: ping::Behaviour::new(ping::Config::new()),
+                limits: connection_limits_behaviour(),
             })
         })?
         .with_swarm_config(|c| c)
@@ -193,15 +212,25 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                 } else {
                     metrics::record_handshake_success();
                     metrics::inc_active_peers();
+                    clear_backoff_for(endpoint.get_remote_address());
                     println!("Inbound connection established with {peer_id} via {endpoint:?}");
                 }
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
                 metrics::record_handshake_attempt();
-                println!("Incoming connection attempt from {send_back_addr}");
+                if allow_incoming(&send_back_addr) {
+                    println!("Incoming connection attempt from {send_back_addr}");
+                } else {
+                    println!("Incoming connection denied via backoff for {send_back_addr}");
+                }
             }
-            SwarmEvent::IncomingConnectionError { error, .. } => {
+            SwarmEvent::IncomingConnectionError {
+                send_back_addr,
+                error,
+                ..
+            } => {
                 metrics::record_handshake_failure();
+                record_failure(&send_back_addr);
                 println!("Incoming connection error: {error:?}");
             }
             SwarmEvent::ConnectionClosed { .. } => {
@@ -210,6 +239,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
             }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Limits(_)) => {}
             other => {
                 println!("Unhandled event: {other:?}");
             }
@@ -265,6 +295,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                     let _ = swarm.disconnect_peer_id(remote);
                 } else {
                     metrics::record_handshake_success();
+                    clear_backoff_for(endpoint.get_remote_address());
                     println!("Connected to {remote} via {endpoint:?}");
                     break;
                 }
@@ -292,4 +323,102 @@ pub async fn dial_peer(addr: String) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct BackoffConfig {
+    base_ms: u64,
+    max_ms: u64,
+}
+
+#[derive(Debug)]
+struct BackoffState {
+    failures: u32,
+    next_allowed: Instant,
+    last_warn: Option<Instant>,
+}
+
+fn read_env_u64(key: &str) -> Option<u64> {
+    env::var(key)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|v| *v > 0)
+}
+
+fn compute_backoff_duration(base_ms: u64, max_ms: u64, failures: u32) -> Duration {
+    if failures == 0 || base_ms == 0 {
+        return Duration::from_millis(0);
+    }
+    let exponent = (failures - 1).min(30);
+    let multiplier = 1u128 << exponent;
+    let mut ms = (base_ms as u128).saturating_mul(multiplier);
+    if max_ms > 0 {
+        ms = ms.min(max_ms as u128);
+    }
+    Duration::from_millis(ms.min(u64::MAX as u128) as u64)
+}
+
+fn allow_incoming(addr: &Multiaddr) -> bool {
+    let key = addr.to_string();
+    let now = Instant::now();
+    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+
+    if let Some(state) = guard.get_mut(&key) {
+        if now < state.next_allowed {
+            let should_warn = state.last_warn.map_or(true, |last| {
+                now.duration_since(last) > Duration::from_secs(60)
+            });
+            if should_warn {
+                warn!(
+                    "event=inbound_backoff addr=\"{key}\" wait_ms={}",
+                    state
+                        .next_allowed
+                        .saturating_duration_since(now)
+                        .as_millis()
+                );
+                state.last_warn = Some(now);
+            }
+            return false;
+        }
+        guard.remove(&key);
+    }
+    true
+}
+
+fn record_failure(addr: &Multiaddr) {
+    let key = addr.to_string();
+    let now = Instant::now();
+    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+    let state = guard.entry(key).or_insert(BackoffState {
+        failures: 0,
+        next_allowed: now,
+        last_warn: None,
+    });
+    state.failures = (state.failures + 1).min(16);
+    let backoff = compute_backoff_duration(
+        BACKOFF_CONFIG.base_ms,
+        BACKOFF_CONFIG.max_ms,
+        state.failures,
+    );
+    state.next_allowed = now + backoff;
+    state.last_warn = None;
+}
+
+fn clear_backoff_for(addr: &Multiaddr) {
+    let key = addr.to_string();
+    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+    guard.remove(&key);
+}
+
+fn connection_limits_config() -> ConnectionLimits {
+    let max_inbound = read_env_u64("CRYPRQ_MAX_INBOUND")
+        .unwrap_or(64)
+        .min(u64::from(u32::MAX)) as u32;
+    ConnectionLimits::default()
+        .with_max_pending_incoming(Some(max_inbound))
+        .with_max_established_incoming(Some(max_inbound))
+}
+
+fn connection_limits_behaviour() -> ConnectionLimitBehaviour {
+    ConnectionLimitBehaviour::new(connection_limits_config())
 }
