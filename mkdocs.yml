@@ -43,6 +43,7 @@ nav:
   - Android Host: android.md
   - Apple Host: apple.md
   - Windows Packaging: windows.md
+  - macOS Notarization: macos-notarization.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
