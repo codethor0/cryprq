@@ -42,6 +42,7 @@ nav:
   - FFI: ffi.md
   - Android Host: android.md
   - Apple Host: apple.md
+  - Windows Packaging: windows.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
