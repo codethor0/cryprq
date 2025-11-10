@@ -45,6 +45,7 @@ nav:
   - Windows Packaging: windows.md
   - macOS Notarization: macos-notarization.md
   - F-Droid Inclusion: fdroid.md
+  - Privacy Policy: privacy.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
