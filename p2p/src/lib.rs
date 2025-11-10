@@ -17,12 +17,16 @@ use libp2p::{
 };
 use log::info;
 use once_cell::sync::Lazy;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use tokio::sync::RwLock;
+use tokio::time::MissedTickBehavior;
 
 // Import the *public* items from the crypto crate
 use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey};
+
+mod metrics;
+pub use metrics::start_metrics_server;
 
 // Define the error type correctly
 #[derive(Debug, Error)]
@@ -72,17 +76,41 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
 }
 
 // Public function to start key rotation
-pub async fn start_key_rotation() {
-    info!("Starting key rotation task...");
-    let mut interval = tokio::time::interval(Duration::from_secs(300)); // 5 mins
-    loop {
-        interval.tick().await;
-        info!("Rotating Kyber keys...");
-        let (pk, sk) = kyber_keypair();
+pub async fn start_key_rotation(interval: Duration) {
+    metrics::set_rotation_interval(interval);
 
-        KEYS.write().await.replace((pk, sk));
-        info!("Keys rotated successfully");
+    info!(
+        "event=rotation_task_started interval_secs={}",
+        interval.as_secs()
+    );
+
+    rotate_once(interval).await;
+
+    let mut ticker = tokio::time::interval(interval);
+    ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+
+    loop {
+        ticker.tick().await;
+        rotate_once(interval).await;
     }
+}
+
+async fn rotate_once(interval: Duration) {
+    let start = Instant::now();
+    let (pk, sk) = kyber_keypair();
+
+    let mut guard = KEYS.write().await;
+    guard.replace((pk, sk));
+
+    let elapsed = start.elapsed();
+    let epoch = metrics::record_rotation_success(elapsed);
+
+    info!(
+        "event=key_rotation status=success epoch={} duration_ms={} interval_secs={}",
+        epoch,
+        elapsed.as_millis(),
+        interval.as_secs()
+    );
 }
 
 pub async fn init_swarm(
@@ -118,6 +146,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
 
     let listen_addr: Multiaddr = addr.parse()?;
     swarm.listen_on(listen_addr)?;
+    metrics::mark_swarm_initialized();
 
     use libp2p::futures::StreamExt;
     loop {
@@ -128,13 +157,20 @@ pub async fn start_listener(addr: &str) -> Result<()> {
             SwarmEvent::ConnectionEstablished {
                 peer_id, endpoint, ..
             } => {
+                metrics::record_handshake_success();
+                metrics::inc_active_peers();
                 println!("Inbound connection established with {peer_id} via {endpoint:?}");
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
+                metrics::record_handshake_attempt();
                 println!("Incoming connection attempt from {send_back_addr}");
             }
             SwarmEvent::IncomingConnectionError { error, .. } => {
+                metrics::record_handshake_failure();
                 println!("Incoming connection error: {error:?}");
+            }
+            SwarmEvent::ConnectionClosed { .. } => {
+                metrics::dec_active_peers();
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
@@ -172,6 +208,8 @@ pub async fn dial_peer(addr: String) -> Result<()> {
         swarm.dial(dial_addr)?;
     }
 
+    metrics::mark_swarm_initialized();
+
     use libp2p::futures::StreamExt;
     loop {
         match swarm.select_next_some().await {
@@ -180,10 +218,12 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 endpoint,
                 ..
             } => {
+                metrics::record_handshake_success();
                 println!("Connected to {remote} via {endpoint:?}");
                 break;
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {
+                metrics::record_handshake_failure();
                 anyhow::bail!("Dial error: {error:?}");
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
@@ -193,7 +233,11 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 peer_id,
                 connection_id,
             } => {
+                metrics::record_handshake_attempt();
                 println!("Dialing {peer_id:?} (connection {connection_id:?})");
+            }
+            SwarmEvent::ConnectionClosed { .. } => {
+                // no active peer tracking for dialer since we exit on connect
             }
             other => {
                 println!("Unhandled event: {other:?}");
