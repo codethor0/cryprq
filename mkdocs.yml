@@ -40,6 +40,7 @@ nav:
   - Deploy: deploy.md
   - Configuration: configuration.md
   - FFI: ffi.md
+  - Android Host: android.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md
