@@ -95,6 +95,8 @@ docker run --rm -p 9999:9999/udp cryprq-node \
   --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
+> The builder stage compiles to `/target/release`; the final image installs to `/usr/local/bin`.
+
 Compose snippet:
 ```yaml
 services:

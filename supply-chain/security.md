@@ -143,7 +143,7 @@ cosign verify-blob --signature bom.json.sig \
 ## Incident Response
 
 ### Security Disclosure
-Email: security@cryprq.org (GPG: [KEY_ID])
+Email: codethor@gmail.com (GPG: [KEY_ID])
 
 ### Response Timeline
 - **Acknowledgment**: 24 hours
