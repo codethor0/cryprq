@@ -109,6 +109,15 @@ grep "cryprq-x86_64" checksums.txt | cut -d' ' -f1 > official.sum
 diff local.sum official.sum && echo "✓ Build is reproducible"
 ```
 
+### Step 5: Generate Release Bundle (Optional)
+```bash
+./finish_qa_and_package.sh VERSION=v0.1.0 IMAGE=ghcr.io/codethor0/cryprq
+```
+
+- `release-v0.1.0/security/sbom-v0.1.0.spdx.json` – SPDX SBOM generated via Syft (Docker fallback included).
+- `release-v0.1.0/security/grype-v0.1.0.txt` – Grype vulnerability scan (defaults to `--fail-on critical`).
+- QA logs and checksums remain under `release-v0.1.0/qa` and `release-v0.1.0/bin`.
+
 ## Docker Method (Detailed)
 
 ### Dockerfile.reproducible

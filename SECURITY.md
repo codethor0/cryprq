@@ -28,6 +28,7 @@ We welcome good-faith research. Activities that follow this policy and avoid use
 ## Security Practices
 - CI enforces `cargo fmt`, `cargo clippy`, `cargo test`, `cargo audit`, `cargo deny`, and CodeQL.
 - Vendored `third_party/if-watch` reduces supply-chain drift.
+- Release packaging (`finish_qa_and_package.sh`) emits SPDX SBOMs via Syft and runs Grype vulnerability scans for `ghcr.io/codethor0/cryprq` images.
 - Reproducible build instructions are documented in `REPRODUCIBLE.md`.
 
 ## Contact Preferences

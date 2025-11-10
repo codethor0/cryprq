@@ -25,6 +25,34 @@ if ! docker version >/dev/null 2>&1; then
   exit 1
 fi
 
+SYFT_IMAGE="${SYFT_IMAGE:-anchore/syft:latest}"
+GRYPE_IMAGE="${GRYPE_IMAGE:-anchore/grype:latest}"
+GRYPE_FAIL_LEVEL="${GRYPE_FAIL_LEVEL:-critical}"
+
+run_syft() {
+  local target="$1" outfile="$2"
+  if command -v syft >/dev/null 2>&1; then
+    syft "${target}" -o spdx-json > "${outfile}"
+    return $?
+  fi
+  log "syft CLI not found; falling back to ${SYFT_IMAGE}"
+  docker run --rm \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    "${SYFT_IMAGE}" "${target}" -o spdx-json > "${outfile}"
+}
+
+run_grype() {
+  local target="$1" outfile="$2"
+  if command -v grype >/dev/null 2>&1; then
+    grype "${target}" --fail-on "${GRYPE_FAIL_LEVEL}" -o table > "${outfile}"
+    return $?
+  fi
+  log "grype CLI not found; falling back to ${GRYPE_IMAGE}"
+  docker run --rm \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    "${GRYPE_IMAGE}" "${target}" --fail-on "${GRYPE_FAIL_LEVEL}" -o table > "${outfile}"
+}
+
 # --- Optional soak patch so SOAK_DIALERS is honoured ---
 PATCH_SOAK_DEFAULT="1"
 if [[ "${PATCH_SOAK:-$PATCH_SOAK_DEFAULT}" == "1" ]] && [[ -f scripts/qa_common.sh ]]; then
@@ -197,7 +225,7 @@ IMAGE="${IMAGE:-ghcr.io/codethor0/cryprq}"
 LOCAL_IMAGE="${LOCAL_IMAGE:-cryprq-local:qa}"
 OUT_DIR="release-${VERSION}"
 
-mkdir -p "${OUT_DIR}/qa" "${OUT_DIR}/bin" "${OUT_DIR}/images"
+mkdir -p "${OUT_DIR}/qa" "${OUT_DIR}/bin" "${OUT_DIR}/images" "${OUT_DIR}/security"
 
 copy_qa_dir "${BASE_DIR}" "${OUT_DIR}/qa"
 copy_qa_dir "${ROT_DIR}" "${OUT_DIR}/qa"
@@ -225,11 +253,19 @@ else
   echo "[warn] No checksum utility (shasum/sha256sum) available" >&2
 fi
 
-if command -v syft >/dev/null 2>&1; then
-  log "Generating SBOM using syft"
-  syft "${IMAGE}:${VERSION}" -o spdx-json > "${OUT_DIR}/sbom-${VERSION}.spdx.json" || true
+SBOM_FILE="${OUT_DIR}/security/sbom-${VERSION}.spdx.json"
+if run_syft "${IMAGE}:${VERSION}" "${SBOM_FILE}"; then
+  log "SBOM written to ${SBOM_FILE}"
 else
-  log "syft not found; skipping SBOM"
+  log "syft execution failed; SBOM not generated"
+  rm -f "${SBOM_FILE}"
+fi
+
+GRYPE_REPORT="${OUT_DIR}/security/grype-${VERSION}.txt"
+if run_grype "${IMAGE}:${VERSION}" "${GRYPE_REPORT}"; then
+  log "Grype scan completed (report: ${GRYPE_REPORT})"
+else
+  log "Grype scan reported issues (see ${GRYPE_REPORT}); continuing"
 fi
 
 NOTES_FILE="${OUT_DIR}/RELEASE_NOTES.md"
@@ -237,7 +273,7 @@ NOTES_FILE="${OUT_DIR}/RELEASE_NOTES.md"
   echo "# CrypRQ ${VERSION}"
   printf '\n**Date:** %s\n' "$(date -u +"%Y-%m-%d %H:%M:%SZ")"
   echo -e "\n## Images\n- ${IMAGE}:${VERSION}\n- ${IMAGE}:latest"
-  echo -e "\n## Artifacts\n- bin/cryprq-linux-amd64\n- bin/cryprq-linux-arm64\n- checksums.txt\n- images/imagetools-${VERSION}.txt\n- images/imagetools-latest.txt\n- sbom-${VERSION}.spdx.json (if present)"
+  echo -e "\n## Artifacts\n- bin/cryprq-linux-amd64\n- bin/cryprq-linux-arm64\n- checksums.txt\n- images/imagetools-${VERSION}.txt\n- images/imagetools-latest.txt\n- security/sbom-${VERSION}.spdx.json (if present)\n- security/grype-${VERSION}.txt"
   echo -e "\n## QA Evidence"
   [[ -n "${BASE_DIR}" ]] && echo "- $(basename "${BASE_DIR}") (baseline)"
   [[ -n "${ROT_DIR}" ]] && echo "- $(basename "${ROT_DIR}") (rotation-60s)"
@@ -257,8 +293,11 @@ if [[ -f "${OUT_DIR}/checksums.txt" ]]; then
 fi
 
 log "To publish with gh CLI (if desired):"
-if ls "${OUT_DIR}"/sbom-*.spdx.json >/dev/null 2>&1; then
-  echo "  gh release create ${VERSION} ${OUT_DIR}/bin/* ${OUT_DIR}/checksums.txt ${OUT_DIR}/images/*.txt ${OUT_DIR}/sbom-*.spdx.json -t ${VERSION} -F ${NOTES_FILE} --latest"
-else
-  echo "  gh release create ${VERSION} ${OUT_DIR}/bin/* ${OUT_DIR}/checksums.txt ${OUT_DIR}/images/*.txt -t ${VERSION} -F ${NOTES_FILE} --latest"
+EXTRA_FILES=()
+if ls "${OUT_DIR}"/security/sbom-*.spdx.json >/dev/null 2>&1; then
+  EXTRA_FILES+=("${OUT_DIR}"/security/sbom-*.spdx.json)
 fi
+if ls "${OUT_DIR}"/security/grype-*.txt >/dev/null 2>&1; then
+  EXTRA_FILES+=("${OUT_DIR}"/security/grype-*.txt)
+fi
+echo "  gh release create ${VERSION} ${OUT_DIR}/bin/* ${OUT_DIR}/checksums.txt ${OUT_DIR}/images/*.txt ${EXTRA_FILES[*]} -t ${VERSION} -F ${NOTES_FILE} --latest"

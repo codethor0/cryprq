@@ -35,6 +35,7 @@
 - Userspace WireGuard prototype using ChaCha20-Poly1305 and BLAKE3 KDF.
 - Dedicated crates: `crypto` (`no_std` ML-KEM), `p2p` (libp2p swarm), `node` (tunnel), `cli`.
 - Supply-chain hardening: vendored dependencies, `cargo audit`, `cargo deny`, `CodeQL`.
+- Release pipeline emits SPDX SBOMs (Syft) and Grype vulnerability reports for container images.
 - Reproducible build scripts for Linux (musl), macOS, Nix, and Docker.
 
 ## Anti-features
@@ -143,6 +144,7 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
 - Linux: `./scripts/build-linux.sh` (musl).
 - macOS: `./scripts/build-macos.sh`.
 - Docker: `docker build -t cryprq-node .`.
+- `./finish_qa_and_package.sh` bundles QA logs, binaries, checksums, an SPDX SBOM, and a Grype report under `release-*/security/`.
 - See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expectations.
 
 ## Roadmap
