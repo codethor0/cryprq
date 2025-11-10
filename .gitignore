@@ -36,3 +36,5 @@ android/local.properties
 android/.idea/
 android/gradle/wrapper/gradle-wrapper.jar
 android/app/build/
+android/rust/libs/
+android/rust/include/cryprq_core.h
