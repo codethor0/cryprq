@@ -9,6 +9,7 @@ members = [
         "p2p",
         "node",
         "cli",
+    "core",
     ]
 resolver = "2"
 

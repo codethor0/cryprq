@@ -152,6 +152,12 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
 - `./finish_qa_and_package.sh` bundles QA logs, binaries, checksums, an SPDX SBOM, and a Grype report under `release-*/security/`.
 - See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expectations.
 
+## FFI & Platform Hosts
+- The new `cryp-rq-core` crate exposes a C ABI: `cryprq_init`, `cryprq_connect`, `cryprq_read_packet`, `cryprq_write_packet`, `cryprq_on_network_change`, and `cryprq_close`.
+- Header generation: `cbindgen --config cbindgen.toml --crate cryprq_core --output cryprq_core.h`.
+- Cross-target CI validates `cargo check` for Apple (macOS/iOS), Android, and Windows static library builds.
+- Documentation: [docs/ffi.md](docs/ffi.md) covers error codes, ownership rules, and deterministic build guidance.
+
 ## Roadmap
 - Complete userspace WireGuard forwarding.
 - Add peer directory + policy enforcement.

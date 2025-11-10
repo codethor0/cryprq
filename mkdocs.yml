@@ -39,6 +39,7 @@ nav:
   - Quickstart: quickstart.md
   - Deploy: deploy.md
   - Configuration: configuration.md
+  - FFI: ffi.md
   - Security: security.md
   - Operations: operations.md
   - FAQ: faq.md

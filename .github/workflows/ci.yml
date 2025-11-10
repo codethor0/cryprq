@@ -41,3 +41,37 @@ jobs:
 
       - name: Cargo test
         run: cargo test --release
+
+  ffi-check:
+    name: FFI cross-target build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-ios
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+          - os: ubuntu-latest
+            target: x86_64-linux-android
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.83.0
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Cargo check (FFI)
+        run: cargo check -p cryp-rq-core --target ${{ matrix.target }}
