@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "dev.cryprq.app"
     compileSdk = 34
+    ndkVersion = "26.1.10909125"
 
     defaultConfig {
         applicationId = "dev.cryprq.tunnel"
@@ -16,6 +17,12 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_STL=c++_shared")
+            }
+        }
     }
 
     buildTypes {
@@ -49,6 +56,14 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    sourceSets["main"].jniLibs.srcDirs("rust/libs")
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 }
 
