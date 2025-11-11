@@ -1,8 +1,8 @@
 [![Tip](https://img.shields.io/badge/Tip-❤-brightgreen)](https://buy.stripe.com/00w6oA7kM4wc4co5RB3Nm01)
 [![Monthly](https://img.shields.io/badge/Monthly-♻️-blue)](https://buy.stripe.com/7sY3cobB2bYEdMYa7R3Nm00)
 
-# CrypRQ: Post-Quantum, Zero-Trust VPN  
-[![CrypRQ logo](docs/_assets/logo.svg)](docs/_assets/logo.svg)
+# CrypRQ: Post-Quantum, Zero-Trust VPN
+<img width="512" height="512" alt="CrypRQ_icon_512" src="docs/_assets/CrypRQ_icon_512.png" />
 
 [![CI](https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml)
