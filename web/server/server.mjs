@@ -9,23 +9,8 @@ app.use(express.json());
 // Check if Docker mode is enabled
 const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
 
-// If Docker mode is enabled, use docker-bridge server logic
-let dockerBridge = null;
-if (USE_DOCKER) {
-    console.log('Docker mode enabled - using docker-bridge server');
-    try {
-        dockerBridge = await import('./docker-bridge.mjs');
-        console.log('Docker bridge server loaded');
-        // Export docker bridge app if available
-        if (dockerBridge.default) {
-            module.exports = dockerBridge.default;
-            // Don't continue with local server setup
-        }
-    } catch (err) {
-        console.error('Failed to load docker-bridge server:', err);
-        console.log('Falling back to local mode');
-    }
-}
+// Note: If Docker mode is enabled, use web/server/index.mjs instead
+// which will load docker-bridge.mjs automatically
 
 let proc = null;
 let currentMode = null;

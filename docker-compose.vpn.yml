@@ -7,8 +7,6 @@
 # This runs the VPN tunnel in a container, allowing the Mac to connect to it
 # The container handles all encryption, tunneling, and routing
 
-version: '3.8'
-
 services:
   cryprq-vpn:
     build:
