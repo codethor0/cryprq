@@ -47,9 +47,8 @@ pub type PacketRecvTx = Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>;
 
 // Callback for when connection is established (for VPN packet forwarding)
 // Now includes recv_tx for forwarding incoming packets to TUN
-pub type ConnectionCallback = Arc<
-    dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, PacketRecvTx) + Send + Sync,
->;
+pub type ConnectionCallback =
+    Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, PacketRecvTx) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
     Lazy::new(|| RwLock::new(None));
 
