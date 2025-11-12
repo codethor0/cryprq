@@ -14,6 +14,12 @@ mod ppk;
 mod pqc_suite;
 mod zkp;
 
+#[cfg(test)]
+mod kat_tests;
+
+#[cfg(test)]
+mod property_tests;
+
 // Publicly export items needed by other crates
 pub use crate::hybrid::{HybridHandshake, SharedSecret32};
 pub use crate::ppk::{PPKStore, PostQuantumPSK};

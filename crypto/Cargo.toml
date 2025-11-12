@@ -15,6 +15,11 @@ blake3 = "1.0"
 zeroize = { version = "1.7", features = ["zeroize_derive"] }
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }
 pqcrypto-mlkem = "0.1.1"
+pqcrypto-traits = "0.3"
+proptest = { version = "1.5", optional = true }
+
+[dev-dependencies]
+proptest = "1.5"
 
 [features]
 std = []

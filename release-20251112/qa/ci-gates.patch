@@ -1,0 +1,41 @@
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -XX,XX +XX,XX @@ jobs:
++    - name: KAT Tests
++      run: cargo test --package cryprq-crypto kat_tests
++
++    - name: Property Tests
++      run: cargo test --package cryprq-crypto property_tests
++
++    - name: Fuzz Smoke Test
++      run: |
++        cargo install cargo-fuzz --force
++        cargo fuzz run hybrid_handshake -- -max_total_time=60 || true
++
++    - name: Security Audit
++      run: cargo audit
++
++    - name: Cargo Deny
++      run: cargo deny check || echo "Deny check failed (non-blocking)"
++
++    - name: Generate SBOM
++      run: |
++        wget -qO- https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
++        syft packages dir:. -o json > sbom.json
++
++    - name: Grype Scan
++      run: |
++        wget -qO- https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
++        grype dir:. -o json > grype-scan.json
++
++    - name: Reproducible Build Check
++      run: |
++        SOURCE_DATE_EPOCH=0 cargo build --release
++        CHECKSUM1=$(shasum -a 256 target/release/cryprq | cut -d' ' -f1)
++        cargo clean -p cryprq
++        SOURCE_DATE_EPOCH=0 cargo build --release
++        CHECKSUM2=$(shasum -a 256 target/release/cryprq | cut -d' ' -f1)
++        if [ "$CHECKSUM1" != "$CHECKSUM2" ]; then
++          echo "Reproducible build failed: checksums differ"
++          exit 1
++        fi
