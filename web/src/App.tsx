@@ -47,8 +47,8 @@ export default function App(){
         }
         
         // Extract connected peer (dialer connects to peer, listener receives connection)
-        if (text.includes('Connected to')) {
-          const match = text.match(/Connected to (\S+)/);
+        if (text.includes('Connected to') || text.includes('connected to')) {
+          const match = text.match(/[Cc]onnected to (\S+)/);
           if (match) {
             setStatus(prev => ({ 
               ...prev, 
@@ -60,11 +60,30 @@ export default function App(){
         }
         
         // Listener receives connection (check for incoming connection events)
-        if (text.includes('New connection') || text.includes('Connection established')) {
+        if (text.includes('New connection') || text.includes('Connection established') || 
+            text.includes('connection established') || text.includes('peer connected')) {
           setStatus(prev => ({ 
             ...prev, 
             connected: true,
             mode: mode
+          }));
+        }
+        
+        // Check for successful dialer connection
+        if (text.includes('Dialing peer') && mode === 'dialer') {
+          setStatus(prev => ({ 
+            ...prev, 
+            mode: mode,
+            connected: false // Reset on new dial attempt
+          }));
+        }
+        
+        // Check for listener starting
+        if (text.includes('Starting listener') && mode === 'listener') {
+          setStatus(prev => ({ 
+            ...prev, 
+            mode: mode,
+            connected: false // Will be set to true when peer connects
           }));
         }
         
@@ -81,15 +100,21 @@ export default function App(){
           }
         }
         
-        // Check for disconnection (exit 0 means clean shutdown, non-zero means error)
-        if (text.includes('exit 1') || text.includes('exit 2') || (text.includes('exit') && text.includes('Error'))) {
-          setStatus(prev => ({ ...prev, connected: false, connectedPeer: undefined }));
+        // Check for disconnection - only mark disconnected on fatal errors
+        // Don't disconnect on clean exits (exit 0) - those are normal shutdowns
+        if (text.includes('exit 1') || text.includes('exit 2')) {
+          // Only disconnect if it's a fatal error, not just a port conflict
+          if (text.includes('Address already in use')) {
+            // Port conflict - don't disconnect, just note the error
+            // The connection might still be active from a previous instance
+          } else if (text.includes('fatal') || text.includes('FATAL') || text.includes('panic')) {
+            setStatus(prev => ({ ...prev, connected: false, connectedPeer: undefined }));
+          }
         }
         
-        // On clean exit, also mark as disconnected
-        if (text.includes('exit 0')) {
-          setStatus(prev => ({ ...prev, connected: false }));
-        }
+        // On clean exit (exit 0), preserve connection status
+        // The connection was successful, process is just shutting down
+        // Keep the connected status to show it was working
         
         // Check for successful connection start
         if (text.includes('Post-quantum encryption enabled')) {
@@ -131,7 +156,7 @@ export default function App(){
   }
 
   return (
-    <div style={{paddingBottom:232,padding:16}}>
+    <div style={{paddingBottom:270,padding:16}}>
       <h1>CrypRQ Web Tester</h1>
       <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
         <label>Mode:
