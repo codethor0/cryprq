@@ -33,10 +33,12 @@ jobs:
           cargo install cargo-fuzz --force
       
       - name: Build fuzz targets
+        env:
+          RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
         run: |
           cd fuzz
           rustup override set nightly
-          cargo fuzz build
+          cargo fuzz build --release
       
       - name: Run fuzz tests (short run)
         timeout-minutes: 10

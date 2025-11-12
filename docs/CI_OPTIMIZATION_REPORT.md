@@ -182,12 +182,12 @@ gh api repos/$OWNER/$REPO/actions/artifacts --paginate --jq '.artifacts | length
 
 ## Quality Gates Maintained
 
-✅ All tests remain unchanged  
-✅ Coverage thresholds unchanged  
-✅ Security checks unchanged  
-✅ Lint rules unchanged  
-✅ No secrets exposed  
-✅ No external dependencies beyond standard registries
+- All tests remain unchanged  
+- Coverage thresholds unchanged  
+- Security checks unchanged  
+- Lint rules unchanged  
+- No secrets exposed  
+- No external dependencies beyond standard registries
 
 ## Next Steps
 

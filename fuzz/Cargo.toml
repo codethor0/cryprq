@@ -7,6 +7,7 @@
 name = "cryprq-fuzz"
 version = "0.0.0"
 edition = "2021"
+license = "MIT"
 
 [package.metadata]
 cargo-fuzz = true

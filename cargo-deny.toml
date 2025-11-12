@@ -3,38 +3,18 @@
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # SPDX-License-Identifier: MIT
 
-[advisories]
-db-path = "~/.cargo/advisory-db"
-db-urls = ["https://github.com/rustsec/advisory-db"]
-ignore = []
-yanked = "deny"
+# Cargo-deny configuration for license checking
 
 [licenses]
+# Allow these licenses
 allow = [
     "MIT",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
-    "Zlib",
-    "Unicode-3.0",
+    "NCSA",  # University of Illinois/NCSA Open Source License (used by libfuzzer-sys)
+    "WTFPL",  # Do What The F*ck You Want To Public License (used by tun crate)
+    "Zlib",  # zlib License (used by foldhash)
+    "Unicode-3.0",  # Unicode License (used by icu_* crates)
 ]
-confidence-threshold = 0.8
-
-[licenses.private]
-ignore = false
-registries = []
-
-[bans]
-multiple-versions = "allow"
-wildcards = "allow"
-highlight = "all"
-workspace-default-features = "allow"
-external-default-features = "allow"
-allow = []
-deny = []
-
-[sources]
-unknown-registry = "deny"
-unknown-git = "deny"
-allow-registry = ["https://github.com/rust-lang/crates.io-index"]

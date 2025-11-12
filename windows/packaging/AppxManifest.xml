@@ -9,7 +9,7 @@
   <Properties>
     <DisplayName>CrypRQ</DisplayName>
     <PublisherDisplayName>Thor Thor</PublisherDisplayName>
-    <Logo>VisualAssets\Square150x150Logo.png</Logo>
+    <Logo>Assets\Square150x150Logo.png</Logo>
     <Description>Post-quantum, zero-trust VPN with five-minute ephemeral key rotation</Description>
   </Properties>
   <Dependencies>
@@ -25,8 +25,8 @@
       <uap:VisualElements DisplayName="CrypRQ"
                           Description="Post-quantum VPN control-plane"
                           BackgroundColor="transparent"
-                          Square150x150Logo="VisualAssets\Square150x150Logo.png"
-                          Square44x44Logo="VisualAssets\Square44x44Logo.png" />
+                          Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
     </Application>
   </Applications>
 </Package>
