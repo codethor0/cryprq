@@ -33,11 +33,12 @@ mod kat_tests {
     #[test]
     fn test_kyber768_encaps_decaps_kat() {
         // Known-Answer Test: Verify encapsulation/decapsulation correctness
+        // API: encapsulate returns (SharedSecret, Ciphertext) - verified from source
         use pqcrypto_traits::kem::{SharedSecret, Ciphertext};
         let (pk, sk) = keypair();
         
-        // Encapsulate
-        let (ct, ss1) = encapsulate(&pk);
+        // Encapsulate - returns (ss, ct) - CORRECT ORDER
+        let (ss1, ct) = encapsulate(&pk);
         
         // Ciphertext should be 1088 bytes for Kyber768
         assert_eq!(ct.as_bytes().len(), 1088, "Ciphertext must be 1088 bytes");
@@ -45,7 +46,7 @@ mod kat_tests {
         // Shared secret should be 32 bytes
         assert_eq!(ss1.as_bytes().len(), 32, "Shared secret must be 32 bytes");
         
-        // Decapsulate - ct is Ciphertext, pass by reference
+        // Decapsulate
         let ss2 = decapsulate(&ct, &sk);
         
         // Shared secrets must match

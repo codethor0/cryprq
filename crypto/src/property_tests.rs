@@ -20,13 +20,20 @@ mod property_tests {
             // Each handshake should produce consistent key sizes
             let h1 = HybridHandshake::new();
             let h2 = HybridHandshake::new();
-
+            
             // Both should produce valid X25519 keys (32 bytes)
             prop_assert_eq!(h1.x25519_secret().as_bytes().len(), 32);
             prop_assert_eq!(h2.x25519_secret().as_bytes().len(), 32);
-
-            // Kyber keys should be non-zero (verified via KAT tests for exact sizes)
-            // Using trait methods requires imports - sizes verified in KAT tests
+            
+            // Kyber keys - full assertions with trait imports
+            prop_assert_eq!(h1.kyber_public_key().as_bytes().len(), 1184, "Kyber768 PK must be 1184 bytes");
+            prop_assert_eq!(h1.kyber_secret_key().as_bytes().len(), 2400, "Kyber768 SK must be 2400 bytes");
+            prop_assert_eq!(h2.kyber_public_key().as_bytes().len(), 1184, "Kyber768 PK must be 1184 bytes");
+            prop_assert_eq!(h2.kyber_secret_key().as_bytes().len(), 2400, "Kyber768 SK must be 2400 bytes");
+            
+            // Keys should be non-zero
+            prop_assert!(h1.kyber_public_key().as_bytes().iter().any(|&b| b != 0));
+            prop_assert!(h1.kyber_secret_key().as_bytes().iter().any(|&b| b != 0));
         }
 
         #[test]
@@ -66,12 +73,13 @@ mod property_tests {
         ) {
             // Property: Key sizes should be consistent across all handshakes
             let h = HybridHandshake::new();
-
+            
             // X25519 secret is always 32 bytes
             prop_assert_eq!(h.x25519_secret().as_bytes().len(), 32);
-
-            // Kyber key sizes verified via KAT tests (1184 bytes PK, 2400 bytes SK)
-            // Trait methods require explicit imports - avoiding here for simplicity
+            
+            // Kyber key sizes - full assertions
+            prop_assert_eq!(h.kyber_public_key().as_bytes().len(), 1184, "Kyber768 PK must be 1184 bytes");
+            prop_assert_eq!(h.kyber_secret_key().as_bytes().len(), 2400, "Kyber768 SK must be 2400 bytes");
         }
     }
 }
