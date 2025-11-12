@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY server.js ./
+COPY .docker/fake-cryprq/server.js ./
 
 EXPOSE 9464
 
