@@ -26,18 +26,8 @@ pub struct PacketCodec;
 /// Packet protocol identifier
 pub const PACKET_PROTOCOL: StreamProtocol = StreamProtocol::new("/cryprq/packet/1.0.0");
 
-// Wrapper to make StreamProtocol work with Codec trait
-#[derive(Clone)]
-pub struct ProtocolWrapper(StreamProtocol);
-
-impl AsRef<str> for ProtocolWrapper {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
 impl Codec for PacketCodec {
-    type Protocol = ProtocolWrapper;
+    type Protocol = String;
     type Request = Vec<u8>;
     type Response = Vec<u8>;
 
