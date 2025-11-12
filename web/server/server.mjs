@@ -3,11 +3,32 @@ import cors from 'cors';
 import { spawn } from 'node:child_process';
 import { exec } from 'node:child_process';
 import { promisify } from 'util';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const execAsync = promisify(exec);
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the web dist directory (built files)
+// If dist doesn't exist, serve from parent directory (for development)
+const distPath = join(__dirname, '..', 'dist');
+const staticPath = require('fs').existsSync(distPath) ? distPath : join(__dirname, '..');
+app.use(express.static(staticPath));
+
+// Fallback to index.html for SPA routing
+app.get('*', (req, res) => {
+    const indexPath = join(staticPath, 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('Web UI not found. Run: cd web && npm run build');
+    }
+});
 
 // Check if Docker mode is enabled
 const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
