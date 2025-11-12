@@ -195,7 +195,8 @@ export default function App(){
         }
       } catch {}
     };
-    es.onerror = ()=> setEvents(prev=>[...prev, {t:'event stream error', level:'error'}]);
+    // EventSource errors are handled above - don't add error messages to UI
+    // EventSource will auto-reconnect automatically
     esRef.current = es;
     return ()=>{ es.close(); };
   },[mode]);
