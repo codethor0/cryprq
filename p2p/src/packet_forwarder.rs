@@ -12,7 +12,7 @@ use anyhow::{Context, Result};
 use libp2p::{
     request_response::{self, Codec, ProtocolSupport},
     swarm::Swarm,
-    PeerId,
+    PeerId, StreamProtocol,
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -20,79 +20,70 @@ use tokio::sync::Mutex;
 use crate::MyBehaviour;
 
 /// Simple codec for packet forwarding
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct PacketCodec;
 
-#[derive(Clone)]
-pub struct PacketProtocol;
-
-impl request_response::Protocol for PacketProtocol {
-    type Request = Vec<u8>;
-    type Response = Vec<u8>;
-
-    fn request_response_protocol_info(&self) -> Vec<libp2p::request_response::ProtocolName> {
-        vec!["/cryprq/packet/1.0.0".into()]
-    }
-}
+/// Packet protocol identifier
+pub const PACKET_PROTOCOL: StreamProtocol = StreamProtocol::new("/cryprq/packet/1.0.0");
 
 impl Codec for PacketCodec {
     type Protocol = StreamProtocol;
     type Request = Vec<u8>;
     type Response = Vec<u8>;
 
-    fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
+    async fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
     where
         T: futures::AsyncRead + Unpin + Send,
     {
         use futures::AsyncReadExt;
         let mut len_bytes = [0u8; 4];
-        futures::executor::block_on(io.read_exact(&mut len_bytes))?;
+        io.read_exact(&mut len_bytes).await?;
         let len = u32::from_be_bytes(len_bytes) as usize;
         if len > 65535 {
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
         }
         let mut buf = vec![0u8; len];
-        futures::executor::block_on(io.read_exact(&mut buf))?;
+        io.read_exact(&mut buf).await?;
         Ok(buf)
     }
 
-    fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
+    async fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
     where
         T: futures::AsyncRead + Unpin + Send,
     {
         use futures::AsyncReadExt;
         let mut len_bytes = [0u8; 4];
-        futures::executor::block_on(io.read_exact(&mut len_bytes))?;
+        io.read_exact(&mut len_bytes).await?;
         let len = u32::from_be_bytes(len_bytes) as usize;
         if len > 65535 {
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
         }
         let mut buf = vec![0u8; len];
-        futures::executor::block_on(io.read_exact(&mut buf))?;
+        io.read_exact(&mut buf).await?;
         Ok(buf)
     }
 
-    fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> std::io::Result<()>
+    async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: &Self::Request) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = req.len() as u32;
-        futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
-        futures::executor::block_on(io.write_all(&req))?;
-        futures::executor::block_on(io.flush())?;
+        io.write_all(&len.to_be_bytes()).await?;
+        io.write_all(req).await?;
+        io.flush().await?;
         Ok(())
     }
 
-    fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> std::io::Result<()>
+    async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: &Self::Response) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = res.len() as u32;
-        futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
-        futures::executor::block_on(io.write_all(&res))?;
-        futures::executor::block_on(io.flush())?;
+        io.write_all(&len.to_be_bytes()).await?;
+        io.write_all(res).await?;
+        io.flush().await?;
         Ok(())
     }
 }
