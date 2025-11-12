@@ -7,7 +7,8 @@
 
 #[cfg(test)]
 mod property_expanded {
-    use crate::hybrid::HybridHandshake;
+    use cryprq_crypto::HybridHandshake;
+    use pqcrypto_traits::kem::{PublicKey, SecretKey};
     use proptest::prelude::*;
 
     proptest! {

@@ -15,7 +15,7 @@ mod property_expanded {
     proptest! {
         #[test]
         fn test_handshake_symmetry_idempotence(
-            iterations in 1..10u32
+            _iterations in 1..10u32
         ) {
             // Property: Same inputs → same transcript hash
             let h1 = HybridHandshake::new();
