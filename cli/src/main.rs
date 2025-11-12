@@ -6,7 +6,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server};
-use std::{env, net::SocketAddr, process, time::Duration};
+use std::{env, net::SocketAddr, process, sync::Arc, time::Duration};
 use node::{TunConfig, TunInterface};
 
 #[derive(Parser, Debug)]
