@@ -11,9 +11,12 @@ set -euo pipefail
 
 TARGET="${1:-all}"
 DURATION="${2:-1800}"  # Default 30 minutes
+MINS="${3:-30}"  # Minutes for --mins flag
 ARTIFACT_DIR="${ARTIFACT_DIR:-release-$(date +%Y%m%d)/qa/fuzz}"
 
 mkdir -p "$ARTIFACT_DIR"
+mkdir -p "$ARTIFACT_DIR/corpus"
+mkdir -p "$ARTIFACT_DIR/crashers"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Extended Fuzz Runner - ${DURATION}s per target"
@@ -33,14 +36,30 @@ if [ "$TARGET" = "all" ]; then
         echo "Fuzzing: $target (${DURATION}s)"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
+        FUZZ_START=$(date +%s)
         cargo +nightly fuzz run "$target" \
             -- -max_total_time="$DURATION" \
-            -artifact_prefix="$ARTIFACT_DIR/" \
+            -artifact_prefix="$ARTIFACT_DIR/crashers/" \
             -print_final_stats=1 \
             2>&1 | tee "$ARTIFACT_DIR/fuzz-${target}-${DURATION}s.log" || {
             echo "⚠️ Fuzz target $target encountered issues"
             continue
         }
+        FUZZ_DURATION=$(($(date +%s) - FUZZ_START))
+        
+        # Record CPU time and corpus growth
+        CORPUS_SIZE=$(find "fuzz/corpus/$target" -type f 2>/dev/null | wc -l | tr -d ' ')
+        CRASHES=$(find "$ARTIFACT_DIR/crashers" -name "crash-*" 2>/dev/null | wc -l | tr -d ' ')
+        
+        cat >> "$ARTIFACT_DIR/fuzz-metrics.json" << EOF
+{
+  "target": "$target",
+  "duration_seconds": $FUZZ_DURATION,
+  "corpus_size": $CORPUS_SIZE,
+  "crashes": $CRASHES,
+  "status": "complete"
+}
+EOF
         
         echo ""
         echo "✅ $target fuzzing complete"
