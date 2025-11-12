@@ -75,10 +75,16 @@ app.post('/connect', (req,res)=>{
   // Set maximum verbosity
   const env = { ...process.env, RUST_LOG: 'debug' };
   
+  // Spawn process with proper stdio handling
+  // Use 'inherit' for stdin to prevent process from exiting due to closed stdin
   proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, { 
-    stdio: ['ignore','pipe','pipe'],
-    env: env
+    stdio: ['ignore','pipe','pipe'], // stdin: ignore, stdout/stderr: pipe for logging
+    env: env,
+    detached: false // Keep attached so we can track it
   });
+  
+  // Ensure process doesn't exit when parent closes
+  proc.unref(); // Allow parent to exit independently, but keep process alive
   currentMode = mode;
   currentPort = port;
   push('status', `spawn ${args.join(' ')}`);
@@ -117,27 +123,32 @@ app.post('/connect', (req,res)=>{
       push(level, line);
     });
   });
-  proc.on('exit', (code)=>{
+  proc.on('exit', (code, signal)=>{
     if(code === 0) {
       push('status', `exit ${code} (clean shutdown)`);
+    } else if(code === null && signal) {
+      push('error', `Process killed by signal: ${signal}`);
+    } else if(code === null) {
+      push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
     } else {
-      push('status', `exit ${code} (error)`);
+      push('error', `exit ${code} (signal: ${signal || 'none'})`);
     }
     // Clear process tracking when it exits
-    if(proc && proc.pid === proc.pid) {
-      proc = null;
-      currentMode = null;
-      currentPort = null;
-    }
-  });
-  
-  // Handle process errors
-  proc.on('error', (err)=>{
-    push('error', `Process error: ${err.message}`);
     proc = null;
     currentMode = null;
     currentPort = null;
   });
+  
+  // Handle process errors
+  proc.on('error', (err)=>{
+    push('error', `Process spawn error: ${err.message}`);
+    proc = null;
+    currentMode = null;
+    currentPort = null;
+  });
+  
+  // Log when process starts
+  push('status', `Process started (PID: ${proc.pid}, mode: ${mode}, port: ${port})`);
   res.json({ok:true, vpn: !!vpn});
 });
 
