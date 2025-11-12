@@ -13,6 +13,7 @@ interface AppSettings {
   disconnectOnQuit?: boolean // Kill-switch: disconnect on app quit
   remoteEndpointAllowlist?: string[] // Allowed domains for REMOTE profile
   telemetryEnabled?: boolean // Opt-in telemetry v0 (default: false)
+  postQuantumEnabled?: boolean // Post-quantum encryption (ML-KEM + X25519 hybrid, default: true)
   lastPeerId?: string
   recentPeers?: Array<{ alias?: string; peerId: string; lastUsed: number }>
 }
@@ -23,6 +24,7 @@ const defaultSettings: AppSettings = {
   keepRunningInBackground: true,
   disconnectOnQuit: true, // Default: disconnect on quit
   remoteEndpointAllowlist: [], // Empty = no restrictions (for now)
+  postQuantumEnabled: true, // Default: post-quantum encryption enabled
   recentPeers: [],
 }
 

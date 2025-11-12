@@ -10,9 +10,11 @@
 extern crate alloc;
 
 mod hybrid;
+mod ppk;
 
 // Publicly export items needed by other crates
 pub use crate::hybrid::{HybridHandshake, SharedSecret32};
+pub use crate::ppk::{PostQuantumPSK, PPKStore};
 pub use pqcrypto_mlkem::mlkem768::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };

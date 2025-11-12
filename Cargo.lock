@@ -547,6 +547,7 @@ dependencies = [
  "pqcrypto-mlkem",
  "rand 0.8.5",
  "x25519-dalek",
+ "zeroize",
 ]
 
 [[package]]
@@ -2082,6 +2083,7 @@ dependencies = [
  "log",
  "once_cell",
  "prometheus",
+ "rand 0.8.5",
  "thiserror 1.0.69",
  "tokio",
  "void",

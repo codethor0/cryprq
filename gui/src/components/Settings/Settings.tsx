@@ -11,6 +11,7 @@ export const Settings: React.FC = () => {
   const [errors, setErrors] = useState<{ port?: string; rotation?: string; endpoint?: string }>({})
   const [touched, setTouched] = useState<{ port?: boolean; rotation?: boolean; endpoint?: boolean }>({})
   const [showAllowlistModal, setShowAllowlistModal] = useState(false)
+  const [showPostQuantumInfo, setShowPostQuantumInfo] = useState(false)
   const [localEndpoint, setLocalEndpoint] = useState('') // For REMOTE endpoint validation
 
   const validate = () => {
@@ -360,6 +361,59 @@ export const Settings: React.FC = () => {
       }}>
         <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600 }}>Security</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Post-Quantum Encryption Toggle */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '14px', color: '#B0B0B0', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={settings.postQuantumEnabled !== false}
+                onChange={(e) => {
+                  const enabled = e.target.checked
+                  updateSettings({ postQuantumEnabled: enabled })
+                  if (!enabled) {
+                    toastStore.getState().addToast({
+                      type: 'warning',
+                      title: 'Post-Quantum Encryption Disabled',
+                      message: 'You are using X25519-only encryption. This is not recommended for future-proof security.',
+                      duration: 8000,
+                    })
+                  }
+                }}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 500 }}>Post-Quantum Encryption</span>
+                  <Tooltip content="Enable ML-KEM (Kyber768) + X25519 hybrid handshake for future-proof security. Disabling falls back to X25519-only (not recommended).">
+                    <span style={{ fontSize: '12px', color: '#757575', cursor: 'help' }}>ℹ️</span>
+                  </Tooltip>
+                  <button
+                    onClick={() => setShowPostQuantumInfo(true)}
+                    style={{
+                      fontSize: '12px',
+                      color: '#1DE9B6',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: 0,
+                      marginLeft: '4px',
+                    }}
+                  >
+                    Learn more
+                  </button>
+                </div>
+                <p style={{ fontSize: '12px', color: '#757575', marginTop: '4px', marginLeft: '0' }}>
+                  {settings.postQuantumEnabled !== false
+                    ? '✅ ML-KEM (Kyber768) + X25519 hybrid encryption enabled. Protects against future quantum computer attacks.'
+                    : '⚠️ X25519-only encryption. Not recommended for long-term security.'}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div style={{ height: '1px', backgroundColor: '#333', margin: '8px 0' }} />
+
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#B0B0B0' }}>
               Remote Endpoint Allowlist
@@ -461,6 +515,11 @@ export const Settings: React.FC = () => {
           onClose={() => setShowAllowlistModal(false)}
         />
       )}
+
+      <PostQuantumInfo
+        isOpen={showPostQuantumInfo}
+        onClose={() => setShowPostQuantumInfo(false)}
+      />
     </div>
   )
 }

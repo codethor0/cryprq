@@ -31,7 +31,7 @@ use tokio::sync::RwLock;
 use tokio::time::MissedTickBehavior;
 
 // Import the *public* items from the crypto crate
-use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey};
+use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PostQuantumPSK, PPKStore};
 
 mod metrics;
 pub use metrics::start_metrics_server;
@@ -49,6 +49,8 @@ pub enum P2PError {
 static KEYS: Lazy<RwLock<Option<(KyberPublicKey, KyberSecretKey)>>> =
     Lazy::new(|| RwLock::new(None));
 static ALLOWED_PEERS: Lazy<RwLock<Option<HashSet<PeerId>>>> = Lazy::new(|| RwLock::new(None));
+// PPK store for post-quantum pre-shared keys
+static PPK_STORE: Lazy<RwLock<PPKStore>> = Lazy::new(|| RwLock::new(PPKStore::new()));
 static BACKOFF_CONFIG: Lazy<BackoffConfig> = Lazy::new(|| BackoffConfig {
     base_ms: read_env_u64("CRYPRQ_BACKOFF_BASE_MS").unwrap_or(500),
     max_ms: read_env_u64("CRYPRQ_BACKOFF_MAX_MS").unwrap_or(30_000),
@@ -146,6 +148,10 @@ async fn rotate_once(interval: Duration) {
     let mut guard = KEYS.write().await;
     guard.replace((pk, sk));
 
+    // Cleanup expired PPKs on rotation
+    let mut ppk_store = PPK_STORE.write().await;
+    ppk_store.cleanup_expired();
+
     let elapsed = start.elapsed();
     let epoch = metrics::record_rotation_success(elapsed);
 
@@ -155,6 +161,47 @@ async fn rotate_once(interval: Duration) {
         elapsed.as_millis(),
         interval.as_secs()
     );
+}
+
+/// Derive and store a PPK for a peer after ML-KEM key exchange
+///
+/// # Arguments
+///
+/// * `kyber_shared` - Shared secret from ML-KEM encapsulation (32 bytes)
+/// * `peer_id_bytes` - Peer identity bytes (32 bytes, typically Ed25519 public key)
+/// * `rotation_interval_secs` - Key rotation interval in seconds
+pub async fn derive_and_store_ppk(
+    kyber_shared: &[u8; 32],
+    peer_id_bytes: &[u8; 32],
+    rotation_interval_secs: u64,
+) {
+    use rand::RngCore;
+    
+    // Generate random salt for this PPK derivation
+    let mut salt = [0u8; 16];
+    rand::thread_rng().fill_bytes(&mut salt);
+    
+    let ppk = PostQuantumPSK::derive(
+        kyber_shared,
+        peer_id_bytes,
+        &salt,
+        rotation_interval_secs,
+    );
+    
+    let mut store = PPK_STORE.write().await;
+    store.store(ppk);
+    
+    info!(
+        "event=ppk_derived peer_id={:x} expires_in_secs={}",
+        peer_id_bytes.iter().take(8).fold(0u64, |acc, &b| (acc << 8) | b as u64),
+        rotation_interval_secs
+    );
+}
+
+/// Get PPK for a peer (if available and not expired)
+pub async fn get_ppk_for_peer(peer_id_bytes: &[u8; 32]) -> Option<PostQuantumPSK> {
+    let store = PPK_STORE.read().await;
+    store.get(peer_id_bytes).cloned()
 }
 
 pub async fn init_swarm(

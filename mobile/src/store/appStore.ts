@@ -70,6 +70,7 @@ const defaultSettings: AppSettings = {
     connectDisconnect: true,
     rotations: true,
   },
+  postQuantumEnabled: true, // Default: post-quantum encryption enabled
 };
 
 export const useAppStore = create<AppState>()(

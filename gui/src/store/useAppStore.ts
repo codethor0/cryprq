@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { AppState, ConnectionStatus, Peer, AppSettings, LogEntry, MetricsPoint } from '@/types'
+import { AppState, ConnectionStatus, Peer, AppSettings, LogEntry, MetricsPoint, LogLine } from '@/types'
 import { backend } from '@/services/backend'
 
 interface AppStore extends AppState {
@@ -27,6 +27,7 @@ const defaultSettings: AppSettings = {
   remoteEndpointAllowlist: [], // Empty = no restrictions
   chartSmoothing: 0.2, // EMA alpha for charts (default: 0.2)
   telemetryEnabled: false, // Opt-in telemetry v0 (default: OFF)
+  postQuantumEnabled: true, // Post-quantum encryption (ML-KEM + X25519 hybrid, default: ON)
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({

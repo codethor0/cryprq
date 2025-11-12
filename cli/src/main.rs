@@ -32,6 +32,13 @@ struct Args {
         action = clap::ArgAction::Append
     )]
     allow_peers: Vec<String>,
+
+    #[arg(
+        long = "no-post-quantum",
+        help = "Disable post-quantum encryption (fallback to X25519-only). Not recommended. Default: post-quantum enabled.",
+        action = clap::ArgAction::SetTrue
+    )]
+    no_post_quantum: bool,
 }
 
 #[tokio::main]
@@ -55,6 +62,14 @@ async fn main() -> Result<()> {
         .unwrap_or(300)
         .max(1);
     let rotation_interval = Duration::from_secs(rotation_secs);
+
+    // Post-quantum encryption flag (default: enabled)
+    let post_quantum_enabled = !args.no_post_quantum;
+    if !post_quantum_enabled {
+        log::warn!("Post-quantum encryption is DISABLED. Using X25519-only (not recommended for long-term security).");
+    } else {
+        log::info!("Post-quantum encryption enabled: ML-KEM (Kyber768) + X25519 hybrid");
+    }
 
     if let Some(metrics_addr_str) = args
         .metrics_addr

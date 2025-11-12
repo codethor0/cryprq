@@ -18,6 +18,7 @@ interface SessionStartArgs {
   binArgs: string[]
   listenMultiaddr?: string
   peerMultiaddr?: string
+  postQuantumEnabled?: boolean // Post-quantum encryption flag (default: true)
 }
 
 function findCryprqBinary(): string | null {
@@ -116,6 +117,13 @@ ipcMain.handle('session:start', async (_e, args: SessionStartArgs) => {
     return { ok: false, error: 'BINARY_NOT_FOUND', message: 'CrypRQ binary not found' }
   }
 
+  // Load settings to get post-quantum flag if not provided
+  const { loadSettings } = await import('./settings')
+  const settings = loadSettings()
+  const postQuantumEnabled = args.postQuantumEnabled !== undefined 
+    ? args.postQuantumEnabled 
+    : (settings.postQuantumEnabled !== false) // Default: true
+
   // Build command args
   const cmdArgs: string[] = []
   
@@ -129,6 +137,11 @@ ipcMain.handle('session:start', async (_e, args: SessionStartArgs) => {
 
   // Add metrics endpoint flag if supported
   cmdArgs.push('--metrics-addr', '127.0.0.1:9464')
+
+  // Post-quantum encryption flag (default: enabled)
+  if (!postQuantumEnabled) {
+    cmdArgs.push('--no-post-quantum')
+  }
 
   try {
     sessionState = 'starting'
@@ -338,6 +351,13 @@ ipcMain.handle('session:restart', async (_e, args: SessionStartArgs) => {
     return { ok: false, error: 'BINARY_NOT_FOUND', message: 'CrypRQ binary not found' }
   }
 
+  // Load settings to get post-quantum flag if not provided
+  const { loadSettings } = await import('./settings')
+  const settings = loadSettings()
+  const postQuantumEnabled = args.postQuantumEnabled !== undefined 
+    ? args.postQuantumEnabled 
+    : (settings.postQuantumEnabled !== false) // Default: true
+
   const cmdArgs: string[] = []
   if (args.peerMultiaddr) {
     cmdArgs.push('--peer', args.peerMultiaddr)
@@ -347,6 +367,11 @@ ipcMain.handle('session:restart', async (_e, args: SessionStartArgs) => {
     cmdArgs.push('--listen', '/ip4/0.0.0.0/udp/9999/quic-v1')
   }
   cmdArgs.push('--metrics-addr', '127.0.0.1:9464')
+
+  // Post-quantum encryption flag (default: enabled)
+  if (!postQuantumEnabled) {
+    cmdArgs.push('--no-post-quantum')
+  }
 
   try {
     sessionState = 'starting'

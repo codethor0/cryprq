@@ -33,6 +33,7 @@ export interface AppSettings {
   remoteEndpointAllowlist?: string[] // Allowed domains for REMOTE profile
   chartSmoothing?: number // EMA alpha for charts (0-0.4, default: 0.2)
   telemetryEnabled?: boolean // Opt-in telemetry v0 (default: false)
+  postQuantumEnabled?: boolean // Post-quantum encryption (ML-KEM + X25519 hybrid, default: true)
 }
 
 export interface MetricsPoint {

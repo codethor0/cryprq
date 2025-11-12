@@ -1,0 +1,32 @@
+// © 2025 Thor Thor
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// SPDX-License-Identifier: MIT
+
+#![no_main]
+
+use libfuzzer_sys::fuzz_target;
+use cryprq_crypto::PostQuantumPSK;
+
+fuzz_target!(|data: &[u8]| {
+    // Fuzz test PPK derivation
+    // Input: 32 bytes kyber_shared + 32 bytes peer_id + 16 bytes salt + 8 bytes rotation_interval
+    if data.len() >= 88 {
+        let kyber_shared: [u8; 32] = data[0..32].try_into().unwrap();
+        let peer_id: [u8; 32] = data[32..64].try_into().unwrap();
+        let salt: [u8; 16] = data[64..80].try_into().unwrap();
+        let rotation_bytes: [u8; 8] = data[80..88].try_into().unwrap();
+        let rotation_interval = u64::from_le_bytes(rotation_bytes).max(1).min(3600);
+        
+        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, rotation_interval);
+        
+        // Verify PPK properties
+        assert_eq!(ppk.peer_id(), &peer_id);
+        assert!(!ppk.is_expired()); // Should not be expired immediately
+        assert!(ppk.expires_in() <= rotation_interval);
+        
+        // Verify key is non-zero
+        assert!(ppk.key().iter().any(|&b| b != 0));
+    }
+});
+

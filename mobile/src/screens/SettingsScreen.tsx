@@ -30,6 +30,7 @@ export function SettingsScreen() {
     settings.rotationInterval.toString(),
   );
   const [localNotifications, setLocalNotifications] = useState(settings.notifications);
+  const [localPostQuantum, setLocalPostQuantum] = useState(settings.postQuantumEnabled !== false);
   const [versionTapCount, setVersionTapCount] = useState(0);
   const [showDeveloper, setShowDeveloper] = useState(false);
 
@@ -53,6 +54,7 @@ export function SettingsScreen() {
       endpoint: localProfile !== 'LOCAL' ? localEndpoint : undefined,
       rotationInterval,
       notifications: localNotifications,
+      postQuantumEnabled: localPostQuantum,
     });
 
     backendService.setProfile(localProfile, localEndpoint);
@@ -163,6 +165,38 @@ export function SettingsScreen() {
             onValueChange={value =>
               setLocalNotifications({...localNotifications, rotations: value})
             }
+          />
+        </View>
+      </Card>
+
+      <Card testID="security-card">
+        <Text style={[styles.sectionTitle, {color: theme.colors.text}]}>
+          Security
+        </Text>
+        <View style={styles.switchRow}>
+          <View style={{flex: 1}}>
+            <Text style={[styles.switchLabel, {color: theme.colors.text}]}>
+              Post-Quantum Encryption
+            </Text>
+            <Text style={[styles.switchDescription, {color: theme.colors.textSecondary}]}>
+              {localPostQuantum
+                ? '✅ ML-KEM (Kyber768) + X25519 hybrid enabled'
+                : '⚠️ X25519-only (not recommended)'}
+            </Text>
+          </View>
+          <Switch
+            testID="post-quantum-switch"
+            value={localPostQuantum}
+            onValueChange={value => {
+              setLocalPostQuantum(value);
+              if (!value) {
+                Alert.alert(
+                  'Post-Quantum Encryption Disabled',
+                  'You are using X25519-only encryption. This is not recommended for future-proof security.',
+                  [{text: 'OK'}]
+                );
+              }
+            }}
           />
         </View>
       </Card>
@@ -281,6 +315,10 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
+  },
+  switchDescription: {
+    fontSize: 12,
+    marginTop: 4,
   },
   actions: {
     marginTop: 16,

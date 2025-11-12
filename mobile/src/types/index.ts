@@ -32,6 +32,7 @@ export interface AppSettings {
     rotations: boolean;
   };
   telemetryEnabled?: boolean;
+  postQuantumEnabled?: boolean; // Post-quantum encryption (ML-KEM + X25519 hybrid, default: true)
   mode?: 'controller' | 'on-device';
   crashReportingEnabled?: boolean;
   eulaAccepted?: boolean;
