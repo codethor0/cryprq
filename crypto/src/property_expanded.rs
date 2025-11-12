@@ -7,7 +7,7 @@
 
 #[cfg(test)]
 mod property_expanded {
-    use super::hybrid::HybridHandshake;
+    use crate::hybrid::HybridHandshake;
     use proptest::prelude::*;
 
     proptest! {
