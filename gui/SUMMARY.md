@@ -1,16 +1,16 @@
 # CrypRQ Desktop GUI - Implementation Summary
 
-## ✅ Completed Features
+##  Completed Features
 
 ### Core Architecture
-- ✅ Electron + React + TypeScript setup
-- ✅ Vite for fast development and building
-- ✅ Zustand for state management
-- ✅ React Router for navigation
-- ✅ Modular component structure
+-  Electron + React + TypeScript setup
+-  Vite for fast development and building
+-  Zustand for state management
+-  React Router for navigation
+-  Modular component structure
 
 ### UI Components
-- ✅ **Dashboard Screen**
+-  **Dashboard Screen**
   - Connection status indicator (green/red dot)
   - Connect/Disconnect button
   - Peer ID display
@@ -18,36 +18,36 @@
   - Throughput metrics (bytes in/out)
   - Recent activity log view
 
-- ✅ **Peers Management Screen**
+-  **Peers Management Screen**
   - List of configured peers
   - Add peer dialog (Peer ID + Multiaddr)
   - Connect/Remove buttons per peer
   - Status indicators (connected/disconnected)
   - Last seen timestamps
 
-- ✅ **Settings Screen**
+-  **Settings Screen**
   - Key rotation interval (seconds)
   - Log level selector
   - Transport configuration (Multiaddr, UDP port)
   - Theme selector (Light/Dark/System)
 
 ### Layout & Navigation
-- ✅ Sidebar navigation (Dashboard | Peers | Settings)
-- ✅ Main layout with responsive content area
-- ✅ Dark theme support (with system preference detection)
-- ✅ Light theme support
+-  Sidebar navigation (Dashboard | Peers | Settings)
+-  Main layout with responsive content area
+-  Dark theme support (with system preference detection)
+-  Light theme support
 
 ### Electron Integration
-- ✅ Main process window management
-- ✅ System tray icon with context menu
-- ✅ IPC bridge setup (preload script)
-- ✅ Development/production build configuration
+-  Main process window management
+-  System tray icon with context menu
+-  IPC bridge setup (preload script)
+-  Development/production build configuration
 
 ### Documentation
-- ✅ Wireframes and design specifications
-- ✅ Backend integration guide
-- ✅ Quick start guide
-- ✅ README with architecture overview
+-  Wireframes and design specifications
+-  Backend integration guide
+-  Quick start guide
+-  README with architecture overview
 
 ## ⏳ Pending Integration
 
@@ -76,29 +76,29 @@
 
 ```
 gui/
-├── src/
-│   ├── components/
-│   │   ├── Dashboard/      ✅ Connection status, metrics, logs
-│   │   ├── Peers/           ✅ Peer list, add/remove dialog
-│   │   ├── Settings/        ✅ Configuration UI
-│   │   └── Layout/          ✅ Sidebar, MainLayout
-│   ├── services/
-│   │   └── backend.ts      ⏳ Mock backend (needs CLI integration)
-│   ├── store/
-│   │   └── useAppStore.ts  ✅ Zustand state management
-│   ├── types/
-│   │   └── index.ts        ✅ TypeScript type definitions
-│   ├── themes/
-│   │   └── index.ts        ✅ Light/dark theme definitions
-│   └── main.tsx            ✅ React entry point
-├── electron/
-│   ├── main.ts             ✅ Window, tray management
-│   └── preload.ts          ✅ IPC bridge
-├── docs/
-│   ├── wireframes.md       ✅ UI design specifications
-│   ├── backend-integration.md ✅ CLI integration guide
-│   └── QUICKSTART.md       ✅ Getting started guide
-└── package.json            ✅ Dependencies and scripts
+ src/
+    components/
+       Dashboard/       Connection status, metrics, logs
+       Peers/            Peer list, add/remove dialog
+       Settings/         Configuration UI
+       Layout/           Sidebar, MainLayout
+    services/
+       backend.ts      ⏳ Mock backend (needs CLI integration)
+    store/
+       useAppStore.ts   Zustand state management
+    types/
+       index.ts         TypeScript type definitions
+    themes/
+       index.ts         Light/dark theme definitions
+    main.tsx             React entry point
+ electron/
+    main.ts              Window, tray management
+    preload.ts           IPC bridge
+ docs/
+    wireframes.md        UI design specifications
+    backend-integration.md  CLI integration guide
+    QUICKSTART.md        Getting started guide
+ package.json             Dependencies and scripts
 ```
 
 ## Getting Started

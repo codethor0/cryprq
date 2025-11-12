@@ -8,92 +8,92 @@ This document describes the organization and structure of the CrypRQ codebase.
 
 ```
 cryprq/
-├── Cargo.toml              # Rust workspace configuration
-├── Cargo.lock              # Dependency lock file
-├── Dockerfile              # Main Dockerfile
-├── docker-compose.yml      # Docker Compose configuration
-├── .dockerignore           # Docker ignore patterns
-├── rust-toolchain.toml     # Rust toolchain version
-├── README.md               # Main README
-├── LICENSE                 # License file
-├── SECURITY.md             # Security policy
-├── CONTRIBUTING.md         # Contribution guidelines
-│
-├── cli/                    # CLI application
-│   ├── Cargo.toml
-│   └── src/
-│       └── main.rs
-│
-├── crypto/                 # Cryptographic primitives
-│   ├── Cargo.toml
-│   └── src/
-│       ├── lib.rs
-│       ├── hybrid.rs
-│       ├── ppk.rs
-│       ├── pqc_suite.rs
-│       └── zkp.rs
-│
-├── p2p/                    # Peer-to-peer networking
-│   ├── Cargo.toml
-│   └── src/
-│       └── lib.rs
-│
-├── node/                   # VPN node implementation
-│   ├── Cargo.toml
-│   └── src/
-│       ├── lib.rs
-│       ├── padding.rs
-│       ├── dns.rs
-│       ├── traffic_shaping.rs
-│       └── tls.rs
-│
-├── core/                   # Core functionality
-│   ├── Cargo.toml
-│   └── src/
-│
-├── tests/                  # Integration tests (if exists)
-│   ├── integration_test.rs
-│   └── e2e_test.rs
-│
-├── scripts/                # Build and utility scripts
-│   ├── test-unit.sh
-│   ├── test-integration.sh
-│   ├── test-e2e.sh
-│   ├── security-audit.sh
-│   ├── performance-tests.sh
-│   ├── compliance-checks.sh
-│   ├── build-android.sh
-│   ├── test-android.sh
-│   ├── build-ios.sh
-│   ├── test-ios.sh
-│   ├── sync-environments.sh
-│   └── cleanup.sh
-│
-├── docs/                   # Documentation
-│   ├── DOCKER.md
-│   ├── TESTING.md
-│   └── FOLDER_STRUCTURE.md
-│
-├── gui/                    # Desktop GUI application
-│   ├── package.json
-│   ├── docker-compose.yml
-│   ├── src/
-│   └── electron/
-│
-├── mobile/                 # Mobile application
-│   ├── package.json
-│   ├── docker-compose.yml
-│   ├── android/
-│   ├── ios/
-│   └── src/
-│
-├── .github/                # GitHub workflows
-│   └── workflows/
-│       ├── docker-test.yml
-│       ├── mobile-android.yml
-│       └── mobile-ios.yml
-│
-└── target/                 # Rust build artifacts (gitignored)
+ Cargo.toml              # Rust workspace configuration
+ Cargo.lock              # Dependency lock file
+ Dockerfile              # Main Dockerfile
+ docker-compose.yml      # Docker Compose configuration
+ .dockerignore           # Docker ignore patterns
+ rust-toolchain.toml     # Rust toolchain version
+ README.md               # Main README
+ LICENSE                 # License file
+ SECURITY.md             # Security policy
+ CONTRIBUTING.md         # Contribution guidelines
+
+ cli/                    # CLI application
+    Cargo.toml
+    src/
+        main.rs
+
+ crypto/                 # Cryptographic primitives
+    Cargo.toml
+    src/
+        lib.rs
+        hybrid.rs
+        ppk.rs
+        pqc_suite.rs
+        zkp.rs
+
+ p2p/                    # Peer-to-peer networking
+    Cargo.toml
+    src/
+        lib.rs
+
+ node/                   # VPN node implementation
+    Cargo.toml
+    src/
+        lib.rs
+        padding.rs
+        dns.rs
+        traffic_shaping.rs
+        tls.rs
+
+ core/                   # Core functionality
+    Cargo.toml
+    src/
+
+ tests/                  # Integration tests (if exists)
+    integration_test.rs
+    e2e_test.rs
+
+ scripts/                # Build and utility scripts
+    test-unit.sh
+    test-integration.sh
+    test-e2e.sh
+    security-audit.sh
+    performance-tests.sh
+    compliance-checks.sh
+    build-android.sh
+    test-android.sh
+    build-ios.sh
+    test-ios.sh
+    sync-environments.sh
+    cleanup.sh
+
+ docs/                   # Documentation
+    DOCKER.md
+    TESTING.md
+    FOLDER_STRUCTURE.md
+
+ gui/                    # Desktop GUI application
+    package.json
+    docker-compose.yml
+    src/
+    electron/
+
+ mobile/                 # Mobile application
+    package.json
+    docker-compose.yml
+    android/
+    ios/
+    src/
+
+ .github/                # GitHub workflows
+    workflows/
+        docker-test.yml
+        mobile-android.yml
+        mobile-ios.yml
+
+ target/                 # Rust build artifacts (gitignored)
 ```
 
 ## Key Directories

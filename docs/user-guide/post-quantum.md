@@ -20,8 +20,8 @@ This provides **defense-in-depth** - even if one algorithm is compromised, the o
 1. Open CrypRQ
 2. Navigate to **Settings** → **Security**
 3. Toggle **"Post-Quantum Encryption"**
-   - ✅ **Enabled** (recommended): ML-KEM + X25519 hybrid
-   - ⚠️ **Disabled**: X25519-only (not recommended)
+   -  **Enabled** (recommended): ML-KEM + X25519 hybrid
+   -  **Disabled**: X25519-only (not recommended)
 
 ### Mobile App
 
@@ -41,14 +41,14 @@ This provides **defense-in-depth** - even if one algorithm is compromised, the o
 
 ## Why Keep It Enabled?
 
-✅ **Future-proof**: Protects against store-now-decrypt-later attacks  
-✅ **Defense-in-depth**: Multiple layers of security  
-✅ **Minimal overhead**: Optimized implementation  
-✅ **Industry standard**: ML-KEM is a NIST-approved algorithm  
+ **Future-proof**: Protects against store-now-decrypt-later attacks  
+ **Defense-in-depth**: Multiple layers of security  
+ **Minimal overhead**: Optimized implementation  
+ **Industry standard**: ML-KEM is a NIST-approved algorithm  
 
 ## When Might You Disable It?
 
-⚠️ **Not recommended**, but you might disable if:
+ **Not recommended**, but you might disable if:
 - Testing compatibility with peers that don't support ML-KEM
 - Debugging connection issues
 - Performance profiling (though overhead is minimal)

@@ -6,15 +6,15 @@ A reproducible checklist for validating CrypRQ across Android, iOS, macOS, Windo
 
 | Scenario | Android | iOS | macOS | Windows | Linux |
 |----------|---------|-----|-------|---------|-------|
-| DNS leak test | ✅ | ✅ | ✅ | ✅ | ✅ |
-| IPv6 connectivity | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Captive portal handling | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Airplane mode / network flip | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Roaming (cell ↔ Wi-Fi) | ✅ | ✅ | N/A | N/A | N/A |
-| App/host restart | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Battery optimization | ✅ | N/A | N/A | N/A | N/A |
-| Crash resilience | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Metrics/health endpoint | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DNS leak test |  |  |  |  |  |
+| IPv6 connectivity |  |  |  |  |  |
+| Captive portal handling |  |  |  |  |  |
+| Airplane mode / network flip |  |  |  |  |  |
+| Roaming (cell ↔ Wi-Fi) |  |  | N/A | N/A | N/A |
+| App/host restart |  |  |  |  |  |
+| Battery optimization |  | N/A | N/A | N/A | N/A |
+| Crash resilience |  |  |  |  |  |
+| Metrics/health endpoint |  |  |  |  |  |
 
 ## Common Setup
 
@@ -42,7 +42,7 @@ Expected:
 ### 2. IPv6 Handling
 
 Steps:
-1. Configure tunnel to include IPv6 route (`addRoute("2001:db8::/64")`).
+1. Configure tunnel to include IPv6 route (`addRoute("2001:/64")`).
 2. Use `ping6` or `curl -6 https://ipv6.google.com`.
 
 Expected:

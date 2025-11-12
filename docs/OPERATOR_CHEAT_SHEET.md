@@ -60,5 +60,5 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 
 ---
 
-**You're set. Run the one-shot, watch CI publish, and go live. 🚀**
+**You're set. Run the one-shot, watch CI publish, and go live. **
 

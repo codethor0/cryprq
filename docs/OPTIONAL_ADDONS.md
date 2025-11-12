@@ -2,7 +2,7 @@
 
 These are ready-to-drop enhancements that can be implemented when needed. All are designed as 60-minute wins.
 
-## 🚩 Feature Flag Shim
+##  Feature Flag Shim
 
 **Purpose**: Instant rollback without rebuild
 
@@ -33,7 +33,7 @@ if (featureFlags.charts.enabled) {
 }
 ```
 
-## 📊 Telemetry v0
+##  Telemetry v0
 
 **Purpose**: Opt-in JSONL event counter (connect/disconnect/rotation, no PII)
 
@@ -45,7 +45,7 @@ if (featureFlags.charts.enabled) {
 **Event Schema**:
 ```json
 {
-  "ts": "2025-01-15T12:00:00Z",
+  "ts": "2025-01-15T1200Z",
   "event": "session.connect",
   "success": true,
   "profile": "LOCAL",
@@ -64,7 +64,7 @@ if (featureFlags.charts.enabled) {
 - No PII (no peer IDs, endpoints, or user data)
 - Local storage only (no network calls unless explicitly enabled)
 
-## 📈 Mini Prometheus→JSON Bridge
+##  Mini Prometheus→JSON Bridge
 
 **Purpose**: Export health metrics to web dashboard
 
@@ -77,7 +77,7 @@ if (featureFlags.charts.enabled) {
 **JSON Format**:
 ```json
 {
-  "timestamp": "2025-01-15T12:00:00Z",
+  "timestamp": "2025-01-15T1200Z",
   "metrics": {
     "crash_free_rate": 0.995,
     "connect_success_rate": 0.99,
@@ -93,7 +93,7 @@ if (featureFlags.charts.enabled) {
 - Real-time metrics visualization
 - File: `gui/public/health-dashboard.html`
 
-## 📋 Post-Ship Observability Metrics
+##  Post-Ship Observability Metrics
 
 **Targets** (when telemetry v0 is enabled):
 
@@ -111,7 +111,7 @@ if (featureFlags.charts.enabled) {
 - Compare against targets
 - Alert on threshold breaches
 
-## 🔧 Quick Implementation Guide
+##  Quick Implementation Guide
 
 ### Feature Flags (30 min)
 1. Create `gui/src/config/features.json`
@@ -132,7 +132,7 @@ if (featureFlags.charts.enabled) {
 3. Create simple HTML dashboard
 4. Document in README
 
-## 🎯 When to Implement
+##  When to Implement
 
 - **Feature Flags**: When you need instant rollback capability
 - **Telemetry v0**: When you need health metrics for monitoring

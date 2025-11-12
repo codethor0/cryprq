@@ -12,7 +12,7 @@ This document describes all GitHub Actions workflows for CrypRQ and how to ensur
    - **Jobs**:
      - `test`: Format check, clippy, tests, release build
      - `ffi-check`: Cross-target FFI builds (iOS, Android, Windows)
-   - **Status**: ✅ Critical checks fail fast, optional checks continue on error
+   - **Status**:  Critical checks fail fast, optional checks continue on error
 
 2. **Docker Tests** (`.github/workflows/docker-test.yml`)
    - **Purpose**: Docker container testing
@@ -21,21 +21,21 @@ This document describes all GitHub Actions workflows for CrypRQ and how to ensur
      - `docker-build`: Build and test Docker image
      - `docker-compose-test`: E2E tests with Docker Compose
      - `integration-tests`: Integration test script
-   - **Status**: ✅ Build fails fast, E2E tests continue on error
+   - **Status**:  Build fails fast, E2E tests continue on error
 
 3. **Security Audit** (`.github/workflows/security-audit.yml`)
    - **Purpose**: Vulnerability scanning
    - **Triggers**: Push/PR to `main`, weekly schedule, manual dispatch
    - **Jobs**:
      - `audit`: Run `cargo-audit` and `cargo-deny`
-   - **Status**: ✅ Tools optional, won't fail if unavailable
+   - **Status**:  Tools optional, won't fail if unavailable
 
 4. **CodeQL** (`.github/workflows/codeql.yml`)
    - **Purpose**: Static security analysis
    - **Triggers**: Push/PR to `main`, weekly schedule, manual dispatch
    - **Jobs**:
      - `analyze`: CodeQL analysis for Rust
-   - **Status**: ✅ Continues on error, cached for performance
+   - **Status**:  Continues on error, cached for performance
 
 ### Mobile Workflows
 
@@ -45,7 +45,7 @@ This document describes all GitHub Actions workflows for CrypRQ and how to ensur
    - **Jobs**:
      - `build`: Build Android APK
      - `test`: Run Android tests
-   - **Status**: ✅ Skips if project not found, continues on error
+   - **Status**:  Skips if project not found, continues on error
 
 6. **Mobile iOS CI** (`.github/workflows/mobile-ios.yml`)
    - **Purpose**: iOS build and test
@@ -53,19 +53,19 @@ This document describes all GitHub Actions workflows for CrypRQ and how to ensur
    - **Jobs**:
      - `build`: Build iOS app
      - `test`: Run iOS tests
-   - **Status**: ✅ Skips if workspace not found, continues on error
+   - **Status**:  Skips if workspace not found, continues on error
 
 ### GUI Workflows
 
 7. **GUI CI/CD** (`.github/workflows/gui-ci.yml`)
    - **Purpose**: Desktop GUI build and test
    - **Triggers**: Changes to `gui/**`, manual dispatch
-   - **Status**: ✅ Handles GUI-specific dependencies
+   - **Status**:  Handles GUI-specific dependencies
 
 8. **Mobile CI** (`.github/workflows/mobile-ci.yml`)
    - **Purpose**: Mobile app CI
    - **Triggers**: Changes to `mobile/**`, manual dispatch
-   - **Status**: ✅ Handles mobile-specific dependencies
+   - **Status**:  Handles mobile-specific dependencies
 
 ### Release Workflows
 
@@ -75,29 +75,29 @@ This document describes all GitHub Actions workflows for CrypRQ and how to ensur
    - **Jobs**:
      - `build`: Build artifacts for Linux, macOS, Windows
      - `release`: Create GitHub release with artifacts
-   - **Status**: ✅ Handles signing and notarization
+   - **Status**:  Handles signing and notarization
 
 10. **Release Verify** (`.github/workflows/release-verify.yml`)
     - **Purpose**: Verify release builds
     - **Triggers**: Release workflow completion
-    - **Status**: ✅ Validates release artifacts
+    - **Status**:  Validates release artifacts
 
 ### Utility Workflows
 
 11. **Local Validate Mirror** (`.github/workflows/local-validate-mirror.yml`)
     - **Purpose**: Mirror local validation in CI
     - **Triggers**: PRs to `main`, manual dispatch
-    - **Status**: ✅ Runs GUI tests with fake backend
+    - **Status**:  Runs GUI tests with fake backend
 
 12. **PR Cheat Sheet** (`.github/workflows/pr-cheat-sheet.yml`)
     - **Purpose**: Auto-comment operator cheat sheet on PRs
     - **Triggers**: PRs to `main`
-    - **Status**: ✅ Provides helpful commands
+    - **Status**:  Provides helpful commands
 
 13. **Fuzz Testing** (`.github/workflows/fuzz.yml`)
     - **Purpose**: Fuzz testing for security
     - **Triggers**: Push/PR to `main`, manual dispatch
-    - **Status**: ✅ Runs fuzz targets
+    - **Status**:  Runs fuzz targets
 
 ## Workflow Strategy
 
@@ -212,11 +212,11 @@ When adding new workflows:
 ## Summary
 
 All workflows are configured to:
-- ✅ Pass reliably (critical checks fail fast)
-- ✅ Handle missing dependencies gracefully
-- ✅ Use caching for performance
-- ✅ Provide clear error messages
-- ✅ Support local testing
+-  Pass reliably (critical checks fail fast)
+-  Handle missing dependencies gracefully
+-  Use caching for performance
+-  Provide clear error messages
+-  Support local testing
 
 For questions or issues, see:
 - `docs/CI_CD.md` - CI/CD pipeline documentation

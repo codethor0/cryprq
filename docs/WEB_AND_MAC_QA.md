@@ -13,7 +13,7 @@ This guide covers:
 
 ```bash
 # Install Playwright browsers
-npm run test:web:install
+npm run testinstall
 
 # Run tests (assumes bridge + site already running)
 npm run test:web

@@ -88,7 +88,7 @@ npm run android:build
 
 **Release:**
 ```bash
-npm run android:build:release
+npm run androidrelease
 npm run android:bundle  # For AAB
 ```
 
@@ -101,7 +101,7 @@ npm run ios:build
 
 **Release:**
 ```bash
-npm run ios:build:release
+npm run iosrelease
 ```
 
 ## Fastlane
@@ -112,18 +112,18 @@ See `fastlane/README.md` for Fastlane setup and usage.
 
 ```
 mobile/
-├── src/
-│   ├── app/          # Navigation and app root
-│   ├── screens/      # Screen components
-│   ├── components/   # Reusable UI components
-│   ├── store/        # Zustand state management
-│   ├── services/     # Backend integration
-│   ├── utils/        # Utilities and validators
-│   ├── theme/        # Theme definitions
-│   └── types/        # TypeScript types
-├── e2e/              # Detox E2E tests
-├── tests/            # Unit tests
-└── fastlane/         # Fastlane configuration
+ src/
+    app/          # Navigation and app root
+    screens/      # Screen components
+    components/   # Reusable UI components
+    store/        # Zustand state management
+    services/     # Backend integration
+    utils/        # Utilities and validators
+    theme/        # Theme definitions
+    types/        # TypeScript types
+ e2e/              # Detox E2E tests
+ tests/            # Unit tests
+ fastlane/         # Fastlane configuration
 ```
 
 ## License

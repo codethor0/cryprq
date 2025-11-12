@@ -49,9 +49,9 @@ Uses Docker Compose to spin up full test environment.
 
 ```
 tests/
-├── unit_tests.rs          # Unit test examples
-├── integration_tests.rs   # Integration test examples
-└── e2e_tests.rs          # E2E test examples
+ unit_tests.rs          # Unit test examples
+ integration_tests.rs   # Integration test examples
+ e2e_tests.rs          # E2E test examples
 ```
 
 ## Writing Tests
@@ -159,9 +159,9 @@ Create mock data in `tests/fixtures/`:
 
 ```
 tests/
-└── fixtures/
-    ├── test_keys.json
-    └── test_config.toml
+ fixtures/
+     test_keys.json
+     test_config.toml
 ```
 
 ### Test Utilities

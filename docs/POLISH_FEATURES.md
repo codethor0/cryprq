@@ -1,6 +1,6 @@
 # Polish Features Implementation Summary
 
-## ✅ Completed Features
+##  Completed Features
 
 ### 1. Endpoint Allowlist UI Validation
 - **Files Created**:
@@ -78,7 +78,7 @@
 
 ---
 
-## 🔧 Integration Notes
+##  Integration Notes
 
 ### Desktop Report Issue Modal
 To integrate the Report Issue modal into the app:
@@ -137,14 +137,14 @@ Add to `.github/workflows/release.yml`:
   run: |
     ./scripts/observability-checks.sh
     if grep -R -E "bearer |privKey=|authorization:" artifacts/; then
-      echo "❌ Secrets leaked in artifacts!"
+      echo " Secrets leaked in artifacts!"
       exit 1
     fi
 ```
 
 ---
 
-## 📝 Remaining Tasks
+##  Remaining Tasks
 
 1. **Mobile Report Issue**: Implement React Native Share API integration
 2. **CI Guardrails**: Add redaction checks to CI workflows
@@ -154,7 +154,7 @@ Add to `.github/workflows/release.yml`:
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### Endpoint Allowlist
 1. Open Settings → Security

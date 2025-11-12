@@ -1,87 +1,87 @@
 # Backend Integration Status
 
-## ✅ Pack 1: CLI Integration (COMPLETE)
+##  Pack 1: CLI Integration (COMPLETE)
 
 ### Implemented Features
 
 1. **Process Spawning**
-   - ✅ `electron/main/session.ts` spawns CrypRQ CLI process
-   - ✅ Binary discovery (dev paths, production paths, PATH fallback)
-   - ✅ Command argument building (--listen, --peer, --metrics-addr)
-   - ✅ Process lifecycle management
+   -  `electron/main/session.ts` spawns CrypRQ CLI process
+   -  Binary discovery (dev paths, production paths, PATH fallback)
+   -  Command argument building (--listen, --peer, --metrics-addr)
+   -  Process lifecycle management
 
 2. **JSON Event Parsing**
-   - ✅ Parses structured JSON lines from CLI stdout
-   - ✅ Falls back to raw log lines for non-JSON output
-   - ✅ Buffers last 20 log lines for error reporting
+   -  Parses structured JSON lines from CLI stdout
+   -  Falls back to raw log lines for non-JSON output
+   -  Buffers last 20 log lines for error reporting
 
 3. **Prometheus Metrics Polling**
-   - ✅ `electron/main/metrics.ts` polls `http://localhost:9464/metrics` every 2s
-   - ✅ Parses metrics: bytesIn, bytesOut, rotationTimer, latency, peerId
-   - ✅ Caches metrics for IPC access
-   - ✅ Renderer also polls for UI updates
+   -  `electron/main/metrics.ts` polls `http://localhost:9464/metrics` every 2s
+   -  Parses metrics: bytesIn, bytesOut, rotationTimer, latency, peerId
+   -  Caches metrics for IPC access
+   -  Renderer also polls for UI updates
 
 4. **IPC Handlers**
-   - ✅ `session:start` - Start CLI process
-   - ✅ `session:stop` - Stop CLI process (SIGTERM, fallback to SIGKILL)
-   - ✅ `session:get` - Get current session state
-   - ✅ `session:restart` - Restart session
-   - ✅ `metrics:get` - Get cached metrics
-   - ✅ `metrics:start` / `metrics:stop` - Control polling
+   -  `session:start` - Start CLI process
+   -  `session:stop` - Stop CLI process (SIGTERM, fallback to SIGKILL)
+   -  `session:get` - Get current session state
+   -  `session:restart` - Restart session
+   -  `metrics:get` - Get cached metrics
+   -  `metrics:start` / `metrics:stop` - Control polling
 
 5. **Event Streaming**
-   - ✅ `session:event` - Structured JSON events
-   - ✅ `session:log` - Raw log lines (info/error)
-   - ✅ `session:ended` - Process exit notification
-   - ✅ `session:error` - Process errors
+   -  `session:event` - Structured JSON events
+   -  `session:log` - Raw log lines (info/error)
+   -  `session:ended` - Process exit notification
+   -  `session:error` - Process errors
 
-## ✅ Pack 2: IPC & Crash Recovery (COMPLETE)
+##  Pack 2: IPC & Crash Recovery (COMPLETE)
 
 ### Implemented Features
 
 1. **Heartbeat Mechanism**
-   - ✅ `electron/main/heartbeat.ts` monitors renderer health
-   - ✅ Renderer pings every 5 seconds
-   - ✅ Main process detects missed beats (3+ = stalled)
-   - ✅ Sends `heartbeat:stalled` event to windows
+   -  `electron/main/heartbeat.ts` monitors renderer health
+   -  Renderer pings every 5 seconds
+   -  Main process detects missed beats (3+ = stalled)
+   -  Sends `heartbeat:stalled` event to windows
 
 2. **Crash Recovery**
-   - ✅ Process exit detection with exit code/signal
-   - ✅ Last 20 log lines included in error events
-   - ✅ Session state tracking (idle/starting/running/stopping/errored)
-   - ✅ Error events sent to all windows
+   -  Process exit detection with exit code/signal
+   -  Last 20 log lines included in error events
+   -  Session state tracking (idle/starting/running/stopping/errored)
+   -  Error events sent to all windows
 
 3. **Single Instance Lock**
-   - ✅ `app.requestSingleInstanceLock()` prevents multiple instances
-   - ✅ Second launch focuses existing window
-   - ✅ Restores minimized windows
+   -  `app.requestSingleInstanceLock()` prevents multiple instances
+   -  Second launch focuses existing window
+   -  Restores minimized windows
 
 4. **Window Management**
-   - ✅ macOS: Close button minimizes to tray
-   - ✅ Tray icon with context menu
-   - ✅ Window restore on activate
+   -  macOS: Close button minimizes to tray
+   -  Tray icon with context menu
+   -  Window restore on activate
 
 ## Integration Points
 
 ### Backend Service (`src/services/backend.ts`)
 
-- ✅ Replaced mock with real Electron IPC calls
-- ✅ Event listeners for session events
-- ✅ Metrics polling integration
-- ✅ Heartbeat ping integration
-- ✅ Error handling and propagation
+-  Replaced mock with real Electron IPC calls
+-  Event listeners for session events
+-  Metrics polling integration
+-  Heartbeat ping integration
+-  Error handling and propagation
 
 ### Store Integration (`src/store/useAppStore.ts`)
 
-- ✅ Backend events update connection status
-- ✅ Logs streamed to store
-- ✅ Error handling in connect/disconnect
+-  Backend events update connection status
+-  Logs streamed to store
+-  Error handling in connect/disconnect
 
 ### UI Components
 
-- ✅ Dashboard shows real connection status
-- ✅ Connect/Disconnect buttons trigger real actions
-- ✅ Error messages displayed to user
+-  Dashboard shows real connection status
+-  Connect/Disconnect buttons trigger real actions
+-  Error messages displayed to user
 
 ## Testing Checklist
 
@@ -134,18 +134,18 @@
 
 ```
 gui/
-├── electron/
-│   ├── main.ts              # Window management, single instance
-│   ├── main/
-│   │   ├── session.ts       # CLI process spawning & management
-│   │   ├── metrics.ts       # Prometheus polling
-│   │   └── heartbeat.ts     # Renderer health monitoring
-│   └── preload.ts           # IPC bridge (context isolation)
-├── src/
-│   ├── services/
-│   │   └── backend.ts       # Backend service (IPC client)
-│   └── store/
-│       └── useAppStore.ts   # Zustand store with backend integration
+ electron/
+    main.ts              # Window management, single instance
+    main/
+       session.ts       # CLI process spawning & management
+       metrics.ts       # Prometheus polling
+       heartbeat.ts     # Renderer health monitoring
+    preload.ts           # IPC bridge (context isolation)
+ src/
+    services/
+       backend.ts       # Backend service (IPC client)
+    store/
+        useAppStore.ts   # Zustand store with backend integration
 ```
 
 ## Usage Example

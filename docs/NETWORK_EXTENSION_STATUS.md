@@ -6,7 +6,7 @@ The macOS Network Extension (NEPacketTunnelProvider) has been implemented to ena
 
 ## Current Status
 
-### ✅ Completed
+###  Completed
 
 1. **PacketTunnelProvider.swift** - Main Network Extension provider class
    - Implements `NEPacketTunnelProvider`
@@ -26,7 +26,7 @@ The macOS Network Extension (NEPacketTunnelProvider) has been implemented to ena
    - Code signing and entitlement setup
    - Testing and troubleshooting guide
 
-### 🚧 In Progress
+###  In Progress
 
 1. **Rust FFI Integration** - Bridge between Swift and Rust
    - Need to implement `CrypRQFFI.swift` with actual FFI calls
@@ -39,7 +39,7 @@ The macOS Network Extension (NEPacketTunnelProvider) has been implemented to ena
    - Configure capabilities and entitlements
    - Set up code signing
 
-### 📋 Pending
+###  Pending
 
 1. **Packet Forwarding Integration**
    - Connect `CrypRQPacketPump` to actual `node::Tunnel`
@@ -60,56 +60,56 @@ The macOS Network Extension (NEPacketTunnelProvider) has been implemented to ena
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    macOS System                         │
-│                                                          │
-│  ┌──────────────┐         ┌──────────────────────────┐ │
-│  │   Browser    │         │   Other Applications    │ │
-│  │   Traffic    │         │        Traffic           │ │
-│  └──────┬───────┘         └──────────┬───────────────┘ │
-│         │                             │                 │
-│         └─────────────┬───────────────┘                 │
-│                       │                                 │
-│              ┌────────▼────────┐                       │
-│              │  TUN Interface  │                       │
-│              │   (utun0)        │                       │
-│              └────────┬─────────┘                       │
-│                       │                                 │
-│              ┌────────▼──────────────────────────────┐  │
-│              │  Network Extension                   │  │
-│              │  (NEPacketTunnelProvider)            │  │
-│              │                                       │  │
-│              │  ┌──────────────────────────────┐   │  │
-│              │  │  CrypRQPacketPump            │   │  │
-│              │  │  - Read from TUN              │   │  │
-│              │  │  - Write to TUN               │   │  │
-│              │  └──────────┬───────────────────┘   │  │
-│              │             │                        │  │
-│              │  ┌──────────▼───────────────────┐   │  │
-│              │  │  CrypRQTunnelController       │   │  │
-│              │  │  - Connection management      │   │  │
-│              │  └──────────┬───────────────────┘   │  │
-│              └─────────────┼───────────────────────┘  │
-│                            │                          │
-│              ┌─────────────▼───────────────────────┐ │
-│              │  Rust FFI Bridge                     │ │
-│              │  (CrypRQFFI.swift)                   │ │
-│              └─────────────┬───────────────────────┘ │
-│                            │                          │
-└────────────────────────────┼──────────────────────────┘
-                             │
-              ┌──────────────▼──────────────┐
-              │  Rust cryprq Binary         │
-              │  - node::Tunnel             │
-              │  - Packet encryption        │
-              │  - Key rotation             │
-              └──────────────┬──────────────┘
-                             │
-              ┌──────────────▼──────────────┐
-              │  libp2p QUIC Connection     │
-              │  - Peer-to-peer tunnel      │
-              │  - Encrypted transport      │
-              └─────────────────────────────┘
+
+                    macOS System                         
+                                                          
+            
+     Browser                Other Applications     
+     Traffic                     Traffic            
+            
+                                                       
+                          
+                                                        
+                                     
+                TUN Interface                         
+                 (utun0)                               
+                                     
+                                                        
+                
+                Network Extension                     
+                (NEPacketTunnelProvider)              
+                                                       
+                     
+                  CrypRQPacketPump                 
+                  - Read from TUN                   
+                  - Write to TUN                    
+                     
+                                                     
+                     
+                  CrypRQTunnelController            
+                  - Connection management           
+                     
+                
+                                                      
+               
+                Rust FFI Bridge                      
+                (CrypRQFFI.swift)                    
+               
+                                                      
+
+                             
+              
+                Rust cryprq Binary         
+                - node::Tunnel             
+                - Packet encryption        
+                - Key rotation             
+              
+                             
+              
+                libp2p QUIC Connection     
+                - Peer-to-peer tunnel      
+                - Encrypted transport      
+              
 ```
 
 ## Next Steps

@@ -33,19 +33,19 @@ bash scripts/build-web-and-mac.sh
 ## Architecture
 
 ```
-┌─────────────┐
-│  Web Client │ (Vite React TS)
-│  (Browser)  │
-└──────┬──────┘
-       │ HTTP/SSE
-┌──────▼──────────┐
-│  Bridge Server  │ (Express.js)
-│  (Node.js)      │
-└──────┬──────────┘
-       │ spawns
-┌──────▼──────────┐
-│  cryprq binary  │ (macOS ARM64)
-└─────────────────┘
+
+  Web Client  (Vite React TS)
+  (Browser)  
+
+        HTTP/SSE
+
+  Bridge Server   (Express.js)
+  (Node.js)      
+
+        spawns
+
+  cryprq binary   (macOS ARM64)
+
 ```
 
 ## Smoke Tests

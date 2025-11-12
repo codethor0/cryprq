@@ -21,16 +21,16 @@ The Network Extension enables system-wide VPN routing on macOS by:
 
 ```
 apple/
-├── Sources/
-│   └── CrypRQTunnelKit/
-│       ├── PacketTunnelProvider.swift    # NEPacketTunnelProvider implementation
-│       ├── CrypRQPacketPump.swift        # Packet forwarding logic
-│       ├── CrypRQTunnelController.swift  # Tunnel connection management
-│       ├── PacketPump.swift             # Packet pump protocol
-│       ├── CrypRQFFI.swift              # Rust FFI bridge (to be implemented)
-│       ├── CrypRQModels.swift           # Configuration models
-│       └── CrypRQError.swift            # Error types
-└── Package.swift                         # Swift Package Manager manifest
+ Sources/
+    CrypRQTunnelKit/
+        PacketTunnelProvider.swift    # NEPacketTunnelProvider implementation
+        CrypRQPacketPump.swift        # Packet forwarding logic
+        CrypRQTunnelController.swift  # Tunnel connection management
+        PacketPump.swift             # Packet pump protocol
+        CrypRQFFI.swift              # Rust FFI bridge (to be implemented)
+        CrypRQModels.swift           # Configuration models
+        CrypRQError.swift            # Error types
+ Package.swift                         # Swift Package Manager manifest
 ```
 
 ## Xcode Project Setup

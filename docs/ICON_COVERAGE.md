@@ -22,13 +22,13 @@ This generates all platform-specific icons from the master source.
 
 | Platform | Status | Icon Location | Manifest Reference |
 |----------|--------|---------------|-------------------|
-| **Android** | ✅ Complete | `android/app/src/main/res/mipmap-*/ic_launcher.png` | `AndroidManifest.xml` → `@mipmap/ic_launcher` |
-| **iOS** | ✅ Complete | `apple/Sources/CrypRQ/Assets.xcassets/AppIcon.appiconset/` | `Contents.json` + Xcode project |
-| **macOS** | ✅ Complete | `branding/CrypRQ.icns` + Assets.xcassets | `Info.plist` → `CFBundleIconFile` |
-| **Windows** | ✅ Complete | `windows/Assets/AppIcon.ico` | `AppxManifest.xml` → VisualAssets |
-| **Linux Desktop** | ✅ Complete | `packaging/linux/hicolor/*/apps/cryprq.png` | `cryprq.desktop` → `Icon=cryprq` |
-| **Electron GUI** | ✅ Complete | `gui/build/icon.{icns,ico,png}` | `package.json` + `electron-builder.yml` |
-| **Docker** | ✅ Complete | OCI label `org.opencontainers.image.logo` | Dockerfile LABEL |
+| **Android** |  Complete | `android/app/src/main/res/mipmap-*/ic_launcher.png` | `AndroidManifest.xml` → `@mipmap/ic_launcher` |
+| **iOS** |  Complete | `apple/Sources/CrypRQ/Assets.xcassets/AppIcon.appiconset/` | `Contents.json` + Xcode project |
+| **macOS** |  Complete | `branding/CrypRQ.icns` + Assets.xcassets | `Info.plist` → `CFBundleIconFile` |
+| **Windows** |  Complete | `windows/Assets/AppIcon.ico` | `AppxManifest.xml` → VisualAssets |
+| **Linux Desktop** |  Complete | `packaging/linux/hicolor/*/apps/cryprq.png` | `cryprq.desktop` → `Icon=cryprq` |
+| **Electron GUI** |  Complete | `gui/build/icon.{icns,ico,png}` | `package.json` + `electron-builder.yml` |
+| **Docker** |  Complete | OCI label `org.opencontainers.image.logo` | Dockerfile LABEL |
 
 ## Generated Icon Sizes
 

@@ -1,4 +1,4 @@
-# 🐳 CrypRQ Docker VPN - Quick Start
+#  CrypRQ Docker VPN - Quick Start
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@
    cargo build --release -p cryprq
    ```
 
-## 🚀 Quick Start (3 Commands)
+##  Quick Start (3 Commands)
 
 ### Option 1: Start Everything at Once
 
@@ -21,10 +21,10 @@
 ```
 
 This will:
-- ✅ Check Docker is running
-- ✅ Start Docker container
-- ✅ Start web server with Docker mode
-- ✅ Show connection info
+-  Check Docker is running
+-  Start Docker container
+-  Start web server with Docker mode
+-  Show connection info
 
 ### Option 2: Start Individually
 
@@ -39,13 +39,13 @@ This will:
 open http://localhost:8787
 ```
 
-## ✅ Check Status
+##  Check Status
 
 ```bash
 ./scripts/check-docker-vpn-status.sh
 ```
 
-## 🔗 Connect
+##  Connect
 
 ### Via Web UI
 
@@ -66,7 +66,7 @@ CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddres
 ./target/release/cryprq --peer /ip4/$CONTAINER_IP/udp/9999/quic-v1
 ```
 
-## 📊 View Logs
+##  View Logs
 
 ```bash
 # Container logs
@@ -76,7 +76,7 @@ docker-compose -f docker-compose.vpn.yml logs -f
 docker logs -f cryprq-vpn
 ```
 
-## 🛑 Stop Everything
+##  Stop Everything
 
 ```bash
 # Stop container
@@ -86,7 +86,7 @@ docker logs -f cryprq-vpn
 # Press Ctrl+C in the terminal running the web server
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Docker not running
 ```bash
@@ -129,13 +129,13 @@ ping <CONTAINER_IP>
 docker exec cryprq-vpn netstat -uln | grep 9999
 ```
 
-## 📚 More Info
+##  More Info
 
 - **Detailed Setup**: `docs/DOCKER_VPN_SETUP.md`
 - **Quick Start**: `docs/DOCKER_VPN_QUICKSTART.md`
 - **Implementation**: `docs/DOCKER_VPN_SUMMARY.md`
 
-## 🎯 What's Happening
+##  What's Happening
 
 1. **Container** runs CrypRQ listener on port 9999
 2. **Mac** connects to container via web UI or CLI
@@ -143,13 +143,13 @@ docker exec cryprq-vpn netstat -uln | grep 9999
 4. **Container** handles key rotation (every 5 minutes)
 5. **Traffic** flows: Mac → Container → Encrypted Tunnel → Internet
 
-## ✨ Benefits
+##  Benefits
 
-✅ No macOS Network Extension required  
-✅ Isolated container environment  
-✅ Easy start/stop with scripts  
-✅ Centralized logging  
-✅ Works on any platform with Docker  
+ No macOS Network Extension required  
+ Isolated container environment  
+ Easy start/stop with scripts  
+ Centralized logging  
+ Works on any platform with Docker  
 
 ---
 

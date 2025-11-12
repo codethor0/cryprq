@@ -2,7 +2,7 @@
 
 **Copy-paste ready commands for Day-0 monitoring**
 
-## 🔄 Every 2h for First 24h
+##  Every 2h for First 24h
 
 ```bash
 ## Observability checks
@@ -12,10 +12,10 @@
 ./scripts/sanity-checks.sh
 
 ## Spot-check redaction on a fresh diagnostics zip
-grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo "✅ redaction OK"
+grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo " redaction OK"
 ```
 
-## ✅ Golden-Path Sanity (60 seconds)
+##  Golden-Path Sanity (60 seconds)
 
 ### Desktop
 1. **Connect** → Charts appear ≤3–5s
@@ -26,7 +26,7 @@ grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || ec
 1. **Settings → Report Issue** → Share sheet opens
 2. **Verify**: ZIP <2MB, "Report Prepared" shown
 
-## 🚨 If Something's Off
+##  If Something's Off
 
 ### Quick Rollback
 
@@ -65,7 +65,7 @@ cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Even
 **Step 3: Search JSONL Logs**
 ```bash
 ## Find error events around timestamp
-TIMESTAMP="2025-01-15T12:00:00Z"  # From user report
+TIMESTAMP="2025-01-15T1200Z"  # From user report
 jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 hour\" +%Y-%m-%dT%H:%M:%SZ)\") | select(.event == \"session.error\" or .event == \"cli.raw\" or .lvl == \"error\")" /tmp/diag/logs/*.log
 ```
 
@@ -75,7 +75,7 @@ jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 ho
 - `METRICS_UNREACHABLE`: Check endpoint URL (LOCAL/LAN/REMOTE)
 - `INVALID_ENDPOINT`: Check REMOTE endpoint allowlist
 
-## 📋 Quick Reference
+##  Quick Reference
 
 **All Checks**:
 ```bash
@@ -84,7 +84,7 @@ jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 ho
 
 **Redaction Check**:
 ```bash
-grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs || echo "✅ OK"
+grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs || echo " OK"
 ```
 
 **Session State Timeline**:
@@ -97,15 +97,15 @@ jq -c 'fromjson | select(.event=="session.state") | [.ts,.data.state]' ~/.cryprq
 jq -c 'fromjson | select(.lvl=="error") | [.ts,.event,.msg]' ~/.cryprq/logs/*.log | tail -10
 ```
 
-## 🎯 Success Criteria
+##  Success Criteria
 
-- ✅ Observability checks: All PASS
-- ✅ Redaction: No secrets in logs
-- ✅ Golden path: Works consistently
-- ✅ Support tickets: 0 critical issues
-- ✅ Crash-free rate: ≥99.5%
+-  Observability checks: All PASS
+-  Redaction: No secrets in logs
+-  Golden path: Works consistently
+-  Support tickets: 0 critical issues
+-  Crash-free rate: ≥99.5%
 
-## 📞 Escalation
+##  Escalation
 
 - **Level 1**: On-Call Engineer (run checks, triage diagnostics)
 - **Level 2**: Engineering Lead (>1% crash rate, >5 tickets/2h)

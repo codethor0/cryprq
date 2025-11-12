@@ -74,7 +74,7 @@ Opt-in event counters (no PII). Stored locally in JSONL format.
 
 **Format**:
 ```json
-{"v":1,"ts":"2025-01-15T10:30:00.000Z","event":"connect","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1000.000Z","event":"connect","appVersion":"1.1.0","platform":"darwin","data":{}}
 ```
 
 **Redaction**: All strings are sanitized (bearer tokens, private keys, authorization headers)
@@ -157,12 +157,12 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 
 ## Acceptance Criteria
 
-- ✅ Flags load from `config/flags.json`
-- ✅ ENV `CRYPRQ_FLAGS` overrides at runtime
-- ✅ Toggling `flags.json` updates UI behavior without rebuild
-- ✅ With telemetry OFF (default), no files are created
-- ✅ With telemetry ON, events write to JSONL; strings are redacted
-- ✅ Observability script can read counters when uncommented
+-  Flags load from `config/flags.json`
+-  ENV `CRYPRQ_FLAGS` overrides at runtime
+-  Toggling `flags.json` updates UI behavior without rebuild
+-  With telemetry OFF (default), no files are created
+-  With telemetry ON, events write to JSONL; strings are redacted
+-  Observability script can read counters when uncommented
 
 ## Future Enhancements
 

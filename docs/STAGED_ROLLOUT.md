@@ -77,16 +77,16 @@ CI comment on release PR:
     CONNECT_FAILURE=$(get_connect_failure_rate)
     
     if (( $(echo "$CRASH_RATE > 0.005" | bc -l) )); then
-      echo "❌ Health gate failed: Crash rate too high"
+      echo " Health gate failed: Crash rate too high"
       exit 1
     fi
     
     if (( $(echo "$CONNECT_FAILURE > 0.01" | bc -l) )); then
-      echo "❌ Health gate failed: Connect failure rate too high"
+      echo " Health gate failed: Connect failure rate too high"
       exit 1
     fi
     
-    echo "✅ All health gates passed"
+    echo " All health gates passed"
 ```
 
 ### Manual Override

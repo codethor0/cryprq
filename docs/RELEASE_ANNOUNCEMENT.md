@@ -4,29 +4,29 @@
 
 ---
 
-## Subject: CrypRQ 1.1.0 is live 🚀
+## Subject: CrypRQ 1.1.0 is live 
 
 CrypRQ 1.1.0 is now available with new features, improved stability, and enhanced security.
 
 ### What's new
 
 **Desktop**:
-- 📊 **Live Charts**: Real-time throughput and latency charts with EMA smoothing, unit toggle (bytes/KB/MB), and auto-scaling
-- 🔔 **Latency Alerts**: Visual warnings when latency exceeds 250ms
-- 🛡️ **Kill-Switch**: Automatic disconnect on app quit (default ON)
-- 📦 **Diagnostics Export**: One-tap diagnostics export with automatic secret redaction
-- 🐛 **Report Issue**: Streamlined issue reporting with support token and diagnostics
+-  **Live Charts**: Real-time throughput and latency charts with EMA smoothing, unit toggle (bytes/KB/MB), and auto-scaling
+-  **Latency Alerts**: Visual warnings when latency exceeds 250ms
+-  **Kill-Switch**: Automatic disconnect on app quit (default ON)
+-  **Diagnostics Export**: One-tap diagnostics export with automatic secret redaction
+-  **Report Issue**: Streamlined issue reporting with support token and diagnostics
 
 **Mobile (iOS & Android)**:
-- 📱 **Controller Apps**: Full controller mode for iOS and Android
-- 📦 **Report Issue**: Generate redacted diagnostics ZIP and share via native share sheet
-- 🔒 **Privacy Controls**: First-run consent, telemetry opt-in, encrypted storage
+-  **Controller Apps**: Full controller mode for iOS and Android
+-  **Report Issue**: Generate redacted diagnostics ZIP and share via native share sheet
+-  **Privacy Controls**: First-run consent, telemetry opt-in, encrypted storage
 
 **Stability & Security**:
-- ✅ Redaction-by-default (no secrets in logs)
-- ✅ Signed builds (macOS/Windows)
-- ✅ CI guardrails (SBOM, npm audit, license checks)
-- ✅ Rate-limited error toasts (prevents UI spam)
+-  Redaction-by-default (no secrets in logs)
+-  Signed builds (macOS/Windows)
+-  CI guardrails (SBOM, npm audit, license checks)
+-  Rate-limited error toasts (prevents UI spam)
 
 ### How to update
 
@@ -61,5 +61,5 @@ If you encounter any issues:
 
 **Short version (for quick posts)**:
 
-🚀 CrypRQ 1.1.0 is live! New: live charts, diagnostics export, kill-switch, mobile controller apps. Download: [GitHub Release]. Need help? Use Help → Report Issue (desktop) or Settings → Report Issue (mobile).
+ CrypRQ 1.1.0 is live! New: live charts, diagnostics export, kill-switch, mobile controller apps. Download: [GitHub Release]. Need help? Use Help → Report Issue (desktop) or Settings → Report Issue (mobile).
 

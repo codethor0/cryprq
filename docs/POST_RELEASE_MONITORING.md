@@ -11,7 +11,7 @@ Confirm JSONL v1 adoption in real logs:
 jq -c 'fromjson | select(.event=="session.state") | .ts,.data' ~/.cryprq/logs/cryprq-*.log | head
 
 ## Verify no secrets in logs
-grep -r "bearer\|privKey=" ~/.cryprq/logs/ || echo "✓ No secrets found"
+grep -r "bearer\|privKey=" ~/.cryprq/logs/ || echo " No secrets found"
 
 ## Count structured log entries
 jq -c 'fromjson | select(.v==1)' ~/.cryprq/logs/cryprq-*.log | wc -l

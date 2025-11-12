@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured logging schema (v1) with versioned JSONL format
 - Strict secret redaction for logs (bearer tokens, private keys, authorization headers)
 - Diagnostics export with session summary and metrics snapshot
-- System tray dev hooks for CI testing (`dev:tray:snapshot`)
-- Fault injection testing hooks (`dev:session:simulateExit`)
+- System tray dev hooks for CI testing (`devsnapshot`)
+- Fault injection testing hooks (`devsimulateExit`)
 - Rotation UX improvements with event-driven countdown synchronization
 - Enhanced error handling with user-friendly messages
 - Log validation with automatic wrapping of invalid entries

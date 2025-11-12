@@ -9,13 +9,13 @@ Run the one-shot local validation script:
 ```
 
 This will:
-1. ✅ Spin up fake backend in Docker
-2. ✅ Run desktop GUI tests (lint, typecheck, unit, Playwright E2E)
-3. ✅ Build desktop artifacts (Linux/macOS/Windows)
-4. ✅ Run smoke tests
-5. ✅ Optionally run mobile Android CI smoke locally
-6. ✅ Commit, push feature branch, and create PR
-7. ✅ Print summary with artifact paths and logs
+1.  Spin up fake backend in Docker
+2.  Run desktop GUI tests (lint, typecheck, unit, Playwright E2E)
+3.  Build desktop artifacts (Linux/macOS/Windows)
+4.  Run smoke tests
+5.  Optionally run mobile Android CI smoke locally
+6.  Commit, push feature branch, and create PR
+7.  Print summary with artifact paths and logs
 
 ## What It Does
 
@@ -75,16 +75,16 @@ This will:
 
 ```
 artifacts/
-├── desktop/
-│   └── <platform>/
-│       ├── *.AppImage (Linux)
-│       ├── *.dmg (macOS)
-│       └── *.exe (Windows)
-├── mobile/
-│   └── android/app/build/outputs/
-└── reports/
-    ├── playwright-report/
-    └── vitest-report/
+ desktop/
+    <platform>/
+        *.AppImage (Linux)
+        *.dmg (macOS)
+        *.exe (Windows)
+ mobile/
+    android/app/build/outputs/
+ reports/
+     playwright-report/
+     vitest-report/
 ```
 
 ## Troubleshooting

@@ -35,11 +35,11 @@ The automated test script:
 
 The tests verify:
 
-✅ **Connection Working** - Container logs show "Inbound connection established"  
-✅ **Encryption Active** - ML-KEM + X25519 hybrid encryption displayed  
-✅ **Docker Mode** - Container IP and Docker mode messages appear  
-✅ **Event Streaming** - Container logs appear in debug console  
-✅ **Status Updates** - Connection status updates correctly  
+ **Connection Working** - Container logs show "Inbound connection established"  
+ **Encryption Active** - ML-KEM + X25519 hybrid encryption displayed  
+ **Docker Mode** - Container IP and Docker mode messages appear  
+ **Event Streaming** - Container logs appear in debug console  
+ **Status Updates** - Connection status updates correctly  
 
 ## Manual Testing
 

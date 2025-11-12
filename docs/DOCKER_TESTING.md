@@ -311,11 +311,11 @@ All Docker tests are integrated into CI workflows:
 ## Summary
 
 Docker testing provides:
-- ✅ Isolated test environment
-- ✅ Consistent test results
-- ✅ Easy cleanup
-- ✅ Reproducible tests
-- ✅ CI/CD integration
+-  Isolated test environment
+-  Consistent test results
+-  Easy cleanup
+-  Reproducible tests
+-  CI/CD integration
 
 For questions or issues, see:
 - `docs/SECURITY_CHECKS.md` - Security checks guide

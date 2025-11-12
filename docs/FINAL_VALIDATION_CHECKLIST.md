@@ -1,19 +1,19 @@
 # Final Post-Install Validation Checklist
 
-**Run this before pressing the big green button** 🚀
+**Run this before pressing the big green button** 
 
-## 1️⃣ Fast Sanity
+## 1⃣ Fast Sanity
 
 ```bash
 ./scripts/quick-smoke.sh || ./scripts/local-validate.sh
 ```
 
 **Expected:**
-- ✅ Docker fake backend responds on :9464
-- ✅ Lint, typecheck, unit, E2E tests pass
-- ✅ Desktop artifacts built
+-  Docker fake backend responds on :9464
+-  Lint, typecheck, unit, E2E tests pass
+-  Desktop artifacts built
 
-## 2️⃣ Observability and Telemetry Readiness
+## 2⃣ Observability and Telemetry Readiness
 
 ```bash
 ./scripts/observability-checks.sh
@@ -21,26 +21,26 @@
 ```
 
 **Expected:**
-- ✅ Structured logs (JSONL v1) found
-- ✅ Redaction OK (no secrets in logs)
-- ✅ Flags file valid JSON
-- ✅ Telemetry directory exists (if enabled)
-- ✅ Telemetry redaction OK (if enabled)
+-  Structured logs (JSONL v1) found
+-  Redaction OK (no secrets in logs)
+-  Flags file valid JSON
+-  Telemetry directory exists (if enabled)
+-  Telemetry redaction OK (if enabled)
 
-## 3️⃣ Review PR Checklist or Create One Directly
+## 3⃣ Review PR Checklist or Create One Directly
 
 ```bash
 gh pr create --fill --base main || echo "PR already open"
 ```
 
 **Check PR includes:**
-- ✅ All tests passing
-- ✅ CI checks green
-- ✅ Artifacts attached (if applicable)
-- ✅ Changelog updated
-- ✅ Documentation updated
+-  All tests passing
+-  CI checks green
+-  Artifacts attached (if applicable)
+-  Changelog updated
+-  Documentation updated
 
-## 4️⃣ (Optional) Trigger Full One-Shot Workflow
+## 4⃣ (Optional) Trigger Full One-Shot Workflow
 
 ```bash
 SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
@@ -56,7 +56,7 @@ SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 
 ---
 
-## 🔍 After Release (Live Ops)
+##  After Release (Live Ops)
 
 ### Golden Path (Manual Check)
 
@@ -84,7 +84,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 ---
 
-## 🔁 Rollback (Emergency)
+##  Rollback (Emergency)
 
 ### Desktop
 
@@ -111,7 +111,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 ---
 
-## 💡 Optional Enhancements (Future)
+##  Optional Enhancements (Future)
 
 - **Integrate telemetry counters into a lightweight dashboard** (Prometheus → JSON bridge)
 - **Add Slack webhook for sanity-check summaries**
@@ -119,7 +119,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 ---
 
-## ✅ Pre-Release Checklist Summary
+##  Pre-Release Checklist Summary
 
 - [ ] Fast sanity passed (`quick-smoke.sh` or `local-validate.sh`)
 - [ ] Observability checks passed (`observability-checks.sh`)

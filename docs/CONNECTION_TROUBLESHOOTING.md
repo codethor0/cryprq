@@ -25,8 +25,8 @@ To test the connection, you need **two browser tabs/windows**:
 
 Once connected, for system-wide VPN routing:
 
-1. **P2P Tunnel**: ✅ Working - All traffic between peers is encrypted via libp2p QUIC
-2. **System-Wide VPN**: ⚠️ Requires Network Extension framework on macOS
+1. **P2P Tunnel**:  Working - All traffic between peers is encrypted via libp2p QUIC
+2. **System-Wide VPN**:  Requires Network Extension framework on macOS
    - The encrypted tunnel between peers is active
    - Routing all system/browser traffic requires macOS Network Extension (NEPacketTunnelProvider)
    - See `docs/NETWORK_EXTENSION_SETUP.md` for implementation details

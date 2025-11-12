@@ -1,6 +1,6 @@
 # Mobile Release Path
 
-## 🔐 Secrets Check
+##  Secrets Check
 
 **GitHub → Repository → Settings → Secrets**
 
@@ -27,7 +27,7 @@ gh secret list | grep -E "ANDROID_|PLAY_|APP_STORE"
 
 ---
 
-## 🧪 Init + CI Smoke
+##  Init + CI Smoke
 
 ### Setup
 ```bash
@@ -53,9 +53,9 @@ npx detox test -c android.emu.debug --headless --record-logs all
 ```
 
 **Expected:**
-- ✅ App builds successfully
-- ✅ Detox tests pass
-- ✅ Artifacts uploaded on failure (screenshots/logs)
+-  App builds successfully
+-  Detox tests pass
+-  Artifacts uploaded on failure (screenshots/logs)
 
 ### iOS E2E Tests (macOS only)
 ```bash
@@ -74,13 +74,13 @@ npx detox test -c ios.sim.debug --record-logs all
 ```
 
 **Expected:**
-- ✅ App builds successfully
-- ✅ Detox tests pass
-- ✅ Artifacts uploaded on failure
+-  App builds successfully
+-  Detox tests pass
+-  Artifacts uploaded on failure
 
 ---
 
-## 🏷️ Tag to Build Signed Artifacts
+##  Tag to Build Signed Artifacts
 
 ### Create Mobile Release Tag
 ```bash
@@ -106,7 +106,7 @@ git push origin mobile-v1.0.0
 
 ---
 
-## 🎯 Staged Rollout
+##  Staged Rollout
 
 ### Android
 
@@ -176,7 +176,7 @@ If issues found:
 
 ---
 
-## 📊 Health Gate Monitoring
+##  Health Gate Monitoring
 
 ### Key Metrics
 
@@ -212,7 +212,7 @@ If issues found:
 
 ---
 
-## 🚨 Emergency Contacts
+##  Emergency Contacts
 
 - **GitHub Issues:** [Repository URL]/issues
 - **Email:** codethor@gmail.com

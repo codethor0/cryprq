@@ -169,14 +169,14 @@ gh auth login
 
 ## Acceptance Criteria
 
-- ✅ No red commits (all gates must pass)
-- ✅ Every pushed commit has passed all local gates
-- ✅ Push only happens if previous commit has green CI
-- ✅ GUI debug console redacts secrets automatically
-- ✅ Binary size stays within limits
-- ✅ Flaky tests are documented, not muted
-- ✅ Only one watcher runs at a time
-- ✅ Documentation remains emoji-free
+-  No red commits (all gates must pass)
+-  Every pushed commit has passed all local gates
+-  Push only happens if previous commit has green CI
+-  GUI debug console redacts secrets automatically
+-  Binary size stays within limits
+-  Flaky tests are documented, not muted
+-  Only one watcher runs at a time
+-  Documentation remains emoji-free
 
 ## Troubleshooting
 

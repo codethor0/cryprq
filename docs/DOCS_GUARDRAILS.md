@@ -8,7 +8,7 @@ This document describes the automated guardrails in place to keep documentation 
 
 **Script**: `scripts/no-emoji-gate.sh`
 
-**Purpose**: Fail fast if any Markdown file contains Unicode emojis or `:shortcodes:`
+**Purpose**: Fail fast if any Markdown file contains Unicode emojis or ``
 
 **Usage**:
 ```bash
@@ -124,7 +124,7 @@ All README files should follow this order:
 
 Act as Documentation Gatekeeper. For every PR and for main:
 
-1. Run `scripts/no-emoji-gate.sh` and fail if any Markdown contains Unicode emojis or `:shortcodes:`.
+1. Run `scripts/no-emoji-gate.sh` and fail if any Markdown contains Unicode emojis or ``.
 2. Ensure README.md and all docs/**/*.md follow the standardized section order: Title, Overview, Quickstart, Installation/Prerequisites, Build/Run (local/Docker/CI), Configuration, Security/Support, Contributing, License.
 3. Run Prettier and markdownlint; fix simple issues (line length, headings, lists, tables).
 4. Run link checks with `scripts/check-doc-links.sh`; fix internal anchors and obvious 404s. For external rate limits, retry via config.

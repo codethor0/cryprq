@@ -104,22 +104,22 @@ async connect(multiaddr?: string) {
 
 ```
 gui/
-├── src/
-│   ├── components/      # React components
-│   │   ├── Dashboard/
-│   │   ├── Peers/
-│   │   ├── Settings/
-│   │   └── Layout/
-│   ├── services/         # Backend integration
-│   ├── store/            # Zustand state
-│   ├── types/            # TypeScript types
-│   ├── themes/           # Theme definitions
-│   └── main.tsx          # Entry point
-├── electron/             # Electron main process
-│   ├── main.ts
-│   └── preload.ts
-├── public/               # Static assets
-└── package.json
+ src/
+    components/      # React components
+       Dashboard/
+       Peers/
+       Settings/
+       Layout/
+    services/         # Backend integration
+    store/            # Zustand state
+    types/            # TypeScript types
+    themes/           # Theme definitions
+    main.tsx          # Entry point
+ electron/             # Electron main process
+    main.ts
+    preload.ts
+ public/               # Static assets
+ package.json
 ```
 
 ## Wireframes
@@ -145,11 +145,11 @@ See `docs/DOCKER_VALIDATION.md` for complete documentation.
 
 ## Next Steps
 
-1. ✅ Basic UI structure and routing
-2. ✅ State management with Zustand
-3. ✅ Backend integration with CLI process
-4. ✅ Error handling and validation
-5. ✅ Docker validation & builds
+1.  Basic UI structure and routing
+2.  State management with Zustand
+3.  Backend integration with CLI process
+4.  Error handling and validation
+5.  Docker validation & builds
 6. ⏳ System tray enhancements (Pack 4)
 7. ⏳ Logs viewer & diagnostics (Pack 5)
 8. ⏳ Complete installer packages

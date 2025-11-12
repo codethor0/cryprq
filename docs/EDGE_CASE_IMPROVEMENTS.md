@@ -1,8 +1,8 @@
 # Edge Case Handling Improvements
 
 ## Current Status
-- ⚠️ Invalid argument handling needs review
-- ⚠️ Empty configuration handling needs review
+-  Invalid argument handling needs review
+-  Empty configuration handling needs review
 
 ## Improvement Plan
 

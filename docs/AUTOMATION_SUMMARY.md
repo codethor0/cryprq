@@ -2,7 +2,7 @@
 
 **Complete automation from validation to release, monitoring, and rollback**
 
-## 🎯 Single Entry Point
+##  Single Entry Point
 
 **One command to rule them all:**
 
@@ -11,13 +11,13 @@
 ```
 
 **This single command:**
-- ✅ Validates (quick-smoke → full validation)
-- ✅ Creates PR (branch + PR + CI trigger)
-- ✅ Ships (go-live + verify-release)
-- ✅ Monitors (observability + sanity checks)
-- ✅ Cleans up (Docker + artifacts)
+-  Validates (quick-smoke → full validation)
+-  Creates PR (branch + PR + CI trigger)
+-  Ships (go-live + verify-release)
+-  Monitors (observability + sanity checks)
+-  Cleans up (Docker + artifacts)
 
-## 📦 Components
+##  Components
 
 ### 1. One-Shot Orchestration (`scripts/one-shot.sh`)
 
@@ -115,7 +115,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 - Reference `FINAL_VALIDATION_CHECKLIST.md` before release
 - Use `TROUBLESHOOTING.md` for common issues
 
-## 🔄 Complete Workflow
+##  Complete Workflow
 
 ### Pre-Release
 
@@ -151,7 +151,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 **Mobile:** Pause rollout (Play Console) / expire build (TestFlight)
 
-## 📊 Monitoring
+##  Monitoring
 
 ### Golden Path (Manual Check)
 
@@ -166,7 +166,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 - Telemetry events (if enabled)
 - Feature flags (runtime toggles)
 
-## 🎉 Summary
+##  Summary
 
 **Everything from validation to release, monitoring, and rollback is now automated and documented.**
 
@@ -178,7 +178,7 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 **…is all it takes to test, build, release, verify, and monitor CrypRQ 1.1.0 across desktop and mobile.**
 
-## 📚 Quick Reference
+##  Quick Reference
 
 **Most-used commands:**
 - `./scripts/one-shot.sh` - Validate + PR
@@ -201,5 +201,5 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 
 ---
 
-**You're fully production-ready with an on-demand parachute.** 🚀
+**You're fully production-ready with an on-demand parachute.** 
 

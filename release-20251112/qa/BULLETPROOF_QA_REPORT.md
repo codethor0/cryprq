@@ -2,7 +2,7 @@
 
 **Date**: $(date +%Y-%m-%d)  
 **Branch**: qa/vnext-$(date +%Y%m%d)  
-**Status**: ✅ Complete - Ready for Production
+**Status**:  Complete - Ready for Production
 
 ## Executive Summary
 
@@ -54,40 +54,40 @@ Comprehensive Bulletproof QA pipeline implemented with loop-until-green auto-rem
 
 ## Acceptance Gates (All Must Pass)
 
-### ✅ Crypto Correctness
+###  Crypto Correctness
 - [x] KATs: 100% pass (FIPS 203, RFC 8439, RFC 7748)
 - [x] Property tests: All pass with 1k+ cases
 - [x] Zeroization: Secret material overwrite verified
 
-### ✅ Safety & Security
+###  Safety & Security
 - [x] Miri: No UB detected
 - [x] ASan/UBSan: Clean
 - [x] Dudect: Constant-time verified (infrastructure ready)
 - [x] Loom: Concurrency soundness (infrastructure ready)
 
-### ✅ Testing Quality
+###  Testing Quality
 - [x] Fuzzers: 30+ min per target, no crashes
 - [x] Mutation testing: Score thresholds met (≥85% general, ≥95% crypto)
 - [x] Coverage: Thresholds met (crypto 90/85, core/p2p 80/70)
 
-### ✅ Interop & Performance
+###  Interop & Performance
 - [x] QUIC/libp2p: Interop passes (infrastructure ready)
 - [x] Network adversity: Chaos testing (infrastructure ready)
 - [x] Performance: No >3% regression
 
-### ✅ Supply Chain
+###  Supply Chain
 - [x] Audit/deny/vet/geiger: Clean
 - [x] SBOM: Generated (SPDX, CycloneDX)
 - [x] Grype: 0 High/Critical vulnerabilities
 
-### ✅ Reproducibility & Provenance
+###  Reproducibility & Provenance
 - [x] Reproducible builds: diffoscope identical
 - [x] MSRV: Verified (cargo-msrv)
 - [x] SemVer: No breaking changes (cargo-semver-checks)
 - [x] Provenance: SLSA attestation generated
 - [x] Signing: cosign ready (requires key setup)
 
-### ✅ Repository Hygiene
+###  Repository Hygiene
 - [x] Unused deps: Clean
 - [x] Documentation: Lints pass
 - [x] Scorecard: No regression
@@ -140,18 +140,18 @@ bash scripts/qa-all.sh || { echo "[QA] failure — collecting artifacts & openin
 ## Exit Criteria Status
 
 All acceptance gates implemented and ready:
-- ✅ KATs: 100% pass infrastructure ready
-- ✅ Tests: All pass infrastructure ready
-- ✅ Safety: Miri/ASan/UBSan clean infrastructure ready
-- ✅ Timing: Dudect infrastructure ready
-- ✅ Interop: QUIC/libp2p infrastructure ready
-- ✅ Perf: No >3% regression infrastructure ready
-- ✅ Coverage: Thresholds met infrastructure ready
-- ✅ MSRV & SemVer: Verified infrastructure ready
-- ✅ Supply chain: Clean infrastructure ready
-- ✅ Reproducibility: diffoscope infrastructure ready
-- ✅ Provenance: SLSA + cosign infrastructure ready
-- ✅ Scorecard: No regression infrastructure ready
+-  KATs: 100% pass infrastructure ready
+-  Tests: All pass infrastructure ready
+-  Safety: Miri/ASan/UBSan clean infrastructure ready
+-  Timing: Dudect infrastructure ready
+-  Interop: QUIC/libp2p infrastructure ready
+-  Perf: No >3% regression infrastructure ready
+-  Coverage: Thresholds met infrastructure ready
+-  MSRV & SemVer: Verified infrastructure ready
+-  Supply chain: Clean infrastructure ready
+-  Reproducibility: diffoscope infrastructure ready
+-  Provenance: SLSA + cosign infrastructure ready
+-  Scorecard: No regression infrastructure ready
 
 ## Next Steps
 
@@ -167,4 +167,4 @@ All acceptance gates implemented and ready:
 
 All infrastructure is complete and ready for production use. The Bulletproof QA pipeline provides comprehensive coverage of correctness, safety, security, performance, supply chain, reproducibility, and provenance with automatic remediation and loop-until-green capabilities.
 
-**Status**: ✅ COMPLETE - READY FOR PRODUCTION USE
+**Status**:  COMPLETE - READY FOR PRODUCTION USE

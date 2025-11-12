@@ -2,7 +2,7 @@
 
 **Fast triage for common issues**
 
-## 🧯 If Something Fails
+##  If Something Fails
 
 ### E2E Flaky?
 
@@ -142,7 +142,7 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 open "https://github.com/[org]/cryprq/compare/main...$BRANCH"
 ```
 
-## 🧼 Cleanup Commands
+##  Cleanup Commands
 
 **Stop Docker services**:
 ```bash
@@ -165,7 +165,7 @@ rm -rf gui/node_modules mobile/node_modules gui/.playwright artifacts/desktop/* 
 ./scripts/cleanup.sh
 ```
 
-## 📋 Quick Reference
+##  Quick Reference
 
 **All checks**:
 ```bash
@@ -174,7 +174,7 @@ rm -rf gui/node_modules mobile/node_modules gui/.playwright artifacts/desktop/* 
 
 **Redaction check**:
 ```bash
-grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs || echo "✅ OK"
+grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs || echo " OK"
 ```
 
 **Session state timeline**:
@@ -187,7 +187,7 @@ jq -c 'fromjson | select(.event=="session.state") | [.ts,.data.state]' ~/.cryprq
 jq -c 'fromjson | select(.lvl=="error") | [.ts,.event,.msg]' ~/.cryprq/logs/*.log | tail -10
 ```
 
-## 🔍 Common Error Patterns
+##  Common Error Patterns
 
 ### `PORT_IN_USE`
 - **Cause**: UDP port already in use

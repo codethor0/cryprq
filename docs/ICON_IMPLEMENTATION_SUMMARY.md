@@ -12,7 +12,7 @@ This is the single source of truth for all platform-specific icon generation. Th
 
 ## Implementation Status
 
-### ✅ Completed
+###  Completed
 
 1. **Master Icon Setup**
    - Created `store-assets/icon_master_1024.png`
@@ -42,7 +42,7 @@ This is the single source of truth for all platform-specific icon generation. Th
    - `docs/ICON_COVERAGE.md` - Complete icon coverage documentation
    - `README.md` - Added icon coverage section
 
-### 🚧 Next Steps (Rebuild Required)
+###  Next Steps (Rebuild Required)
 
 1. **Generate Icons**
    ```bash

@@ -1,6 +1,6 @@
 # CrypRQ Package Build Summary
 
-## macOS Package ✅
+## macOS Package 
 
 **Location:** `dist/macos/`
 

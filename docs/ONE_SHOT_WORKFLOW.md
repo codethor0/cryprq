@@ -87,11 +87,11 @@ The script prints a compact summary with:
 
 ## Acceptance Criteria
 
-- ✅ Docker fake backend responded on :9464 during tests
-- ✅ Lint, typecheck, unit, and Playwright E2E passed locally or in full validation
-- ✅ Desktop artifacts exist under `artifacts/desktop/<platform>/`
-- ✅ PR opened against main (if GH CLI available) and mirror CI kicked off
-- ✅ If shipped: release artifacts are signed/notarized and verify-release reported OK
+-  Docker fake backend responded on :9464 during tests
+-  Lint, typecheck, unit, and Playwright E2E passed locally or in full validation
+-  Desktop artifacts exist under `artifacts/desktop/<platform>/`
+-  PR opened against main (if GH CLI available) and mirror CI kicked off
+-  If shipped: release artifacts are signed/notarized and verify-release reported OK
 
 ## Golden Path (for PR testing)
 
@@ -113,9 +113,9 @@ The script prints a compact summary with:
 ## Example Output
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 ONE-SHOT SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ONE-SHOT SUMMARY
+
 
 Branch: chore/local-validate-20250115-1930
 PR: https://github.com/org/cryprq/pull/123

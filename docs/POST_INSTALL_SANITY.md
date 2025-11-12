@@ -58,11 +58,11 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 
 **Expected telemetry events:**
 ```jsonl
-{"v":1,"ts":"2025-01-15T10:30:00.000Z","event":"app.open","appVersion":"1.1.0","platform":"darwin","data":{}}
-{"v":1,"ts":"2025-01-15T10:30:05.000Z","event":"connect","appVersion":"1.1.0","platform":"darwin","data":{}}
-{"v":1,"ts":"2025-01-15T10:35:00.000Z","event":"rotation.completed","appVersion":"1.1.0","platform":"darwin","data":{}}
-{"v":1,"ts":"2025-01-15T10:40:00.000Z","event":"disconnect","appVersion":"1.1.0","platform":"darwin","data":{}}
-{"v":1,"ts":"2025-01-15T10:45:00.000Z","event":"app.quit","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1000.000Z","event":"app.open","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1005.000Z","event":"connect","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1000.000Z","event":"rotation.completed","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1000.000Z","event":"disconnect","appVersion":"1.1.0","platform":"darwin","data":{}}
+{"v":1,"ts":"2025-01-15T1000.000Z","event":"app.quit","appVersion":"1.1.0","platform":"darwin","data":{}}
 ```
 
 **Verify:**
@@ -119,29 +119,29 @@ CRYPRQ_FLAGS='{"enableCharts":false,"enableTrayEnhancements":false}' npm run dev
 
 ```bash
 ## 1. Check flags file exists and is valid JSON
-jq . config/flags.json > /dev/null && echo "✅ Flags file valid"
+jq . config/flags.json > /dev/null && echo " Flags file valid"
 
 ## 2. Check telemetry directory exists (if telemetry was enabled)
-[ -d ~/.cryprq/telemetry ] && echo "✅ Telemetry directory exists" || echo "ℹ️  Telemetry not enabled yet"
+[ -d ~/.cryprq/telemetry ] && echo " Telemetry directory exists" || echo "ℹ  Telemetry not enabled yet"
 
 ## 3. Check latest telemetry file (if exists)
 if [ -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl ]; then
   COUNT=$(wc -l < ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl)
-  echo "✅ Telemetry active: $COUNT events today"
+  echo " Telemetry active: $COUNT events today"
 else
-  echo "ℹ️  No telemetry events today (opt-in)"
+  echo "ℹ  No telemetry events today (opt-in)"
 fi
 ```
 
 ## Production Readiness Checklist
 
-- ✅ Feature flags load from `config/flags.json`
-- ✅ ENV override works (`CRYPRQ_FLAGS`)
-- ✅ Telemetry OFF by default
-- ✅ Telemetry opt-in works (Settings → Privacy)
-- ✅ Telemetry events are redacted (no PII)
-- ✅ Flags hot-reload without rebuild
-- ✅ Emergency ENV override works
+-  Feature flags load from `config/flags.json`
+-  ENV override works (`CRYPRQ_FLAGS`)
+-  Telemetry OFF by default
+-  Telemetry opt-in works (Settings → Privacy)
+-  Telemetry events are redacted (no PII)
+-  Flags hot-reload without rebuild
+-  Emergency ENV override works
 
 ## Troubleshooting
 

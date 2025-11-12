@@ -6,10 +6,10 @@ This document outlines the implementation plan for routing all system traffic th
 
 ## Current Status
 
-- ✅ **Control Plane**: Encrypted peer-to-peer connections working (ML-KEM + X25519)
-- ✅ **Tunnel Encryption**: ChaCha20-Poly1305 AEAD encryption implemented
-- ⚠️ **Data Plane**: Packet forwarding is experimental/incomplete
-- ❌ **System Routing**: Not yet implemented
+-  **Control Plane**: Encrypted peer-to-peer connections working (ML-KEM + X25519)
+-  **Tunnel Encryption**: ChaCha20-Poly1305 AEAD encryption implemented
+-  **Data Plane**: Packet forwarding is experimental/incomplete
+-  **System Routing**: Not yet implemented
 
 ## Architecture
 

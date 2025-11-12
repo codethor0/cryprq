@@ -1,8 +1,8 @@
 # Integration Test Improvement Plan
 
 ## Current Status
-- ✅ Basic Docker tests exist
-- ⚠️ Need more comprehensive integration tests
+-  Basic Docker tests exist
+-  Need more comprehensive integration tests
 
 ## Test Coverage Goals
 

@@ -8,7 +8,7 @@ CrypRQ supports multiple post-quantum cryptography algorithms, with a focus on N
 
 ### Key Exchange
 
-#### ML-KEM 768 (Kyber768-compatible) ✅ **Implemented**
+#### ML-KEM 768 (Kyber768-compatible)  **Implemented**
 - **Status**: Production-ready
 - **Security Level**: Level 3 (equivalent to AES-192)
 - **Public Key Size**: 1184 bytes
@@ -26,14 +26,14 @@ CrypRQ supports multiple post-quantum cryptography algorithms, with a focus on N
 - **Secret Key Size**: 3168 bytes
 - **Use Case**: Higher security requirements
 
-#### X25519 (Classical) ⚠️ **Fallback Only**
+#### X25519 (Classical)  **Fallback Only**
 - **Status**: Supported as fallback
 - **Security**: Classical (not post-quantum)
 - **Use Case**: Compatibility fallback (not recommended)
 
 ### Signatures
 
-#### Ed25519 (Classical) ✅ **Implemented**
+#### Ed25519 (Classical)  **Implemented**
 - **Status**: Production-ready
 - **Security**: Classical (not post-quantum)
 - **Use Case**: Current signature algorithm
@@ -75,12 +75,12 @@ CrypRQ supports multiple post-quantum cryptography algorithms, with a focus on N
 
 | Algorithm | Status | Notes |
 |-----------|--------|-------|
-| ML-KEM 768 | ✅ Implemented | Default key exchange |
-| ML-KEM 1024 | 📋 Planned | Higher security option |
-| Dilithium3 | 📋 Planned | Post-quantum signatures |
-| SPHINCS+ | 📋 Planned | Hash-based signatures |
-| Ed25519 | ✅ Implemented | Current signatures |
-| X25519 | ✅ Implemented | Hybrid handshake |
+| ML-KEM 768 |  Implemented | Default key exchange |
+| ML-KEM 1024 |  Planned | Higher security option |
+| Dilithium3 |  Planned | Post-quantum signatures |
+| SPHINCS+ |  Planned | Hash-based signatures |
+| Ed25519 |  Implemented | Current signatures |
+| X25519 |  Implemented | Hybrid handshake |
 
 ## Performance Considerations
 

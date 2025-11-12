@@ -1,42 +1,42 @@
 # Release Summary: Desktop 1.1.0 & Mobile Bootstrap
 
-## ✅ Completed Tasks
+##  Completed Tasks
 
 ### Desktop 1.1.0 Release
 
 1. **Preflight & Release Infrastructure**
-   - ✅ Makefile targets (`test`, `build-linux`, `build-mac`, `build-win`)
-   - ✅ Release script (`scripts/release.sh`)
-   - ✅ Release workflow (`.github/workflows/release.yml`)
-   - ✅ Smoke test script (`scripts/smoke-tests.sh`)
-   - ✅ Release documentation (`README_RELEASE.md`)
+   -  Makefile targets (`test`, `build-linux`, `build-mac`, `build-win`)
+   -  Release script (`scripts/release.sh`)
+   -  Release workflow (`.github/workflows/release.yml`)
+   -  Smoke test script (`scripts/smoke-tests.sh`)
+   -  Release documentation (`README_RELEASE.md`)
 
 2. **Production Hardening**
-   - ✅ Kill-switch: "Disconnect on app quit" toggle (default ON)
-   - ✅ Endpoint allowlist: `remoteEndpointAllowlist` setting (empty = no restrictions)
-   - ✅ Settings UI updated with kill-switch checkbox
+   -  Kill-switch: "Disconnect on app quit" toggle (default ON)
+   -  Endpoint allowlist: `remoteEndpointAllowlist` setting (empty = no restrictions)
+   -  Settings UI updated with kill-switch checkbox
 
 3. **Store Readiness**
-   - ✅ Store readiness checklists (`docs/STORE_READINESS.md`)
-   - ✅ Post-release monitoring plan (`docs/POST_RELEASE_MONITORING.md`)
+   -  Store readiness checklists (`docs/STORE_READINESS.md`)
+   -  Post-release monitoring plan (`docs/POST_RELEASE_MONITORING.md`)
 
 ### Mobile Bootstrap
 
 1. **Core Infrastructure**
-   - ✅ React Native app structure
-   - ✅ Screens: Dashboard, Peers, Settings, Logs, Privacy, About, FirstRun, Developer
-   - ✅ Services: Backend, Security, Notifications, Crash Reporting
-   - ✅ CI workflows (`.github/workflows/mobile-ci.yml`)
-   - ✅ Fastlane lanes (`mobile/fastlane/`)
+   -  React Native app structure
+   -  Screens: Dashboard, Peers, Settings, Logs, Privacy, About, FirstRun, Developer
+   -  Services: Backend, Security, Notifications, Crash Reporting
+   -  CI workflows (`.github/workflows/mobile-ci.yml`)
+   -  Fastlane lanes (`mobile/fastlane/`)
 
 2. **Security & Store Readiness**
-   - ✅ Encrypted storage (MMKV)
-   - ✅ HTTPS enforcement (REMOTE profile)
-   - ✅ Log redaction
-   - ✅ First-run consent flow
-   - ✅ Privacy controls
+   -  Encrypted storage (MMKV)
+   -  HTTPS enforcement (REMOTE profile)
+   -  Log redaction
+   -  First-run consent flow
+   -  Privacy controls
 
-## 🚀 Ready for Release
+##  Ready for Release
 
 ### Desktop Release Steps
 
@@ -59,7 +59,7 @@ git push origin main
 
 ## 4. Post-release spot checks
 ##    - Tray: connect → rotate → disconnect
-##    - Fault inject: dev:session:simulateExit
+##    - Fault inject: devsimulateExit
 ##    - Diagnostics export: verify <10MB, no secrets
 ```
 
@@ -89,7 +89,7 @@ npx detox build -c ios.sim.debug
 npx detox test -c ios.sim.debug --record-logs all
 ```
 
-## 📋 Store Submission Checklists
+##  Store Submission Checklists
 
 See `docs/STORE_READINESS.md` for:
 - Google Play Store checklist
@@ -97,7 +97,7 @@ See `docs/STORE_READINESS.md` for:
 - Common requirements
 - Pre-submission checklist
 
-## 📊 Monitoring
+##  Monitoring
 
 See `docs/POST_RELEASE_MONITORING.md` for:
 - Desktop diagnostics verification
@@ -105,7 +105,7 @@ See `docs/POST_RELEASE_MONITORING.md` for:
 - Issue reporting flows
 - Weekly review checklist
 
-## 🔧 Production Hardening Features
+##  Production Hardening Features
 
 ### Kill-Switch
 - **Location**: Settings > Window Behavior > "Disconnect on app quit"
@@ -125,7 +125,7 @@ See `docs/POST_RELEASE_MONITORING.md` for:
 - EMA for latency/throughput
 - Reduces chart flicker
 
-## 📝 Next Steps
+##  Next Steps
 
 1. **Desktop Release**
    - Run preflight checks
@@ -146,13 +146,13 @@ See `docs/POST_RELEASE_MONITORING.md` for:
    - Desktop "Report Issue" button
    - Mobile "Report Issue" flow
 
-## 🐛 Known Issues
+##  Known Issues
 
 - `main.ts` kill-switch implementation needs verification (file path issue resolved)
 - Endpoint allowlist validation not yet implemented in UI
 - Mobile "Report Issue" flow not yet implemented
 
-## 📞 Support
+##  Support
 
 - Email: codethor@gmail.com
 - GitHub: [Repository URL]

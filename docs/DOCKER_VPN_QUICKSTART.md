@@ -109,11 +109,11 @@ docker exec cryprq-vpn netstat -uln | grep 9999
 
 ## Benefits
 
-✅ **No macOS Network Extension** - Avoids macOS-specific requirements  
-✅ **Isolated Environment** - VPN runs in container  
-✅ **Easy Management** - Start/stop with docker-compose  
-✅ **Portable** - Works on any platform with Docker  
-✅ **Centralized Logging** - All logs in container  
+ **No macOS Network Extension** - Avoids macOS-specific requirements  
+ **Isolated Environment** - VPN runs in container  
+ **Easy Management** - Start/stop with docker-compose  
+ **Portable** - Works on any platform with Docker  
+ **Centralized Logging** - All logs in container  
 
 ## Next Steps
 

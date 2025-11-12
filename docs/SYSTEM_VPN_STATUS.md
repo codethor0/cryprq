@@ -29,7 +29,7 @@ Implementing system-wide VPN routing is a significant feature that requires:
 
 ## Current Status
 
-**⚠️ Work In Progress**
+** Work In Progress**
 
 The data-plane (packet forwarding) is currently experimental. The control-plane (encrypted peer connections) is working.
 

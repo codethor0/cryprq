@@ -1,6 +1,6 @@
 # Go-Live Sequence: Desktop 1.1.0
 
-## 🔐 Secrets Check
+##  Secrets Check
 
 **GitHub → Repository → Settings → Secrets**
 
@@ -23,7 +23,7 @@ gh secret list
 
 ---
 
-## 📦 SBOM + Listing Validation
+##  SBOM + Listing Validation
 
 ### Generate SBOM
 ```bash
@@ -40,13 +40,13 @@ node store/validate.mjs
 ```
 
 Expected output:
-- ✅ All length checks pass
-- ✅ Privacy URL format valid
-- ⚠️ Screenshots may be missing (OK for initial release)
+-  All length checks pass
+-  Privacy URL format valid
+-  Screenshots may be missing (OK for initial release)
 
 ---
 
-## 🏷️ Tag & Release
+##  Tag & Release
 
 ### Pre-Release Checks
 ```bash
@@ -80,7 +80,7 @@ git push origin main
 
 ---
 
-## 🔒 Gatekeeper Checks
+##  Gatekeeper Checks
 
 ### macOS
 ```bash
@@ -88,9 +88,9 @@ git push origin main
 spctl --assess --type open --verbose dist-package/*.dmg
 ```
 
-**Expected:** ✅ `dist-package/CrypRQ.dmg: accepted`
+**Expected:**  `dist-package/CrypRQ.dmg: accepted`
 
-**If unsigned:** ⚠️ Will show "rejected" - this is OK for dev builds without secrets
+**If unsigned:**  Will show "rejected" - this is OK for dev builds without secrets
 
 ### Windows
 ```bash
@@ -98,13 +98,13 @@ spctl --assess --type open --verbose dist-package/*.dmg
 signtool verify /pa dist-package/*.exe
 ```
 
-**Expected:** ✅ `Successfully verified: CrypRQ.exe`
+**Expected:**  `Successfully verified: CrypRQ.exe`
 
-**If unsigned:** ⚠️ Will show "No signature" - this is OK for dev builds without secrets
+**If unsigned:**  Will show "No signature" - this is OK for dev builds without secrets
 
 ---
 
-## 📊 Post-Release Monitoring
+##  Post-Release Monitoring
 
 ### Observability Checks
 ```bash
@@ -112,23 +112,23 @@ signtool verify /pa dist-package/*.exe
 ```
 
 **Expected output:**
-- ✅ Desktop logs sanity check
-- ✅ Redaction OK - No secrets found
-- ✅ Structured log adoption metrics
+-  Desktop logs sanity check
+-  Redaction OK - No secrets found
+-  Structured log adoption metrics
 
 ### Export Diagnostics Once
 ```bash
 ## In the app: Help → Export Diagnostics
 ## Then verify:
 unzip -q cryprq-diagnostics-*.zip -d /tmp/diag-check
-grep -r -E "bearer |privKey=|authorization:" /tmp/diag-check || echo "✅ No secrets found"
+grep -r -E "bearer |privKey=|authorization:" /tmp/diag-check || echo " No secrets found"
 ```
 
-**Expected:** ✅ No secrets found
+**Expected:**  No secrets found
 
 ---
 
-## 📱 Mobile Release Path
+##  Mobile Release Path
 
 ### Secrets Check
 
@@ -172,7 +172,7 @@ git push origin mobile-v1.0.0
 
 ---
 
-## 🎯 Staged Rollout
+##  Staged Rollout
 
 ### Android
 1. **Internal Testing** (immediate)
@@ -204,16 +204,16 @@ git push origin mobile-v1.0.0
 
 ---
 
-## 🧩 Optional Polish (Already Implemented)
+##  Optional Polish (Already Implemented)
 
-✅ **Endpoint Allowlist** - UI validation in Settings → Security  
-✅ **Error Toast Rate-Limit** - Max 1 error toast per 10s  
-✅ **EMA Smoothing** - Settings → Charts slider (0-0.4)  
-✅ **Report Issue** - Desktop Help menu + modal  
+ **Endpoint Allowlist** - UI validation in Settings → Security  
+ **Error Toast Rate-Limit** - Max 1 error toast per 10s  
+ **EMA Smoothing** - Settings → Charts slider (0-0.4)  
+ **Report Issue** - Desktop Help menu + modal  
 
 ---
 
-## 🔒 One-Time Sanity Checks
+##  One-Time Sanity Checks
 
 ### Kill-Switch Test
 1. Start CrypRQ
@@ -245,14 +245,14 @@ ps aux | grep cryprq | grep -v grep
 ## Then:
 unzip -q cryprq-diagnostics-*.zip -d /tmp/redact-check
 if grep -r -E "bearer |privKey=|authorization:" /tmp/redact-check; then
-  echo "❌ Secrets leaked!"
+  echo " Secrets leaked!"
   exit 1
 else
-  echo "✅ Redaction OK"
+  echo " Redaction OK"
 fi
 ```
 
-**Expected:** ✅ Redaction OK
+**Expected:**  Redaction OK
 
 ### Crash Symbols
 **macOS:**
@@ -265,7 +265,7 @@ fi
 
 ---
 
-## 🧭 Quick Incident Runbook
+##  Quick Incident Runbook
 
 ### User Can't Connect
 
@@ -326,7 +326,7 @@ fi
 
 ---
 
-## 📋 Release Checklist
+##  Release Checklist
 
 - [ ] Secrets configured in GitHub
 - [ ] SBOM generated
@@ -346,7 +346,7 @@ fi
 
 ---
 
-## 🚨 Emergency Contacts
+##  Emergency Contacts
 
 - **GitHub Issues:** [Repository URL]/issues
 - **Email:** codethor@gmail.com

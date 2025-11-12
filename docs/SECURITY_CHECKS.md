@@ -249,11 +249,11 @@ If CodeQL reports false positives:
 ## Summary
 
 All security checks and technology validation processes are:
-- ✅ Automated in CI/CD
-- ✅ Documented and scripted
-- ✅ Integrated into workflows
-- ✅ Regularly scheduled
-- ✅ Available for local testing
+-  Automated in CI/CD
+-  Documented and scripted
+-  Integrated into workflows
+-  Regularly scheduled
+-  Available for local testing
 
 For questions or issues, see:
 - `docs/SECURITY.md` - Security policy

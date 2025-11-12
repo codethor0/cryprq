@@ -19,10 +19,10 @@ The script **blocks and fails** on:
 ### Success Criteria
 
 All gates must pass:
-- ✅ Playwright tests pass on all three browsers
-- ✅ Bridge logs show handshake/peer/rotation events
-- ✅ macOS app launches successfully
-- ✅ macOS app passes listener + dialer connection test
+-  Playwright tests pass on all three browsers
+-  Bridge logs show handshake/peer/rotation events
+-  macOS app launches successfully
+-  macOS app passes listener + dialer connection test
 
 ## Usage
 

@@ -14,6 +14,7 @@ COPY crypto/Cargo.toml ./crypto/
 COPY node/Cargo.toml ./node/
 COPY p2p/Cargo.toml ./p2p/
 COPY core/Cargo.toml ./core/
+COPY fuzz/Cargo.toml ./fuzz/
 COPY cli/src ./cli/src
 COPY crypto/src ./crypto/src
 COPY node/src ./node/src

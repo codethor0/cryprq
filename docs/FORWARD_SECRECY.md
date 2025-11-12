@@ -51,13 +51,13 @@ let session_key = *blake3::hash(&kdf_input).as_bytes();
 
 ## Security Properties
 
-### Forward Secrecy ✅
+### Forward Secrecy 
 
 - **Ephemeral Keys**: Each session uses unique keys
 - **No Key Storage**: Session keys are not stored long-term
 - **Secure Erasure**: Keys are zeroized after use
 
-### Perfect Forward Secrecy ✅
+### Perfect Forward Secrecy 
 
 - **No Key Derivation**: Keys are not derived from previous keys
 - **Independent Sessions**: Each session is cryptographically independent
@@ -113,15 +113,15 @@ CRYPRQ_ROTATE_SECS=60 ./cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
 ### Protected Against
 
-✅ **Retroactive Decryption**: Past sessions cannot be decrypted even if current keys are compromised  
-✅ **Key Compromise**: Compromise of one session key does not affect other sessions  
-✅ **Long-Term Storage Attacks**: No long-term keys stored for session encryption  
+ **Retroactive Decryption**: Past sessions cannot be decrypted even if current keys are compromised  
+ **Key Compromise**: Compromise of one session key does not affect other sessions  
+ **Long-Term Storage Attacks**: No long-term keys stored for session encryption  
 
 ### Not Protected Against
 
-⚠️ **Active MitM**: Requires additional authentication (Ed25519 signatures)  
-⚠️ **Replay Attacks**: Handled separately with replay window  
-⚠️ **Traffic Analysis**: Requires additional padding/shaping (implemented separately)  
+ **Active MitM**: Requires additional authentication (Ed25519 signatures)  
+ **Replay Attacks**: Handled separately with replay window  
+ **Traffic Analysis**: Requires additional padding/shaping (implemented separately)  
 
 ## References
 

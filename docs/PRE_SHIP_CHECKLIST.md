@@ -145,7 +145,7 @@ codesign -dv --verbose=4 ios/build/Build/Products/Release-iphoneos/CrypRQ.app
 ## Pre-Release Smoke Tests
 
 - [ ] Tray: connect → rotate → disconnect (icon/menu update ≤1s)
-- [ ] Fault inject: `dev:session:simulateExit` → modal + structured logs v1
+- [ ] Fault inject: `devsimulateExit` → modal + structured logs v1
 - [ ] Diagnostics export: zip <10MB, no bearer/privKey when grepping
 - [ ] Kill-switch: quit while connected → disconnect happens
 - [ ] Endpoint allowlist: REMOTE profile validation works

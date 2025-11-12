@@ -6,25 +6,25 @@ CrypRQ implements metadata minimization techniques to reduce the amount of infor
 
 ## Implemented Techniques
 
-### ✅ Packet Padding
+###  Packet Padding
 
 - **Random Padding**: Packets are padded with random bytes to prevent size fingerprinting
 - **Target Size**: Packets padded to target size (default: 512 bytes)
 - **Configurable**: Padding can be customized or disabled
 
-### ✅ Traffic Shaping
+###  Traffic Shaping
 
 - **Constant-Rate Traffic**: Optional constant-rate traffic generation
 - **Jitter Injection**: Random delays to avoid perfect constant-rate detection
 - **Configurable Rate**: Adjustable packets per second
 
-### ✅ DNS Protection
+###  DNS Protection
 
 - **DNS-over-HTTPS**: Encrypted DNS queries prevent DNS metadata leakage
 - **DNS-over-TLS**: Alternative encrypted DNS method
 - **No DNS Leakage**: DNS queries do not reveal destination hostnames
 
-### ✅ Minimal Headers
+###  Minimal Headers
 
 - **Compact Protocol**: Minimal protocol overhead
 - **No Unnecessary Metadata**: Only essential information in headers
@@ -71,14 +71,14 @@ let ip = resolve_hostname("example.com", &config).await?;
 
 ## Metadata Minimized
 
-### ✅ Not Leaked
+###  Not Leaked
 
 - **Packet Sizes**: Padding masks actual packet sizes
 - **Traffic Patterns**: Constant-rate traffic hides patterns
 - **DNS Queries**: DoH/DoT encrypts DNS metadata
 - **Timing Information**: Jitter obscures timing patterns
 
-### ⚠️ Still Visible
+###  Still Visible
 
 - **Connection Existence**: Connection to CrypRQ peer is visible
 - **Traffic Volume**: Total traffic volume is visible

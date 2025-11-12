@@ -6,16 +6,16 @@ This directory contains store listing content and assets for Google Play Store a
 
 ```
 store/
-├── play/
-│   ├── short.txt          # Short description (≤80 chars)
-│   ├── full.txt           # Full description (≤4000 chars)
-│   └── screenshots/       # Screenshots (1080×1920)
-├── appstore/
-│   ├── promo.txt         # Promotional text
-│   ├── keywords.txt      # Keywords (≤100 chars)
-│   ├── subtitle.txt      # Subtitle
-│   └── screenshots/      # Screenshots (6.7", 6.1")
-└── validate.mjs          # Validation script
+ play/
+    short.txt          # Short description (≤80 chars)
+    full.txt           # Full description (≤4000 chars)
+    screenshots/       # Screenshots (1080×1920)
+ appstore/
+    promo.txt         # Promotional text
+    keywords.txt      # Keywords (≤100 chars)
+    subtitle.txt      # Subtitle
+    screenshots/      # Screenshots (6.7", 6.1")
+ validate.mjs          # Validation script
 ```
 
 ## Screenshots

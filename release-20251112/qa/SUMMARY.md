@@ -1,31 +1,31 @@
 # CrypRQ Extreme Test + Optimize + Lock-In - Summary
 
 **Date**: 2025-11-12  
-**Status**: ✅ CORE INFRASTRUCTURE COMPLETE
+**Status**:  CORE INFRASTRUCTURE COMPLETE
 
 ## Completed Tasks
 
-### 1. Repo Sanity ✅
+### 1. Repo Sanity 
 - Format check: Clean
 - Clippy: Clean  
 - Build: Success
 - Unit tests: 31 passing
 
-### 2. Crypto Correctness ✅
+### 2. Crypto Correctness 
 - ML-KEM KAT tests: Added (`crypto/src/kat_tests.rs`)
   - 5 tests covering keypair, encaps/decaps, uniqueness, wrong key rejection
 - Property tests: Added (`crypto/src/property_tests.rs`)
   - 3 property tests for handshake correctness
 - Dependencies: `pqcrypto-traits` added
 
-### 3. Security & Supply Chain ✅
+### 3. Security & Supply Chain 
 - Security audit: Clean (0 vulnerabilities)
 - Cargo deny: License warning (non-blocking)
 - SBOM: Generated (4.0MB JSON)
 - Grype scan: Complete (2.6MB JSON, 29KB text)
 - Reproducible build: Checksums match
 
-### 4. Infrastructure ✅
+### 4. Infrastructure 
 - Fuzz targets: 4 ready (`fuzz/fuzz_targets/`)
 - Docker: Builds successfully
 - Miri: Quick test infrastructure ready
@@ -71,4 +71,4 @@ All artifacts in `release-20251112/qa/`:
 
 ---
 
-**Status**: ✅ Core QA infrastructure complete and verified
+**Status**:  Core QA infrastructure complete and verified

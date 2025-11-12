@@ -1,6 +1,6 @@
 # Release Checklist: Desktop 1.1.0
 
-## ✅ Pre-Release
+##  Pre-Release
 
 ### Secrets Configuration
 - [ ] `APPLE_ID` configured
@@ -29,7 +29,7 @@
 
 ---
 
-## 🏷️ Release
+##  Release
 
 ### Tag Creation
 - [ ] Version bumped in `gui/package.json`
@@ -47,7 +47,7 @@
 
 ---
 
-## 🔒 Post-Release Verification
+##  Post-Release Verification
 
 ### Artifact Verification
 - [ ] macOS DMG passes Gatekeeper: `spctl --assess --type open --verbose dist-package/*.dmg`
@@ -72,7 +72,7 @@
 
 ---
 
-## 📱 Mobile Release (Separate)
+##  Mobile Release (Separate)
 
 ### Secrets
 - [ ] `ANDROID_KEYSTORE_*` configured
@@ -94,7 +94,7 @@
 
 ---
 
-## 🚨 Post-Release Monitoring
+##  Post-Release Monitoring
 
 ### Week 1
 - [ ] Daily monitoring of crash reports
@@ -110,7 +110,7 @@
 
 ---
 
-## 📋 Quick Reference
+##  Quick Reference
 
 ### All-in-One Go-Live
 ```bash

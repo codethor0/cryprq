@@ -36,9 +36,9 @@
 
 CrypRQ uses **ML-KEM (Kyber768) + X25519 hybrid encryption** by default. This provides:
 
-- ✅ Protection against future quantum computer attacks
-- ✅ Defense-in-depth security
-- ✅ Automatic key rotation every 5 minutes
+-  Protection against future quantum computer attacks
+-  Defense-in-depth security
+-  Automatic key rotation every 5 minutes
 
 **Recommendation**: Keep post-quantum encryption enabled. See [Post-Quantum Encryption Guide](./post-quantum.md) for details.
 

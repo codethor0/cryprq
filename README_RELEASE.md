@@ -63,7 +63,7 @@
    - Verify secrets redacted:
      ```bash
      unzip diagnostics.zip -d /tmp/diag
-     grep -r "bearer\|privKey" /tmp/diag || echo "No secrets found ✓"
+     grep -r "bearer\|privKey" /tmp/diag || echo "No secrets found "
      ```
    - Verify `session-summary.json` present
    - Verify `metrics-snapshot.json` present

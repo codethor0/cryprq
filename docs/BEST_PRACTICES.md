@@ -211,7 +211,7 @@ pub enum CryptoError {
 ### Example
 
 ```rust
-use tokio::sync::mpsc;
+use tokio::mpsc;
 
 async fn process_packets(mut rx: mpsc::Receiver<Packet>) {
     while let Some(packet) = rx.recv().await {
@@ -298,13 +298,13 @@ error!("Connection failed: {}", error);
 
 ```
 crypto/
-├── src/
-│   ├── lib.rs          # Public API
-│   ├── hybrid.rs       # Hybrid handshake
-│   ├── ppk.rs          # Post-quantum PSKs
-│   └── zkp.rs          # Zero-knowledge proofs
-└── tests/
-    └── integration.rs  # Integration tests
+ src/
+    lib.rs          # Public API
+    hybrid.rs       # Hybrid handshake
+    ppk.rs          # Post-quantum PSKs
+    zkp.rs          # Zero-knowledge proofs
+ tests/
+     integration.rs  # Integration tests
 ```
 
 ## References

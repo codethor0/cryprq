@@ -117,11 +117,11 @@ make github-sync
 
 ## Acceptance Criteria
 
-- ✅ Local quick-smoke or full validation passes
-- ✅ Branch pushed; PR open with cheat sheet comment
-- ✅ CI workflows triggered and checks pass (or are reported)
-- ✅ If `SHIP=true`: GitHub Release v1.1.0 exists with signed/notarized artifacts and verify-release success
-- ✅ Summary printed with artifact paths and links
+-  Local quick-smoke or full validation passes
+-  Branch pushed; PR open with cheat sheet comment
+-  CI workflows triggered and checks pass (or are reported)
+-  If `SHIP=true`: GitHub Release v1.1.0 exists with signed/notarized artifacts and verify-release success
+-  Summary printed with artifact paths and links
 
 ## Operator Notes
 
@@ -185,26 +185,26 @@ SHIP=true RUN_POST=true ./scripts/github-sync.sh
 ## Example Output
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 GITHUB SYNC SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ GITHUB SYNC SUMMARY
+
 
 Branch: chore/github-sync-20250115-2030
 PR: https://github.com/org/cryprq/pull/123
 Desktop artifacts: artifacts/desktop/darwin/CrypRQ-1.1.0.dmg,artifacts/desktop/darwin/CrypRQ-1.1.0-mac.zip
 Reports: artifacts/reports/playwright-report/index.html,artifacts/reports/test-results.json
 CI mirror: triggered (see PR Checks tab)
-CI status: ✅ All checks passed
+CI status:  All checks passed
 Release: v1.1.0 pushed; verify assets on GitHub Releases page
 
 Next: Golden path
   Desktop: Connect → Charts ≤3s → Rotate (toast ≤2s) → Disconnect
   Mobile: Settings → Report Issue → share sheet (<2MB, 'Report Prepared')
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ```
 
 ---
 
-**You're fully wired with GitHub. Run `make github-sync` to sync, verify CI, and optionally ship.** 🚀
+**You're fully wired with GitHub. Run `make github-sync` to sync, verify CI, and optionally ship.** 
 

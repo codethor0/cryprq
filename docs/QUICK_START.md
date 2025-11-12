@@ -1,6 +1,6 @@
 # Quick Start: Desktop 1.1.0 Release
 
-## 🚀 Fast Path (All-in-One)
+##  Fast Path (All-in-One)
 
 ```bash
 ## Run the go-live script
@@ -8,16 +8,16 @@
 ```
 
 This script will:
-1. ✅ Check GitHub secrets
-2. ✅ Generate SBOM
-3. ✅ Validate store listings
-4. ✅ Run pre-release tests
-5. ✅ Create release tag
-6. ✅ Provide post-release instructions
+1.  Check GitHub secrets
+2.  Generate SBOM
+3.  Validate store listings
+4.  Run pre-release tests
+5.  Create release tag
+6.  Provide post-release instructions
 
 ---
 
-## 📋 Manual Steps (If Needed)
+##  Manual Steps (If Needed)
 
 ### 1. Secrets Check
 ```bash
@@ -57,13 +57,13 @@ git push origin main
 
 ---
 
-## 📱 Mobile Release
+##  Mobile Release
 
 See `docs/MOBILE_RELEASE.md` for complete mobile release path.
 
 ---
 
-## 🆘 Need Help?
+##  Need Help?
 
 - **Go-Live Guide:** `docs/GO_LIVE_SEQUENCE.md`
 - **Incident Runbook:** `docs/INCIDENT_RUNBOOK.md`

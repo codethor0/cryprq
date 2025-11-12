@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 1.0.x   |  |
+| < 1.0   |                 |
 
 ## Reporting a Vulnerability
 
@@ -55,18 +55,18 @@ Include:
 ## Security Best Practices
 
 ### For Users
-- ✅ Keep CrypRQ updated to the latest version
-- ✅ Enable post-quantum encryption (default)
-- ✅ Use explicit peer allowlists
-- ✅ Review logs regularly
-- ✅ Report suspicious activity
+-  Keep CrypRQ updated to the latest version
+-  Enable post-quantum encryption (default)
+-  Use explicit peer allowlists
+-  Review logs regularly
+-  Report suspicious activity
 
 ### For Developers
-- ✅ Follow secure coding practices
-- ✅ Use `cargo audit` and `cargo deny`
-- ✅ Run fuzz tests before commits
-- ✅ Review cryptographic implementations carefully
-- ✅ Never commit secrets or keys
+-  Follow secure coding practices
+-  Use `cargo audit` and `cargo deny`
+-  Run fuzz tests before commits
+-  Review cryptographic implementations carefully
+-  Never commit secrets or keys
 
 ## Bug Bounty Program
 

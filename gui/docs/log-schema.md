@@ -9,7 +9,7 @@ One JSON object per line, newline-delimited.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info"|"warn"|"error"|"debug",
   "src": "cli"|"ipc"|"metrics"|"app",
   "event": "session.state"|"session.error"|"cli.raw"|"cli.json"|"metrics.tick"|"peer.action"|"rotation.started"|"rotation.completed"|"rotation.scheduled"|"log.invalid",
@@ -39,7 +39,7 @@ Session state transition.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "app",
   "event": "session.state",
@@ -58,7 +58,7 @@ Session error.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "error",
   "src": "app",
   "event": "session.error",
@@ -76,7 +76,7 @@ Raw CLI output (stdout/stderr).
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info"|"error",
   "src": "cli",
   "event": "cli.raw",
@@ -91,7 +91,7 @@ Parsed JSON event from CLI.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "cli",
   "event": "cli.json",
@@ -99,7 +99,7 @@ Parsed JSON event from CLI.
   "data": {
     "type": "connected",
     "peerId": "Qm...",
-    "timestamp": "2025-11-11T18:43:21.345Z"
+    "timestamp": "2025-11-11T1821.345Z"
   }
 }
 ```
@@ -110,7 +110,7 @@ Metrics update.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "metrics",
   "event": "metrics.tick",
@@ -131,7 +131,7 @@ Key rotation started.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "cli",
   "event": "rotation.started",
@@ -146,7 +146,7 @@ Key rotation completed.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "cli",
   "event": "rotation.completed",
@@ -163,7 +163,7 @@ Rotation timer update.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "metrics",
   "event": "rotation.scheduled",
@@ -180,7 +180,7 @@ Peer management action.
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "info",
   "src": "app",
   "event": "peer.action",
@@ -198,7 +198,7 @@ Invalid log entry (validation failure).
 ```json
 {
   "v": 1,
-  "ts": "2025-11-11T18:43:21.345Z",
+  "ts": "2025-11-11T1821.345Z",
   "lvl": "error",
   "src": "app",
   "event": "log.invalid",

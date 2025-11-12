@@ -2,16 +2,16 @@
 
 ## Current Status
 
-### ✅ What's Working
+###  What's Working
 
 1. **P2P Encrypted Tunnel**: The encrypted connection between peers is fully functional
-   - ML-KEM (Kyber768) + X25519 hybrid encryption ✅
-   - Key rotation every 5 minutes ✅
-   - All traffic between the two `cryprq` processes is encrypted ✅
+   - ML-KEM (Kyber768) + X25519 hybrid encryption 
+   - Key rotation every 5 minutes 
+   - All traffic between the two `cryprq` processes is encrypted 
 
 2. **Connection Status**: Peers can connect and communicate securely
 
-### ⚠️ What's Not Working Yet
+###  What's Not Working Yet
 
 **System-Wide VPN Routing**: Routing all system/browser traffic through the tunnel is not yet implemented.
 
@@ -35,11 +35,11 @@ On macOS, routing all system traffic requires:
 ## Current Implementation
 
 The current VPN mode implementation:
-- ✅ Enables VPN mode flag (`--vpn`)
-- ✅ Attempts to create TUN interface
-- ✅ Logs VPN mode status
-- ⚠️ **Does NOT** actually route system traffic yet
-- ⚠️ **Does NOT** create functional TUN interface on macOS (requires Network Extension)
+-  Enables VPN mode flag (`--vpn`)
+-  Attempts to create TUN interface
+-  Logs VPN mode status
+-  **Does NOT** actually route system traffic yet
+-  **Does NOT** create functional TUN interface on macOS (requires Network Extension)
 
 ## What You're Seeing
 
@@ -79,8 +79,8 @@ For now, the encrypted P2P tunnel is working. To route system traffic:
 
 ## Summary
 
-**P2P Tunnel**: ✅ Working - All peer-to-peer traffic is encrypted  
-**System-Wide VPN**: ⚠️ Not yet implemented - Requires Network Extension framework on macOS
+**P2P Tunnel**:  Working - All peer-to-peer traffic is encrypted  
+**System-Wide VPN**:  Not yet implemented - Requires Network Extension framework on macOS
 
 The foundation is in place, but full system-wide routing requires the Network Extension framework implementation.
 

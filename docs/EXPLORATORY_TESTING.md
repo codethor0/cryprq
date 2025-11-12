@@ -188,11 +188,11 @@ Test results are logged to:
 ## Summary
 
 Exploratory testing helps ensure:
-- ✅ Application functions correctly
-- ✅ Edge cases handled gracefully
-- ✅ Performance meets requirements
-- ✅ Security features work as intended
-- ✅ Error handling is robust
+-  Application functions correctly
+-  Edge cases handled gracefully
+-  Performance meets requirements
+-  Security features work as intended
+-  Error handling is robust
 
 For questions or issues, see:
 - `docs/TESTING.md` - General testing guide

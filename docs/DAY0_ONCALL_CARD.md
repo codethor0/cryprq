@@ -4,7 +4,7 @@
 **Date**: [Release Date]  
 **On-Call**: [Name]
 
-## 🟢 Golden Path (60 seconds)
+##  Golden Path (60 seconds)
 
 **Desktop**:
 1. Connect → Charts appear ≤3–5s
@@ -20,7 +20,7 @@
 ## See docs/GOLDEN_PATH.md for detailed steps
 ```
 
-## 🔍 Quick Checks (Every 2h for First 24h)
+##  Quick Checks (Every 2h for First 24h)
 
 **Copy-paste loop**:
 ```bash
@@ -31,7 +31,7 @@
 ./scripts/sanity-checks.sh
 
 ## Spot-check redaction on fresh diagnostics zip
-grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo "✅ redaction OK"
+grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo " redaction OK"
 ```
 
 **Expected**: All checks PASS, no secrets found
@@ -46,7 +46,7 @@ grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || ec
 **Expected**: Crash-free rate ≥99.5%  
 **Action**: If below threshold, investigate immediately
 
-## 🚨 If Something's Off
+##  If Something's Off
 
 ### Quick Rollback
 
@@ -96,7 +96,7 @@ cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Even
 **Step 3: Search JSONL Logs**
 ```bash
 ## Find error events around timestamp
-TIMESTAMP="2025-01-15T12:00:00Z"  # From user report
+TIMESTAMP="2025-01-15T1200Z"  # From user report
 jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 hour\" +%Y-%m-%dT%H:%M:%SZ)\") | select(.event == \"session.error\" or .event == \"cli.raw\" or .lvl == \"error\")" /tmp/diag/logs/*.log
 ```
 
@@ -124,7 +124,7 @@ jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 ho
 - Android: Check Play Console → Release dashboard
 - iOS: Check TestFlight → Builds list
 
-## 📞 Escalation Path
+##  Escalation Path
 
 **Level 1: On-Call Engineer**
 - Check observability checks
@@ -141,7 +141,7 @@ jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 ho
 - If service-wide outage
 - If rollback fails
 
-## 📋 Day-0 Checklist
+##  Day-0 Checklist
 
 **Hour 0 (Immediate)**:
 - [ ] Run `./scripts/observability-checks.sh`
@@ -182,18 +182,18 @@ jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 ho
 - [ ] Document any issues
 - [ ] Hand off to regular monitoring
 
-## 🎯 Success Criteria
+##  Success Criteria
 
 **Day-0 Success**:
-- ✅ All observability checks PASS
-- ✅ Crash-free rate ≥99.5%
-- ✅ 0 critical support tickets
-- ✅ No security incidents
-- ✅ Golden path works consistently
+-  All observability checks PASS
+-  Crash-free rate ≥99.5%
+-  0 critical support tickets
+-  No security incidents
+-  Golden path works consistently
 
 **If any criteria fails**: Escalate immediately
 
-## 📝 Notes
+##  Notes
 
 - Keep this card handy during first 24h
 - Update with any issues encountered

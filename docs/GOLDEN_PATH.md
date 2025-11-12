@@ -7,14 +7,14 @@
 ### Steps
 1. **Launch app**: `cd gui && npm run dev`
 2. **Connect**: Click "Connect" button
-   - ✅ Status changes to "Connected" within ≤2s
-   - ✅ Charts appear ("Throughput (last 60s)" and "Latency") within ≤3–5s
+   -  Status changes to "Connected" within ≤2s
+   -  Charts appear ("Throughput (last 60s)" and "Latency") within ≤3–5s
 3. **Wait for rotation**: Monitor rotation timer
-   - ✅ Toast appears within ≤2s: "Keys rotated securely at HH:MM:SS"
-   - ✅ Countdown resets
+   -  Toast appears within ≤2s: "Keys rotated securely at HH:MM:SS"
+   -  Countdown resets
 4. **Disconnect**: Click "Disconnect" button
-   - ✅ Status changes to "Disconnected" immediately
-   - ✅ Charts stop updating
+   -  Status changes to "Disconnected" immediately
+   -  Charts stop updating
 
 ### Expected Behavior
 - **Connection**: Smooth transition, no errors
@@ -28,9 +28,9 @@
 1. **Open app**: Launch CrypRQ Mobile
 2. **Navigate**: Settings → Report Issue
 3. **Generate**: Tap "Generate & Share Diagnostics"
-   - ✅ Share sheet opens
-   - ✅ ZIP file <2MB
-   - ✅ "Report Prepared" alert shown after share
+   -  Share sheet opens
+   -  ZIP file <2MB
+   -  "Report Prepared" alert shown after share
 
 ### Expected Behavior
 - **Share sheet**: Opens immediately

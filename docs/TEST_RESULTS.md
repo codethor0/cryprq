@@ -43,18 +43,18 @@ bash scripts/docker-test-individual.sh <test-name>
 
 | Test Category | Status | Duration | Notes |
 |--------------|--------|----------|-------|
-| Secret Scanning | ✅/❌ | XXs | |
-| Dependency Scanning | ✅/❌ | XXs | |
-| Static Analysis | ✅/❌ | XXs | |
-| Dynamic Analysis | ✅/❌ | XXs | |
-| Security Audits | ✅/❌ | XXs | |
-| Crypto Validation | ✅/❌ | XXs | |
-| Unit Tests | ✅/❌ | XXs | |
-| Integration Tests | ✅/❌ | XXs | |
-| E2E Tests | ✅/❌ | XXs | |
-| Performance Tests | ✅/❌ | XXs | |
-| Build Tests | ✅/❌ | XXs | |
-| Code Quality | ✅/❌ | XXs | |
+| Secret Scanning | / | XXs | |
+| Dependency Scanning | / | XXs | |
+| Static Analysis | / | XXs | |
+| Dynamic Analysis | / | XXs | |
+| Security Audits | / | XXs | |
+| Crypto Validation | / | XXs | |
+| Unit Tests | / | XXs | |
+| Integration Tests | / | XXs | |
+| E2E Tests | / | XXs | |
+| Performance Tests | / | XXs | |
+| Build Tests | / | XXs | |
+| Code Quality | / | XXs | |
 
 #### Summary
 - **Total Tests**: XX
@@ -84,18 +84,18 @@ bash scripts/docker-test-individual.sh <test-name>
 
 | Test Category | Status | Duration | Notes |
 |--------------|--------|----------|-------|
-| Secret Scanning | ✅ | 5s | No secrets found |
-| Dependency Scanning | ✅ | 30s | No vulnerabilities |
-| Static Analysis | ⚠️ | 60s | CodeQL optional |
-| Dynamic Analysis | ✅ | 10s | Basic checks passed |
-| Security Audits | ✅ | 45s | All checks passed |
-| Crypto Validation | ✅ | 15s | All algorithms validated |
-| Unit Tests | ✅ | 20s | 24/24 tests passed |
-| Integration Tests | ✅ | 30s | All integration tests passed |
-| E2E Tests | ✅ | 45s | Docker Compose tests passed |
-| Performance Tests | ✅ | 60s | Benchmarks completed |
-| Build Tests | ✅ | 120s | Release build successful |
-| Code Quality | ✅ | 10s | Formatting and linting passed |
+| Secret Scanning |  | 5s | No secrets found |
+| Dependency Scanning |  | 30s | No vulnerabilities |
+| Static Analysis |  | 60s | CodeQL optional |
+| Dynamic Analysis |  | 10s | Basic checks passed |
+| Security Audits |  | 45s | All checks passed |
+| Crypto Validation |  | 15s | All algorithms validated |
+| Unit Tests |  | 20s | 24/24 tests passed |
+| Integration Tests |  | 30s | All integration tests passed |
+| E2E Tests |  | 45s | Docker Compose tests passed |
+| Performance Tests |  | 60s | Benchmarks completed |
+| Build Tests |  | 120s | Release build successful |
+| Code Quality |  | 10s | Formatting and linting passed |
 
 #### Summary
 - **Total Tests**: 12

@@ -5,16 +5,16 @@ This document describes how to integrate the GUI with the CrypRQ CLI backend.
 ## Architecture Overview
 
 ```
-┌─────────────────┐
-│  Electron GUI   │
-│  (React/TS)     │
-└────────┬────────┘
-         │ IPC / Process Spawn
-         ▼
-┌─────────────────┐
-│  CrypRQ CLI     │
-│  (Rust)         │
-└─────────────────┘
+
+  Electron GUI   
+  (React/TS)     
+
+          IPC / Process Spawn
+         
+
+  CrypRQ CLI     
+  (Rust)         
+
 ```
 
 ## Integration Points
@@ -328,8 +328,8 @@ app.on('ready', () => {
 
 ## Next Steps
 
-1. ✅ Implement process spawning
-2. ✅ Add log parsing
+1.  Implement process spawning
+2.  Add log parsing
 3. ⏳ Integrate metrics polling
 4. ⏳ Add configuration file management
 5. ⏳ Handle errors gracefully

@@ -15,13 +15,13 @@
   - Linux (hicolor 16..512)
   - GUI (Electron/Tauri)
   - Docker (OCI logo)
-- **Result**: ✅ PASS
+- **Result**:  PASS
 
 ### Signing Status
 <!-- Update based on secrets availability -->
-- macOS: ✅ Signed & Notarized / ⚠️ Unsigned
-- Windows: ✅ Signed / ⚠️ Unsigned
-- Android: ✅ Signed / ⚠️ Unsigned
+- macOS:  Signed & Notarized /  Unsigned
+- Windows:  Signed /  Unsigned
+- Android:  Signed /  Unsigned
 
 ### Verification
 - [ ] Icon verification passed

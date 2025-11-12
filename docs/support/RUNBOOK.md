@@ -37,13 +37,13 @@ When users report issues, request:
 Structure:
 ```
 diagnostics-YYYY-MM-DD-HHMMSS.zip
-├── system-info.json
-├── settings.json (redacted)
-├── session-summary.json
-├── metrics-snapshot.json
-├── logs/
-│   └── cryprq-YYYY-MM-DD.log (JSONL)
-└── README.txt
+ system-info.json
+ settings.json (redacted)
+ session-summary.json
+ metrics-snapshot.json
+ logs/
+    cryprq-YYYY-MM-DD.log (JSONL)
+ README.txt
 ```
 
 ### Key Files
@@ -51,7 +51,7 @@ diagnostics-YYYY-MM-DD-HHMMSS.zip
 #### `session-summary.json`
 ```json
 {
-  "timestamp": "2025-01-15T10:30:00Z",
+  "timestamp": "2025-01-15T1000Z",
   "last50Events": [...],
   "sessions": {
     "total": 5,
@@ -79,7 +79,7 @@ diagnostics-YYYY-MM-DD-HHMMSS.zip
 
 Each line is a JSON object:
 ```json
-{"v":1,"ts":"2025-01-15T10:30:00Z","lvl":"error","src":"cli","event":"session.error","msg":"Connection failed","data":{"error":"TIMEOUT"}}
+{"v":1,"ts":"2025-01-15T1000Z","lvl":"error","src":"cli","event":"session.error","msg":"Connection failed","data":{"error":"TIMEOUT"}}
 ```
 
 **How to read**:
@@ -233,9 +233,9 @@ jq -c 'fromjson | select(.event | startswith("rotation"))' ~/.cryprq/logs/cryprq
 ```bash
 ## Verify no secrets leaked
 if grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs; then
-  echo "❌ Secrets leaked!"
+  echo " Secrets leaked!"
 else
-  echo "✅ Redaction OK"
+  echo " Redaction OK"
 fi
 ```
 

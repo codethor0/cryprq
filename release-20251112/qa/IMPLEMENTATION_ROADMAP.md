@@ -1,9 +1,9 @@
 # CrypRQ Extreme Verify → Optimize → Lock - Implementation Roadmap
 
 **Date**: 2025-11-12  
-**Status**: Phase 1 Complete ✅ | Phase 2 In Progress
+**Status**: Phase 1 Complete  | Phase 2 In Progress
 
-## Phase 1: Known Issues Fixed ✅
+## Phase 1: Known Issues Fixed 
 
 - [x] Fix KAT API order
 - [x] Restore full property tests
@@ -79,12 +79,12 @@ cargo +nightly miri test --all 2>&1 | tee release-20251112/qa/miri-full.log
 ## Phase 3: Supply Chain & Reproducibility
 
 ### 3.1 SBOM & Grype
-**Status**: ✅ Complete
+**Status**:  Complete
 - SBOM generated
 - Grype scan complete
 
 ### 3.2 Reproducible Builds
-**Status**: ✅ Verified
+**Status**:  Verified
 - Checksums match
 - Deterministic builds confirmed
 
@@ -100,5 +100,5 @@ cargo +nightly miri test --all 2>&1 | tee release-20251112/qa/miri-full.log
 
 ---
 
-**Current Status**: Phase 1 Complete ✅ | Phase 2 In Progress
+**Current Status**: Phase 1 Complete  | Phase 2 In Progress
 

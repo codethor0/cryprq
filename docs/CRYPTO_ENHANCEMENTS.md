@@ -6,7 +6,7 @@ CrypRQ implements advanced cryptographic features beyond basic encryption to pro
 
 ## Implemented Features
 
-### ✅ Post-Quantum Cryptography
+###  Post-Quantum Cryptography
 
 #### Key Exchange
 - **ML-KEM 768 + X25519 Hybrid**: Default key exchange (implemented)
@@ -17,7 +17,7 @@ CrypRQ implements advanced cryptographic features beyond basic encryption to pro
 - **ChaCha20-Poly1305**: Current data-plane cipher (implemented)
 - **Post-Quantum Data Encryption**: Framework ready for PQ cipher integration
 
-### ✅ Traffic Analysis Resistance
+###  Traffic Analysis Resistance
 
 #### Packet Padding
 - **Configurable Padding**: Pad packets to target size (implemented)
@@ -29,7 +29,7 @@ CrypRQ implements advanced cryptographic features beyond basic encryption to pro
 - **Jitter Injection**: Adds randomness to avoid perfect constant-rate detection (implemented)
 - **Configurable Rate**: Adjustable packets per second
 
-### ✅ DNS Protection
+###  DNS Protection
 
 #### DNS-over-HTTPS (DoH)
 - **Encrypted DNS Queries**: DoH support (implemented)
@@ -40,7 +40,7 @@ CrypRQ implements advanced cryptographic features beyond basic encryption to pro
 - **TLS-Encrypted DNS**: DoT support (framework ready)
 - **Server Selection**: Configurable DoT servers
 
-### ✅ Transport Security
+###  Transport Security
 
 #### QUIC Protocol
 - **libp2p QUIC**: Low-latency, secure transport (implemented)
@@ -51,14 +51,14 @@ CrypRQ implements advanced cryptographic features beyond basic encryption to pro
 - **Server/Client Support**: Both server and client modes available
 - **Certificate Management**: Configurable certificate paths
 
-### ✅ Advanced Authentication
+###  Advanced Authentication
 
 #### Zero-Knowledge Proofs
 - **ZK Proof Framework**: ZKP support for peer authentication (framework ready)
 - **Privacy-Preserving**: Authenticate without revealing secrets
 - **Hash-Based**: Simplified implementation (can be extended with SNARKs)
 
-### ✅ Forward Secrecy
+###  Forward Secrecy
 
 #### Perfect Forward Secrecy (PFS)
 - **Ephemeral Keys**: Each session uses unique keys (implemented)

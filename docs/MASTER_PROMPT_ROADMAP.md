@@ -11,54 +11,54 @@ This document maps the Master Prompt requirements against CrypRQ's current imple
 
 ## Current Implementation Status
 
-### ✅ Completed Features
+###  Completed Features
 
 #### Post-Quantum Cryptography (PQC)
-- ✅ **Hybrid ML-KEM (Kyber768) + X25519 handshake**
+-  **Hybrid ML-KEM (Kyber768) + X25519 handshake**
   - Location: `crypto/src/hybrid.rs`, `p2p/src/lib.rs`
   - Status: Implemented and tested
   - Library: `pqcrypto-mlkem` (ML-KEM 768)
 
-- ✅ **Five-minute key rotation**
+-  **Five-minute key rotation**
   - Location: `node/src/lib.rs` (line 565), `node/src/rotate.rs`
   - Status: Implemented with secure zeroization
   - Mechanism: Tokio interval timer (300 seconds)
 
-- ✅ **Secure key zeroization**
+-  **Secure key zeroization**
   - Location: `node/src/lib.rs` (uses `zeroize` crate)
   - Status: Implemented for ephemeral keys
 
 #### Platform-Specific Development
-- ✅ **Android**: `VpnService` module (`android/`)
+-  **Android**: `VpnService` module (`android/`)
   - Status: Scaffolded with JNI bridge
   - FFI: Rust core exposed via C ABI
 
-- ✅ **iOS/macOS**: Network Extension (`apple/`)
+-  **iOS/macOS**: Network Extension (`apple/`)
   - Status: SwiftPM package scaffolded
   - Architecture: `NEPacketTunnelProvider`
 
-- ✅ **Windows**: MSIX packaging (`windows/`)
+-  **Windows**: MSIX packaging (`windows/`)
   - Status: Packaging scripts and manifests prepared
 
-- ✅ **Linux**: Reproducible builds (musl, Nix)
+-  **Linux**: Reproducible builds (musl, Nix)
   - Status: Docker and Nix flakes configured
 
 #### Security & Supply Chain
-- ✅ **Supply-chain hardening**
+-  **Supply-chain hardening**
   - `cargo audit`, `cargo deny`, CodeQL workflows
   - SPDX SBOM generation (Syft)
   - Vulnerability scanning (Grype)
 
-- ✅ **Reproducible builds**
+-  **Reproducible builds**
   - Linux (musl), macOS, Nix, Docker
   - Documentation: `REPRODUCIBLE.md`
 
 #### Cross-Platform GUI
-- ✅ **Desktop GUI** (Electron/React)
+-  **Desktop GUI** (Electron/React)
   - Status: v1.0.1 released
   - Features: Dashboard, Peers, Settings, Logs, Diagnostics
 
-- ✅ **Mobile GUI** (React Native)
+-  **Mobile GUI** (React Native)
   - Status: Bootstrap complete (M1-M15)
   - Architecture: Controller mode with profiles
 
@@ -66,10 +66,10 @@ This document maps the Master Prompt requirements against CrypRQ's current imple
 
 ## Gap Analysis
 
-### 🔴 Critical Gaps (High Priority)
+###  Critical Gaps (High Priority)
 
 #### 1. Post-Quantum Pre-Shared Keys (PPKs)
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** High  
 **Impact:** Enhanced security for peer authentication
 
@@ -109,7 +109,7 @@ pub fn derive_ppk(
 ---
 
 #### 2. User Toggle for Post-Quantum Encryption
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** High  
 **Impact:** User control and compliance
 
@@ -174,14 +174,14 @@ if config.post_quantum {
 ---
 
 #### 3. Additional PQC Algorithms (OQS Integration)
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** Medium  
 **Impact:** Algorithm diversity and future-proofing
 
 **Requirements:**
 - Integrate Open Quantum Safe (OQS) library
 - Support multiple PQC algorithms:
-  - ML-KEM (Kyber) - ✅ Already implemented
+  - ML-KEM (Kyber) -  Already implemented
   - ML-DSA (Dilithium) - For signatures
   - SPHINCS+ - For hash-based signatures
 - Algorithm selection via configuration
@@ -236,10 +236,10 @@ impl PQCSuite {
 
 ---
 
-### 🟡 Important Gaps (Medium Priority)
+###  Important Gaps (Medium Priority)
 
 #### 4. Fuzz Testing Infrastructure
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** Medium  
 **Impact:** Security robustness
 
@@ -294,15 +294,15 @@ jobs:
 ---
 
 #### 5. User Documentation & Tooltips
-**Status:** ⚠️ Partial  
+**Status:**  Partial  
 **Priority:** Medium  
 **Impact:** User education and adoption
 
 **Current State:**
-- ✅ Technical docs exist (`docs/`)
-- ❌ User-facing tooltips missing
-- ❌ In-app help system missing
-- ❌ Tutorial/onboarding missing
+-  Technical docs exist (`docs/`)
+-  User-facing tooltips missing
+-  In-app help system missing
+-  Tutorial/onboarding missing
 
 **Requirements:**
 - In-app tooltips for PQC features
@@ -322,9 +322,9 @@ export const PostQuantumInfo: React.FC = () => (
       against future quantum computer attacks.
     </p>
     <ul>
-      <li>✅ Future-proof security</li>
-      <li>✅ Defense-in-depth (hybrid approach)</li>
-      <li>✅ Automatic key rotation every 5 minutes</li>
+      <li> Future-proof security</li>
+      <li> Defense-in-depth (hybrid approach)</li>
+      <li> Automatic key rotation every 5 minutes</li>
     </ul>
     <Link to="/docs/post-quantum">Learn more →</Link>
   </Modal>
@@ -351,7 +351,7 @@ export const PostQuantumInfo: React.FC = () => (
 ---
 
 #### 6. Bug Bounty Program Setup
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** Low (can be deferred)  
 **Impact:** Community security testing
 
@@ -378,10 +378,10 @@ export const PostQuantumInfo: React.FC = () => (
 
 ---
 
-### 🟢 Nice-to-Have Enhancements
+###  Nice-to-Have Enhancements
 
 #### 7. Automated Penetration Testing
-**Status:** ❌ Not Implemented  
+**Status:**  Not Implemented  
 **Priority:** Low  
 **Impact:** Continuous security validation
 
@@ -395,7 +395,7 @@ export const PostQuantumInfo: React.FC = () => (
 ---
 
 #### 8. Community Contribution Guidelines
-**Status:** ⚠️ Partial (`CONTRIBUTING.md` exists)  
+**Status:**  Partial (`CONTRIBUTING.md` exists)  
 **Priority:** Low  
 **Impact:** Open source engagement
 
@@ -479,21 +479,21 @@ export const PostQuantumInfo: React.FC = () => (
 ## Success Metrics
 
 ### Technical Metrics
-- ✅ PPK implementation with <100ms overhead
-- ✅ PQC toggle works without restart
-- ✅ 3+ PQC algorithms supported
-- ✅ Fuzz tests cover 80%+ of crypto code
-- ✅ Zero critical vulnerabilities in audits
+-  PPK implementation with <100ms overhead
+-  PQC toggle works without restart
+-  3+ PQC algorithms supported
+-  Fuzz tests cover 80%+ of crypto code
+-  Zero critical vulnerabilities in audits
 
 ### User Metrics
-- ✅ 90%+ users keep PQC enabled (default)
-- ✅ Tooltip engagement >50%
-- ✅ Support tickets for PQC <5% of total
+-  90%+ users keep PQC enabled (default)
+-  Tooltip engagement >50%
+-  Support tickets for PQC <5% of total
 
 ### Security Metrics
-- ✅ Bug bounty submissions: 5+ per quarter
-- ✅ Security audit findings: <3 critical per year
-- ✅ Fuzz test coverage: 80%+ of attack surface
+-  Bug bounty submissions: 5+ per quarter
+-  Security audit findings: <3 critical per year
+-  Fuzz test coverage: 80%+ of attack surface
 
 ---
 

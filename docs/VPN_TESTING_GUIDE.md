@@ -49,18 +49,18 @@ docker logs cryprq-vpn | grep -E "(ENCRYPT|DECRYPT|Forwarded)"
 
 ### Connection Establishment
 
-- ✅ Container starts listening on port 9999/udp
-- ✅ Dialer connects successfully
-- ✅ Connection established message appears
-- ✅ Packet forwarding loop starts
+-  Container starts listening on port 9999/udp
+-  Dialer connects successfully
+-  Connection established message appears
+-  Packet forwarding loop starts
 
 ### Packet Flow
 
-- ✅ Outgoing packets: TUN → encrypted tunnel → peer
-- ✅ Incoming packets: peer → encrypted tunnel → TUN
-- ✅ Encryption events logged (`🔐 ENCRYPT`)
-- ✅ Decryption events logged (`🔓 DECRYPT`)
-- ✅ Packet forwarding events logged (`✅ Forwarded`)
+-  Outgoing packets: TUN → encrypted tunnel → peer
+-  Incoming packets: peer → encrypted tunnel → TUN
+-  Encryption events logged (` ENCRYPT`)
+-  Decryption events logged (` DECRYPT`)
+-  Packet forwarding events logged (` Forwarded`)
 
 ### TUN Interface
 
@@ -158,14 +158,14 @@ USE_DOCKER=true BRIDGE_PORT=8787 node web/server/server.mjs
 
 ## Success Criteria
 
-✅ Container starts and listens on port 9999  
-✅ Dialer connects successfully  
-✅ TUN interface created and configured  
-✅ Packet forwarding loop active  
-✅ Encryption events logged (`🔐 ENCRYPT`)  
-✅ Decryption events logged (`🔓 DECRYPT`)  
-✅ Packets forwarded successfully (`✅ Forwarded`)  
-✅ Bidirectional packet flow working  
+ Container starts and listens on port 9999  
+ Dialer connects successfully  
+ TUN interface created and configured  
+ Packet forwarding loop active  
+ Encryption events logged (` ENCRYPT`)  
+ Decryption events logged (` DECRYPT`)  
+ Packets forwarded successfully (` Forwarded`)  
+ Bidirectional packet flow working  
 
 ## Next Steps
 

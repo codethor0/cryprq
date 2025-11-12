@@ -4,7 +4,7 @@
 
 ---
 
-## 🧭 Operator Tip
+##  Operator Tip
 
 **Golden path:** Connect → charts ≤3–5s → Rotate (toast ≤2s) → Disconnect
 

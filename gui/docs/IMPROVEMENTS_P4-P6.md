@@ -1,11 +1,11 @@
 # GUI Improvements P4.1 - P6 Summary
 
-## P4.1 — Tray Updater Dev Hooks + CI Assertions ✅
+## P4.1 — Tray Updater Dev Hooks + CI Assertions 
 
 ### Implementation
 
 1. **Dev Hook IPC** (`gui/electron/main/tray.ts`)
-   - Added `dev:tray:snapshot` IPC handler
+   - Added `devsnapshot` IPC handler
    - Returns: `{ status, currentPeer, recentLabels, items }`
    - `getCurrentMenuLabels()` extracts menu item labels for assertions
 
@@ -20,10 +20,10 @@
    - Test: recent peers contains active peer after connect
 
 ### Acceptance Criteria Met
-- ✅ Playwright can call `dev:tray:snapshot` and see labels reflect Connect/Disconnect
-- ✅ Rotation flips to 'rotating' then back to 'connected' automatically
+-  Playwright can call `devsnapshot` and see labels reflect Connect/Disconnect
+-  Rotation flips to 'rotating' then back to 'connected' automatically
 
-## P5.1 — Structured Log Schema (Versioned) + Strict Redaction ✅
+## P5.1 — Structured Log Schema (Versioned) + Strict Redaction 
 
 ### Implementation
 
@@ -50,12 +50,12 @@
    - Session state changes → `session.state` events
 
 ### Acceptance Criteria Met
-- ✅ Files contain JSONL with mandatory keys
-- ✅ No secrets visible (bearer/token/privKey) in msg or data
-- ✅ stderr lines always `lvl=error`, `src=cli`
-- ✅ session:start and session:restart produce identical schema outputs
+-  Files contain JSONL with mandatory keys
+-  No secrets visible (bearer/token/privKey) in msg or data
+-  stderr lines always `lvl=error`, `src=cli`
+-  session:start and session:restart produce identical schema outputs
 
-## P5.2 — Diagnostics Export Uses New Schema + Timeline ✅
+## P5.2 — Diagnostics Export Uses New Schema + Timeline 
 
 ### Implementation
 
@@ -77,16 +77,16 @@
    - `README.txt`: Instructions for sharing with support
 
 ### Acceptance Criteria Met
-- ✅ Zip contains JSONL logs + computed summaries
-- ✅ Sizes <10MB (with rotation)
-- ✅ session-summary shows coherent state timelines (no negative durations)
+-  Zip contains JSONL logs + computed summaries
+-  Sizes <10MB (with rotation)
+-  session-summary shows coherent state timelines (no negative durations)
 
-## P5.3 — Fault-Injection Tests for State/Logs Parity ✅
+## P5.3 — Fault-Injection Tests for State/Logs Parity 
 
 ### Implementation
 
 1. **Dev IPC Hook** (`gui/electron/main/session.ts`)
-   - `dev:session:simulateExit`: Simulates process exit with code/signal
+   - `devsimulateExit`: Simulates process exit with code/signal
    - Allows testing error scenarios without actual failures
 
 2. **E2E Tests** (`gui/tests/e2e/session-parity.spec.ts`)
@@ -100,10 +100,10 @@
    - Tests non-secret content is not redacted
 
 ### Acceptance Criteria Met
-- ✅ Tests pass
-- ✅ Diffs show no schema or ordering drift between start/restart
+-  Tests pass
+-  Diffs show no schema or ordering drift between start/restart
 
-## P6 — Rotation UX Sanity Checks Tied to Events ✅
+## P6 — Rotation UX Sanity Checks Tied to Events 
 
 ### Implementation
 
@@ -124,9 +124,9 @@
    - State changes to 'rotating' then back to 'running'
 
 ### Acceptance Criteria Met
-- ✅ If metrics jitter, countdown resyncs within 2s
-- ✅ No double toasts
-- ✅ Rotation status visible in UI
+-  If metrics jitter, countdown resyncs within 2s
+-  No double toasts
+-  Rotation status visible in UI
 
 ## Bonus: One-Liner CI Checks
 
@@ -175,5 +175,5 @@ docker compose -f gui/docker-compose.yml up -d fake-cryprq
 npm run test:e2e
 ```
 
-All improvements are complete and ready for testing! 🎉
+All improvements are complete and ready for testing! 
 

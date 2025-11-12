@@ -2,46 +2,46 @@
 
 **Date**: $(date +%Y-%m-%d)  
 **Branch**: qa/vnext-$(date +%Y%m%d)  
-**Status**: 🚧 In Progress
+**Status**:  In Progress
 
-## Completed ✅
+## Completed 
 
 1. **Environment Setup**
-   - ✅ QA environment setup script
-   - ✅ Multi-toolchain support (1.83.0, stable, beta, nightly)
-   - ✅ Hardened RUSTFLAGS configuration
+   -  QA environment setup script
+   -  Multi-toolchain support (1.83.0, stable, beta, nightly)
+   -  Hardened RUSTFLAGS configuration
 
 2. **KAT Infrastructure**
-   - ✅ FIPS 203 ML-KEM loader structure
-   - ✅ RFC 8439 ChaCha20-Poly1305 test structure
-   - ✅ RFC 7748 X25519 test structure
-   - ✅ KAT test runner script
+   -  FIPS 203 ML-KEM loader structure
+   -  RFC 8439 ChaCha20-Poly1305 test structure
+   -  RFC 7748 X25519 test structure
+   -  KAT test runner script
 
 3. **Property Tests**
-   - ✅ Expanded property test suite
-   - ✅ Handshake symmetry/idempotence tests
-   - ✅ Key size invariant tests
-   - ✅ Malformed input rejection tests
+   -  Expanded property test suite
+   -  Handshake symmetry/idempotence tests
+   -  Key size invariant tests
+   -  Malformed input rejection tests
 
 4. **Testing Infrastructure**
-   - ✅ Sanitizer runner (ASan/UBSan)
-   - ✅ Coverage runner (cargo-llvm-cov)
-   - ✅ Supply chain checker (audit, deny, vet, geiger, SBOM, Grype)
-   - ✅ QA orchestration script
+   -  Sanitizer runner (ASan/UBSan)
+   -  Coverage runner (cargo-llvm-cov)
+   -  Supply chain checker (audit, deny, vet, geiger, SBOM, Grype)
+   -  QA orchestration script
 
-## In Progress 🚧
+## In Progress 
 
 1. **KAT Vector Loading**
-   - 🚧 FIPS 203 vector parser implementation
-   - 🚧 RFC 8439/7748 vector integration
+   -  FIPS 203 vector parser implementation
+   -  RFC 8439/7748 vector integration
 
 2. **Docker Harness**
-   - 🚧 docker-compose.test.yml creation
-   - 🚧 Interop test implementation
+   -  docker-compose.test.yml creation
+   -  Interop test implementation
 
 3. **CI Integration**
-   - 🚧 CI gate updates
-   - 🚧 Required check configuration
+   -  CI gate updates
+   -  Required check configuration
 
 ## Pending ⏳
 

@@ -2,9 +2,9 @@
 
 **Last Updated:** 2025-11-11
 
-## Current Status: ✅ 6/12 Features Complete
+## Current Status:  6/12 Features Complete
 
-### ✅ Implemented
+###  Implemented
 1. Hybrid ML-KEM (Kyber768) + X25519 handshake
 2. Five-minute key rotation with zeroization
 3. Platform implementations (Android, iOS, macOS, Windows, Linux)
@@ -12,12 +12,12 @@
 5. Reproducible builds
 6. Cross-platform GUIs (Desktop v1.0.1, Mobile bootstrap)
 
-### ❌ Missing (Critical)
+###  Missing (Critical)
 1. **Post-Quantum Pre-Shared Keys (PPKs)** - 2-3 weeks
 2. **User Toggle for PQC** - 1 week
 3. **Additional OQS Algorithms** - 3-4 weeks
 
-### ⚠️ Partial
+###  Partial
 4. **Fuzz Testing** - 2 weeks
 5. **User Documentation/Tooltips** - 1-2 weeks
 6. **Bug Bounty Program** - 1 week (docs)

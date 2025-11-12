@@ -51,27 +51,27 @@ npm run build:win
 
 ```
 gui/
-├── src/
-│   ├── components/      # React components
-│   │   ├── Dashboard/   # Dashboard screen
-│   │   ├── Peers/       # Peer management
-│   │   ├── Settings/    # Settings screen
-│   │   └── Layout/      # Sidebar, MainLayout
-│   ├── services/        # Backend integration
-│   ├── store/           # Zustand state management
-│   ├── types/           # TypeScript types
-│   ├── themes/          # Theme definitions
-│   └── main.tsx         # React entry point
-├── electron/            # Electron main process
-│   ├── main.ts          # Window management, tray
-│   └── preload.ts       # IPC bridge
-├── public/              # Static assets
-└── docs/                # Documentation
+ src/
+    components/      # React components
+       Dashboard/   # Dashboard screen
+       Peers/       # Peer management
+       Settings/    # Settings screen
+       Layout/      # Sidebar, MainLayout
+    services/        # Backend integration
+    store/           # Zustand state management
+    types/           # TypeScript types
+    themes/          # Theme definitions
+    main.tsx         # React entry point
+ electron/            # Electron main process
+    main.ts          # Window management, tray
+    preload.ts       # IPC bridge
+ public/              # Static assets
+ docs/                # Documentation
 ```
 
 ## Features
 
-### ✅ Implemented
+###  Implemented
 
 - Dashboard with connection status
 - Peer management (add/remove)
