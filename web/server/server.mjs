@@ -383,27 +383,38 @@ app.get('/events', async (req,res)=>{
   
   // If Docker mode, stream container logs periodically
   if (USE_DOCKER) {
+    let lastLogCount = 0;
     const logInterval = setInterval(async () => {
       try {
-        const logs = await getContainerLogs(5);
-        logs.split('\n').filter(Boolean).forEach(line => {
-          let level = 'info';
-          if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
-          else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
-          else if (/rotate|rotation/i.test(line)) level = 'rotation';
-          else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
-          else if (/vpn|tun|interface/i.test(line)) level = 'status';
-          else if (/error|failed|panic/i.test(line)) level = 'error';
-          
-          const e = { level, t: line };
-          events.push(e);
-          if (events.length > 500) events.shift();
-          res.write(`data: ${JSON.stringify(e)}\n\n`);
-        });
+        const logs = await getContainerLogs(10);
+        const lines = logs.split('\n').filter(Boolean);
+        // Only send new lines (after lastLogCount)
+        if (lines.length > lastLogCount) {
+          lines.slice(lastLogCount).forEach(line => {
+            let level = 'info';
+            if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+            else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+            else if (/rotate|rotation/i.test(line)) level = 'rotation';
+            else if (/peer|connect|handshake|ping|connected|Inbound|Incoming/i.test(line)) level = 'peer';
+            else if (/vpn|tun|interface/i.test(line)) level = 'status';
+            else if (/error|failed|panic/i.test(line)) level = 'error';
+            
+            const e = { level, t: line };
+            events.push(e);
+            if (events.length > 500) events.shift();
+            try {
+              res.write(`data: ${JSON.stringify(e)}\n\n`);
+            } catch (err) {
+              // Connection closed
+              clearInterval(logInterval);
+            }
+          });
+          lastLogCount = lines.length;
+        }
       } catch (err) {
         // Ignore errors, connection might be closed
       }
-    }, 2000);
+    }, 1000); // Check every second for faster updates
     req.on('close', () => clearInterval(logInterval));
   } else {
     // Local mode - just send ticks
