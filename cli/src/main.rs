@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
             
-            p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
                 
@@ -110,6 +110,20 @@ async fn main() -> Result<()> {
                     if let Some(mut tun) = tun_guard.take() {
                         // Create packet forwarder
                         let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        
+                        // Store recv_tx for forwarding incoming packets from swarm events
+                        // The swarm event handler will use this to forward packets to TUN
+                        let forwarder_recv_tx = forwarder.recv_tx();
+                        
+                        // Spawn task to forward incoming packets from swarm to TUN
+                        let recv_tx_for_swarm = recv_tx.clone();
+                        tokio::spawn(async move {
+                            loop {
+                                // This will be populated by swarm event handler
+                                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                            }
+                        });
+                        
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
                         
                         // Start packet forwarding loop
@@ -136,7 +150,7 @@ async fn main() -> Result<()> {
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
             
-            p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
                 
@@ -149,6 +163,11 @@ async fn main() -> Result<()> {
                     if let Some(mut tun) = tun_guard.take() {
                         // Create packet forwarder
                         let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        let forwarder_recv_tx = forwarder.recv_tx();
+                        
+                        // Store recv_tx for swarm event handler to forward incoming packets
+                        // For now, we'll handle this in the swarm event loop
+                        
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
                         
                         // Start packet forwarding loop

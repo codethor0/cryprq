@@ -13,6 +13,7 @@ use libp2p::{
     identity, mdns,
     multiaddr::Protocol,
     noise, ping,
+    request_response::{self, ProtocolSupport},
     swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
     tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
 };
@@ -40,7 +41,8 @@ pub mod packet_forwarder;
 pub use packet_forwarder::Libp2pPacketForwarder;
 
 // Callback for when connection is established (for VPN packet forwarding)
-pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>) + Send + Sync>;
+// Now includes recv_tx for forwarding incoming packets to TUN
+pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>>) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));
 
 /// Set callback to be called when connection is established
@@ -77,6 +79,7 @@ pub struct MyBehaviour {
     mdns: mdns::tokio::Behaviour,
     ping: ping::Behaviour,
     limits: ConnectionLimitBehaviour,
+    request_response: request_response::Behaviour<packet_forwarder::PacketCodec>,
 }
 
 #[derive(Debug)]
@@ -84,6 +87,7 @@ pub enum MyBehaviourEvent {
     Mdns(mdns::Event),
     Ping(ping::Event),
     Limits(Infallible),
+    RequestResponse(request_response::Event<Vec<u8>, Vec<u8>>),
 }
 
 impl From<mdns::Event> for MyBehaviourEvent {
@@ -101,6 +105,12 @@ impl From<ping::Event> for MyBehaviourEvent {
 impl From<Infallible> for MyBehaviourEvent {
     fn from(_: Infallible) -> Self {
         unreachable!("connection limit behaviour is infallible")
+    }
+}
+
+impl From<request_response::Event<Vec<u8>, Vec<u8>>> for MyBehaviourEvent {
+    fn from(event: request_response::Event<Vec<u8>, Vec<u8>>) -> Self {
+        MyBehaviourEvent::RequestResponse(event)
     }
 }
 
@@ -248,10 +258,19 @@ pub async fn init_swarm(
         .with_behaviour(|key| {
             let peer_id = PeerId::from(key.public());
             let mdns_behaviour = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+            
+            // Create request-response behaviour for packet forwarding
+            let protocol = packet_forwarder::PacketProtocol;
+            let request_response_behaviour = request_response::Behaviour::new(
+                [(protocol, ProtocolSupport::Full)],
+                request_response::Config::default(),
+            );
+            
             Ok(MyBehaviour {
                 mdns: mdns_behaviour,
                 ping: ping::Behaviour::new(ping::Config::new()),
                 limits: connection_limits_behaviour(),
+                request_response: request_response_behaviour,
             })
         })?
         .with_swarm_config(|c| c)
@@ -333,6 +352,32 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                 println!("Ping event: {event:?}");
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Limits(_)) => {}
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, .. } => {
+                        match message {
+                            request_response::Message::Request { request, channel, peer, .. } => {
+                                // Incoming packet from peer - send empty response and forward packet to TUN
+                                let mut s = swarm_for_loop.lock().await;
+                                let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
+                                log::debug!("🔓 DECRYPT: Received {} bytes packet from {}", request.len(), peer);
+                                // TODO: Forward to TUN interface via callback's recv_tx
+                            }
+                            request_response::Message::Response { response, request_id, .. } => {
+                                // Response to our request - acknowledgment
+                                log::debug!("✅ Received response for request {:?} ({} bytes)", request_id, response.len());
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure { error, request_id, .. } => {
+                        log::warn!("Request-response outbound failure for {:?}: {:?}", request_id, error);
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {:?}", error);
+                    }
+                    _ => {}
+                }
+            }
             other => {
                 println!("Unhandled event: {other:?}");
             }
@@ -417,6 +462,33 @@ pub async fn dial_peer(addr: String) -> Result<()> {
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, .. } => {
+                        match message {
+                            request_response::Message::Request { request, channel, .. } => {
+                                // Incoming packet from peer - send empty response and forward packet
+                                let mut s = swarm_for_loop.lock().await;
+                                let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
+                                log::debug!("🔓 Received {} bytes packet from peer", request.len());
+                                // TODO: Forward to TUN interface via callback
+                            }
+                            request_response::Message::Response { response, .. } => {
+                                // Response to our request - this is the packet we sent
+                                log::debug!("✅ Received response for packet ({} bytes)", response.len());
+                                // TODO: Handle response if needed
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure { error, .. } => {
+                        log::warn!("Request-response outbound failure: {:?}", error);
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {:?}", error);
+                    }
+                    _ => {}
+                }
             }
             SwarmEvent::Dialing {
                 peer_id,

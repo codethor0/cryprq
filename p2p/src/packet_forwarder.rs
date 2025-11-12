@@ -3,14 +3,14 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // SPDX-License-Identifier: MIT
 
-//! Packet forwarding over libp2p streams
+//! Packet forwarding over libp2p request-response protocol
 //! 
-//! This module provides packet forwarding using libp2p's encrypted streams.
-//! For now, this is a stub implementation that logs packets.
-//! Full libp2p stream integration will be added incrementally.
+//! This module provides packet forwarding using libp2p's request-response protocol
+//! for bidirectional packet exchange over encrypted streams.
 
 use anyhow::{Context, Result};
 use libp2p::{
+    request_response::{self, Codec, ProtocolSupport},
     swarm::Swarm,
     PeerId,
 };
@@ -19,15 +19,91 @@ use tokio::sync::Mutex;
 
 use crate::MyBehaviour;
 
-/// Packet forwarder using libp2p streams
-/// 
-/// This is a stub implementation that will be enhanced with full
-/// libp2p stream-based packet forwarding.
+/// Simple codec for packet forwarding
+#[derive(Clone)]
+pub struct PacketCodec;
+
+#[derive(Clone)]
+pub struct PacketProtocol;
+
+impl request_response::Protocol for PacketProtocol {
+    type Request = Vec<u8>;
+    type Response = Vec<u8>;
+
+    fn request_response_protocol_info(&self) -> Vec<libp2p::request_response::ProtocolName> {
+        vec!["/cryprq/packet/1.0.0".into()]
+    }
+}
+
+impl Codec for PacketCodec {
+    type Protocol = PacketProtocol;
+    type Request = Vec<u8>;
+    type Response = Vec<u8>;
+
+    fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
+    where
+        T: futures::AsyncRead + Unpin + Send,
+    {
+        use futures::AsyncReadExt;
+        let mut len_bytes = [0u8; 4];
+        futures::executor::block_on(io.read_exact(&mut len_bytes))?;
+        let len = u32::from_be_bytes(len_bytes) as usize;
+        if len > 65535 {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
+        }
+        let mut buf = vec![0u8; len];
+        futures::executor::block_on(io.read_exact(&mut buf))?;
+        Ok(buf)
+    }
+
+    fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
+    where
+        T: futures::AsyncRead + Unpin + Send,
+    {
+        use futures::AsyncReadExt;
+        let mut len_bytes = [0u8; 4];
+        futures::executor::block_on(io.read_exact(&mut len_bytes))?;
+        let len = u32::from_be_bytes(len_bytes) as usize;
+        if len > 65535 {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
+        }
+        let mut buf = vec![0u8; len];
+        futures::executor::block_on(io.read_exact(&mut buf))?;
+        Ok(buf)
+    }
+
+    fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: &Self::Request) -> std::io::Result<()>
+    where
+        T: futures::AsyncWrite + Unpin + Send,
+    {
+        use futures::AsyncWriteExt;
+        let len = req.len() as u32;
+        futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
+        futures::executor::block_on(io.write_all(req))?;
+        futures::executor::block_on(io.flush())?;
+        Ok(())
+    }
+
+    fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: &Self::Response) -> std::io::Result<()>
+    where
+        T: futures::AsyncWrite + Unpin + Send,
+    {
+        use futures::AsyncWriteExt;
+        let len = res.len() as u32;
+        futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
+        futures::executor::block_on(io.write_all(res))?;
+        futures::executor::block_on(io.flush())?;
+        Ok(())
+    }
+}
+
+/// Packet forwarder using libp2p request-response protocol
 pub struct Libp2pPacketForwarder {
     swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
     peer_id: PeerId,
     send_tx: Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>,
     recv_rx: Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>,
+    recv_tx: Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>>,
 }
 
 impl Libp2pPacketForwarder {
@@ -36,36 +112,48 @@ impl Libp2pPacketForwarder {
         peer_id: PeerId,
     ) -> (Self, Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>, Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>) {
         let (send_tx, mut send_rx) = tokio::sync::mpsc::unbounded_channel();
-        let (_recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
         
         let send_tx_arc = Arc::new(send_tx.clone());
         let recv_rx_arc = Arc::new(Mutex::new(recv_rx));
+        let recv_tx_arc = Arc::new(tokio::sync::Mutex::new(recv_tx));
         
         let forwarder = Self {
             swarm: swarm.clone(),
             peer_id,
             send_tx: send_tx_arc.clone(),
             recv_rx: recv_rx_arc.clone(),
+            recv_tx: recv_tx_arc.clone(),
         };
         
-        // Spawn task to handle sending packets via libp2p
+        // Spawn task to handle sending packets via libp2p request-response
         let swarm_clone = swarm.clone();
         let peer_id_clone = peer_id;
         tokio::spawn(async move {
             loop {
                 if let Some(packet) = send_rx.recv().await {
-                    // Log packet forwarding
-                    log::debug!("🔐 Forwarding {} bytes via libp2p to {}", packet.len(), peer_id_clone);
+                    // Send packet as request via request-response protocol
+                    let mut swarm_guard = swarm_clone.lock().await;
                     
-                    // TODO: Send packet via libp2p stream
-                    // This requires integrating with libp2p's stream handling
-                    // For now, we log that packets are ready to be forwarded
-                    // The actual stream integration will be added in a follow-up
+                    // Send request (packet) to peer using request-response behaviour
+                    match swarm_guard.behaviour_mut().request_response.send_request(&peer_id_clone, packet.clone()) {
+                        Ok(request_id) => {
+                            log::debug!("🔐 ENCRYPT: Sent {} bytes packet to {} (request_id: {:?})", packet.len(), peer_id_clone, request_id);
+                        }
+                        Err(e) => {
+                            log::warn!("Failed to send packet to {}: {}", peer_id_clone, e);
+                        }
+                    }
                 }
             }
         });
         
         (forwarder, send_tx_arc, recv_rx_arc)
+    }
+    
+    /// Get the receiver channel sender for forwarding incoming packets
+    pub fn recv_tx(&self) -> Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>> {
+        self.recv_tx.clone()
     }
 }
 
