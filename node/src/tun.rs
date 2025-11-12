@@ -7,14 +7,14 @@
 //!
 //! This module provides TUN interface creation and packet forwarding
 //! to enable routing all system traffic through the encrypted tunnel.
-//!
-//! NOTE: This is a simplified implementation for proof-of-concept.
-//! Production use should use proper Network Extension framework on macOS.
 
 use anyhow::{Context, Result};
 use std::process::Command;
+use std::sync::Arc;
+use std::io::{Read, Write};
 
 /// TUN interface configuration
+#[derive(Clone)]
 pub struct TunConfig {
     pub name: String,
     pub address: String,
@@ -34,92 +34,86 @@ impl Default for TunConfig {
 }
 
 /// TUN interface handle
-/// 
-/// NOTE: This is a simplified implementation that uses system commands
-/// to create and configure the TUN interface. For production use,
-/// consider using a proper Network Extension framework.
 pub struct TunInterface {
     config: TunConfig,
     interface_name: String,
+    #[cfg(target_os = "macos")]
+    device: Option<tun::platform::macos::Device>,
+    #[cfg(target_os = "linux")]
+    device: Option<tun::platform::linux::Device>,
 }
 
 impl TunInterface {
     /// Create a new TUN interface
     /// 
-    /// This uses system commands to create and configure the interface.
-    /// Requires root/admin privileges.
+    /// This creates and configures the TUN interface.
+    /// Requires root/admin privileges on macOS/Linux.
     pub async fn create(config: TunConfig) -> Result<Self> {
         let interface_name = config.name.clone();
         
-        // Create and configure the interface
-        #[cfg(target_os = "macos")]
-        {
-            Self::create_macos(&config, &interface_name).await?;
-        }
-        #[cfg(target_os = "linux")]
-        {
-            Self::create_linux(&config, &interface_name).await?;
-        }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            anyhow::bail!("TUN interface not supported on this platform");
-        }
+        // Create the TUN device using the tun crate (blocking, but fast)
+        let device = tokio::task::spawn_blocking({
+            let config_clone = config.clone();
+            let name_clone = interface_name.clone();
+            move || Self::create_device(&config_clone, &name_clone)
+        })
+        .await
+        .context("Failed to spawn TUN creation task")?
+        .context("Failed to create TUN device")?;
 
         Ok(Self {
             config,
             interface_name,
+            device: Some(device),
         })
     }
 
     #[cfg(target_os = "macos")]
-    async fn create_macos(config: &TunConfig, name: &str) -> Result<()> {
-        // On macOS, creating TUN interfaces requires Network Extension framework
-        // or root privileges. For now, we'll attempt to create via system commands.
+    fn create_device(config: &TunConfig, name: &str) -> Result<tun::platform::macos::Device> {
+        log::info!("Creating TUN interface {} for VPN mode", name);
         
-        log::info!("Creating TUN interface {} on macOS", name);
-        log::info!("VPN Mode: Attempting to create TUN interface for system-wide routing");
+        let mut config_builder = tun::Configuration::default();
+        let addr: std::net::Ipv4Addr = config.address.parse()
+            .context("Invalid TUN address (must be IPv4)")?;
+        let netmask: std::net::Ipv4Addr = config.netmask.parse()
+            .context("Invalid netmask (must be IPv4)")?;
         
-        // Try to create utun interface using ifconfig
-        // Note: This requires sudo/admin privileges
-        let output = Command::new("ifconfig")
-            .args(&["-l"])
-            .output()
-            .context("Failed to list interfaces")?;
+        config_builder
+            .name(name)
+            .address(addr)
+            .netmask(netmask)
+            .mtu(config.mtu as i32)
+            .up();
         
-        let interfaces = String::from_utf8_lossy(&output.stdout);
-        log::debug!("Available interfaces: {}", interfaces);
+        let device = tun::platform::macos::create(&config_builder)
+            .context("Failed to create TUN device (requires root/admin privileges)")?;
         
-        // Check if utun interface already exists
-        if interfaces.contains("utun") {
-            log::info!("Found existing utun interface - will configure it");
-        } else {
-            log::warn!("No utun interface found - TUN creation requires Network Extension framework");
-            log::warn!("For full system-wide VPN, macOS requires Network Extension (NEPacketTunnelProvider)");
-            log::info!("Current implementation: P2P encrypted tunnel is working, but system routing needs Network Extension");
-        }
-        
-        Ok(())
+        log::info!("TUN interface {} created successfully", name);
+        Ok(device)
     }
-
+    
     #[cfg(target_os = "linux")]
-    async fn create_linux(config: &TunConfig, name: &str) -> Result<()> {
-        // On Linux, create TUN interface using ip command
-        log::info!("Creating TUN interface {} on Linux (requires root privileges)", name);
+    fn create_device(config: &TunConfig, name: &str) -> Result<tun::platform::linux::Device> {
+        log::info!("Creating TUN interface {} for VPN mode", name);
         
-        // Use ip tuntap command to create TUN interface
-        let output = Command::new("sudo")
-            .args(&["ip", "tuntap", "add", "mode", "tun", "name", name])
-            .output()
-            .context("Failed to create TUN interface (requires root)")?;
-
-        if !output.status.success() {
-            return Err(anyhow::anyhow!(
-                "ip tuntap add failed: {}",
-                String::from_utf8_lossy(&output.stderr)
-            ));
-        }
-
-        Ok(())
+        let mut config_builder = tun::Configuration::default();
+        let addr: std::net::Ipv4Addr = config.address.parse()
+            .context("Invalid TUN address (must be IPv4)")?;
+        let netmask: std::net::Ipv4Addr = config.netmask.parse()
+            .context("Invalid netmask (must be IPv4)")?;
+        
+        config_builder
+            .name(name)
+            .address(addr)
+            .netmask(netmask)
+            .mtu(config.mtu as i32)
+            .up();
+        
+        let device = tun::platform::linux::create(&config_builder)
+            .context("Failed to create TUN device (requires root/admin privileges)")?;
+        
+        log::info!("TUN interface {} created successfully", name);
+        Ok(device)
     }
 
     /// Get the TUN interface name
@@ -213,16 +207,93 @@ impl TunInterface {
     /// Start packet forwarding loop
     /// 
     /// This forwards packets between the TUN interface and the encrypted tunnel.
-    /// NOTE: This is a placeholder - actual implementation requires proper TUN device access.
-    pub async fn start_forwarding(&mut self, _tunnel: &crate::Tunnel) -> Result<()> {
-        log::info!("Packet forwarding started for TUN interface {}", self.interface_name);
-        log::warn!("Packet forwarding is a placeholder - requires proper TUN device implementation");
+    pub async fn start_forwarding(&mut self, tunnel: Arc<crate::Tunnel>) -> Result<()> {
+        log::info!("Starting packet forwarding for TUN interface {}", self.interface_name);
         
-        // TODO: Implement actual packet forwarding loop
-        // 1. Read packets from TUN interface
-        // 2. Encrypt and send via tunnel
-        // 3. Receive encrypted packets from tunnel
-        // 4. Decrypt and write to TUN interface
+        let device = self.device.take()
+            .context("TUN device not initialized")?;
+        
+        // Keep device alive by moving it into the tasks
+        // We'll use blocking I/O wrapped in spawn_blocking
+        // Note: tun::Device implements Read/Write, so we can use it directly
+        let tunnel_read = tunnel.clone();
+        
+        // Spawn blocking task to read from TUN and send to tunnel
+        // We need to share device for read/write, so we'll use Arc<Mutex<>> wrapper
+        let device_clone = Arc::new(std::sync::Mutex::new(device));
+        let device_read = device_clone.clone();
+        let device_write = device_clone.clone();
+        
+        let tun_read_task = tokio::spawn(async move {
+            loop {
+                // Use blocking read in spawn_blocking
+                let mut buf = vec![0u8; 65535];
+                let n = match tokio::task::spawn_blocking({
+                    let dev = device_read.clone();
+                    let mut buf_clone = buf.clone();
+                    move || {
+                        let mut dev_guard = dev.lock().unwrap();
+                        dev_guard.read(&mut buf_clone)
+                    }
+                }).await {
+                    Ok(Ok(n)) => {
+                        buf = vec![0u8; 65535]; // Reset buffer
+                        n
+                    },
+                    Ok(Err(e)) => {
+                        log::error!("Error reading from TUN: {}", e);
+                        break;
+                    }
+                    Err(e) => {
+                        log::error!("Task error: {}", e);
+                        break;
+                    }
+                };
+                
+                if n > 0 {
+                    let packet = buf[..n].to_vec();
+                    log::debug!("Read {} bytes from TUN interface", n);
+                    
+                    // Encrypt and send via tunnel
+                    if let Err(e) = tunnel_read.send_packet(&packet).await {
+                        log::error!("Failed to send packet via tunnel: {}", e);
+                    }
+                } else {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                }
+            }
+        });
+        
+        // Spawn task to receive from tunnel and write to TUN
+        let tun_write_task = tokio::spawn(async move {
+            loop {
+                match tunnel.recv_packet().await {
+                    Ok(packet) => {
+                        log::debug!("Received {} bytes from tunnel, writing to TUN", packet.len());
+                        // Use blocking write in spawn_blocking
+                        let dev = device_write.clone();
+                        if let Err(e) = tokio::task::spawn_blocking(move || {
+                            let mut dev_guard = dev.lock().unwrap();
+                            dev_guard.write_all(&packet)
+                        }).await {
+                            log::error!("Failed to write packet to TUN: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Error receiving packet from tunnel: {}", e);
+                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    }
+                }
+            }
+        });
+        
+        log::info!("Packet forwarding loop started - routing system traffic through encrypted tunnel");
+        
+        // Wait for tasks (they run forever)
+        tokio::select! {
+            _ = tun_read_task => {},
+            _ = tun_write_task => {},
+        }
         
         Ok(())
     }
