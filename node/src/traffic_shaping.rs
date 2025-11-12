@@ -71,14 +71,14 @@ impl TrafficShaper {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_traffic_shaper_creation() {
+    #[tokio::test]
+    async fn test_traffic_shaper_creation() {
         let shaper = TrafficShaper::new(10.0);
         assert_eq!(shaper.pps, 10.0);
     }
 
-    #[test]
-    fn test_should_send() {
+    #[tokio::test]
+    async fn test_should_send() {
         let mut shaper = TrafficShaper::new(1.0);
         assert!(shaper.should_send()); // Should send immediately if no previous packet
     }
