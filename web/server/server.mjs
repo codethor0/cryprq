@@ -7,45 +7,58 @@ app.use(cors());
 app.use(express.json());
 
 let proc = null;
+let currentMode = null;
+let currentPort = null;
 const events = [];
 function push(level, t){ const e={level,t}; events.push(e); if(events.length>500) events.shift(); }
 
 app.post('/connect', (req,res)=>{
   const { mode, port, peer, vpn } = req.body || {};
   
-  // Kill any existing processes and clear the port
-  if(proc) { 
+  // Only kill existing process if we're switching modes or ports
+  // This prevents killing the listener when dialer tries to connect
+  if(proc && (currentMode !== mode || currentPort !== port)) {
+    push('status', `🔄 Switching from ${currentMode} to ${mode} on port ${port}`);
     proc.kill('SIGKILL'); 
     proc = null;
+    currentMode = null;
+    currentPort = null;
+    
+    // Wait for process to die
+    const { execSync } = require('child_process');
+    try {
+      execSync('sleep 0.5', {stdio: 'ignore'});
+    } catch(e) {}
   }
   
-  // Kill any cryprq processes and clear port
-  // BUT: Don't kill processes that are listening on the same port we're about to use
-  // This prevents killing the listener before dialer can connect
+  // If we already have a process running for this exact mode/port, don't restart it
+  if(proc && currentMode === mode && currentPort === port) {
+    push('status', `ℹ️ ${mode} already running on port ${port} - keeping alive`);
+    res.json({ok:true, vpn: !!vpn, alreadyRunning: true});
+    return;
+  }
+  
+  // Kill any cryprq processes on this port ONLY if we're starting a listener
+  // For dialer, we want to keep the listener alive
   const { execSync } = require('child_process');
-  try {
-    // Only kill processes using the port if we're switching modes
-    // If listener is already running and we're starting dialer, keep listener alive
-    if(proc) {
-      // We're switching connections, kill the old one
+  if(mode === 'listener') {
+    try {
+      // Kill any processes using this port (we're starting a new listener)
       execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
       execSync('sleep 0.3', {stdio: 'ignore'});
-    } else {
-      // New connection - only kill if port is in use AND it's not our own listener
-      // Check if there's a listener on this port
+      push('status', `🧹 Cleaned up port ${port} - ready for listener`);
+    } catch(e) {}
+  } else if(mode === 'dialer') {
+    // For dialer, check if listener is running - if not, warn user
+    try {
       const portUsers = execSync(`lsof -ti:${port} 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
-      if(portUsers && mode === 'dialer') {
-        // Dialer mode - don't kill listener, it needs to stay alive
-        push('status', `ℹ️ Port ${port} in use - assuming listener is running`);
-      } else if(portUsers && mode === 'listener') {
-        // Listener mode - kill existing processes on this port
-        execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
-        execSync('sleep 0.3', {stdio: 'ignore'});
+      if(!portUsers) {
+        push('status', `⚠️ No listener detected on port ${port} - make sure listener is running first`);
+      } else {
+        push('status', `✅ Listener detected on port ${port} - connecting...`);
       }
-    }
-  } catch(e) {}
-  
-  push('status', `🧹 Cleaned up port ${port} - ready for new connection`);
+    } catch(e) {}
+  }
   let args = [];
   if(mode==='listener') args = ['--listen', `/ip4/0.0.0.0/udp/${port}/quic-v1`];
   else if(mode==='dialer') args = ['--peer', peer || `/ip4/127.0.0.1/udp/${port}/quic-v1`];
@@ -66,6 +79,8 @@ app.post('/connect', (req,res)=>{
     stdio: ['ignore','pipe','pipe'],
     env: env
   });
+  currentMode = mode;
+  currentPort = port;
   push('status', `spawn ${args.join(' ')}`);
   proc.stdout.on('data', d=>{
     const s=d.toString();
@@ -108,6 +123,20 @@ app.post('/connect', (req,res)=>{
     } else {
       push('status', `exit ${code} (error)`);
     }
+    // Clear process tracking when it exits
+    if(proc && proc.pid === proc.pid) {
+      proc = null;
+      currentMode = null;
+      currentPort = null;
+    }
+  });
+  
+  // Handle process errors
+  proc.on('error', (err)=>{
+    push('error', `Process error: ${err.message}`);
+    proc = null;
+    currentMode = null;
+    currentPort = null;
   });
   res.json({ok:true, vpn: !!vpn});
 });
