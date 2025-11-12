@@ -1,5 +1,7 @@
 # Roadmap
 
+> **📋 Master Prompt Roadmap:** For comprehensive post-quantum feature implementation plan aligned with the Master Prompt requirements, see [`MASTER_PROMPT_ROADMAP.md`](./MASTER_PROMPT_ROADMAP.md) and [`MASTER_PROMPT_QUICK_REF.md`](./MASTER_PROMPT_QUICK_REF.md).
+
 ## Near-Term
 - Complete userspace WireGuard forwarding path.
 - Implement peer directory and ACL enforcement.
