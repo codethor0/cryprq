@@ -1,16 +1,53 @@
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'node:child_process';
+import { exec } from 'node:child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Check if Docker mode is enabled
 const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
+const CONTAINER_NAME = process.env.CRYPRQ_CONTAINER || 'cryprq-listener';
 
-// Note: If Docker mode is enabled, use web/server/index.mjs instead
-// which will load docker-bridge.mjs automatically
+// Helper to get container IP
+async function getContainerIP() {
+    try {
+        const { stdout } = await execAsync(
+            `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}`
+        );
+        return stdout.trim();
+    } catch {
+        return null;
+    }
+}
+
+// Helper to check if container is running
+async function isContainerRunning() {
+    try {
+        const { stdout } = await execAsync(
+            `docker ps --filter "name=${CONTAINER_NAME}" --format "{{.Names}}"`
+        );
+        return stdout.trim() === CONTAINER_NAME;
+    } catch {
+        return false;
+    }
+}
+
+// Helper to get container logs
+async function getContainerLogs(lines = 20) {
+    try {
+        const { stdout } = await execAsync(
+            `docker logs --tail ${lines} ${CONTAINER_NAME} 2>&1`
+        );
+        return stdout;
+    } catch {
+        return '';
+    }
+}
 
 let proc = null;
 let currentMode = null;
@@ -18,9 +55,138 @@ let currentPort = null;
 const events = [];
 function push(level, t){ const e={level,t}; events.push(e); if(events.length>500) events.shift(); }
 
-app.post('/connect', (req,res)=>{
+app.post('/connect', async (req,res)=>{
   const { mode, port, peer, vpn } = req.body || {};
   
+  // If Docker mode is enabled, use container instead of local process
+  if (USE_DOCKER) {
+    const containerRunning = await isContainerRunning();
+    if (!containerRunning) {
+      push('error', `Container ${CONTAINER_NAME} is not running`);
+      push('status', `Start container with: ./scripts/docker-vpn-start.sh`);
+      return res.status(500).json({ error: 'Container not running' });
+    }
+    
+    const containerIP = await getContainerIP();
+    if (!containerIP) {
+      push('error', 'Could not get container IP');
+      return res.status(500).json({ error: 'Could not get container IP' });
+    }
+    
+    // For listener mode, container is already listening
+    if (mode === 'listener') {
+      push('status', `🐳 Container ${CONTAINER_NAME} is listening on port ${port}`);
+      push('status', `Container IP: ${containerIP}`);
+      push('status', `Connect to: /ip4/${containerIP}/udp/${port}/quic-v1`);
+      push('status', `✅ Docker VPN mode active - container handling encryption`);
+      
+      // Stream container logs
+      const logs = await getContainerLogs(20);
+      logs.split('\n').filter(Boolean).forEach(line => {
+        let level = 'info';
+        if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+        else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+        else if (/rotate|rotation/i.test(line)) level = 'rotation';
+        else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+        else if (/vpn|tun|interface/i.test(line)) level = 'status';
+        else if (/error|failed|panic/i.test(line)) level = 'error';
+        push(level, line);
+      });
+      
+      return res.json({ 
+        ok: true, 
+        vpn: !!vpn,
+        containerIP,
+        containerName: CONTAINER_NAME,
+        mode: 'listener',
+        dockerMode: true
+      });
+    }
+    
+    // For dialer mode, Mac connects to container
+    if (mode === 'dialer') {
+      const containerPeer = `/ip4/${containerIP}/udp/${port}/quic-v1`;
+      push('status', `🐳 Connecting Mac to container at ${containerPeer}`);
+      push('status', `✅ Docker VPN mode - container will handle encryption and routing`);
+      
+      // Run local cryprq binary to connect to container
+      const args = ['--peer', containerPeer];
+      if (vpn) args.push('--vpn');
+      
+      proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, RUST_LOG: 'debug' }
+      });
+      
+      currentMode = mode;
+      currentPort = port;
+      push('status', `spawn ${args.join(' ')}`);
+      
+      proc.stdout.on('data', d => {
+        const s = d.toString();
+        s.split(/\r?\n/).filter(Boolean).forEach(line => {
+          let level = 'info';
+          if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+          else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+          else if (/rotate|rotation/i.test(line)) level = 'rotation';
+          else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+          else if (/vpn|tun|interface/i.test(line)) level = 'status';
+          else if (/error|failed|panic/i.test(line)) level = 'error';
+          push(level, line);
+        });
+      });
+      
+      proc.stderr.on('data', d => {
+        const s = d.toString();
+        s.split(/\r?\n/).filter(Boolean).forEach(line => {
+          let level = 'error';
+          if (/INFO|DEBUG|TRACE/i.test(line)) {
+            level = 'info';
+            if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+            else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+            else if (/rotate|rotation/i.test(line)) level = 'rotation';
+            else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+          }
+          push(level, line);
+        });
+      });
+      
+      proc.on('exit', (code, signal) => {
+        if (code === 0) {
+          push('status', `exit ${code} (clean shutdown)`);
+        } else if (code === null && signal) {
+          push('error', `Process killed by signal: ${signal}`);
+        } else if (code === null) {
+          push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
+        } else {
+          push('error', `exit ${code} (signal: ${signal || 'none'})`);
+        }
+        proc = null;
+        currentMode = null;
+        currentPort = null;
+      });
+      
+      proc.on('error', (err) => {
+        push('error', `Process spawn error: ${err.message}`);
+        proc = null;
+        currentMode = null;
+        currentPort = null;
+      });
+      
+      return res.json({ 
+        ok: true, 
+        vpn: !!vpn,
+        containerIP,
+        containerPeer,
+        mode: 'dialer',
+        dockerMode: true
+      });
+    }
+    
+    return res.status(400).json({ error: 'mode must be listener or dialer' });
+  }
+  
+  // Local mode (original code)
   // Only kill existing process if we're switching modes or ports
   // This prevents killing the listener when dialer tries to connect
   if(proc && (currentMode !== mode || currentPort !== port)) {
