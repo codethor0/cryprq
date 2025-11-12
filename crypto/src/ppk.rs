@@ -11,8 +11,10 @@
 
 use blake3::Hasher;
 use alloc::vec::Vec;
-use std::time::{SystemTime, UNIX_EPOCH};
 use zeroize::ZeroizeOnDrop;
+
+// For no_std compatibility, we'll use a timestamp-based approach
+// In std environments, this can use SystemTime; in no_std, use a provided timestamp
 
 /// Post-Quantum Pre-Shared Key
 ///
@@ -40,6 +42,7 @@ impl PostQuantumPSK {
     /// * `peer_id` - Peer identity (32 bytes, typically Ed25519 public key)
     /// * `salt` - Random salt for this derivation (16 bytes)
     /// * `rotation_interval_secs` - Key rotation interval in seconds
+    /// * `current_timestamp_secs` - Current Unix timestamp in seconds
     ///
     /// # Returns
     ///
@@ -49,6 +52,7 @@ impl PostQuantumPSK {
         peer_id: &[u8; 32],
         salt: &[u8; 16],
         rotation_interval_secs: u64,
+        current_timestamp_secs: u64,
     ) -> Self {
         // BLAKE3 KDF: hash(kyber_shared || peer_id || salt)
         let mut hasher = Hasher::new();
@@ -60,16 +64,11 @@ impl PostQuantumPSK {
         let mut key = [0u8; 32];
         key.copy_from_slice(&hash.as_bytes()[..32]);
         
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        
         Self {
             key,
             peer_id: *peer_id,
-            created_at: now,
-            expires_at: now + rotation_interval_secs,
+            created_at: current_timestamp_secs,
+            expires_at: current_timestamp_secs + rotation_interval_secs,
         }
     }
     
@@ -84,24 +83,24 @@ impl PostQuantumPSK {
     }
     
     /// Check if this PPK has expired
-    pub fn is_expired(&self) -> bool {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        now >= self.expires_at
+    ///
+    /// # Arguments
+    ///
+    /// * `current_timestamp_secs` - Current Unix timestamp in seconds
+    pub fn is_expired_at(&self, current_timestamp_secs: u64) -> bool {
+        current_timestamp_secs >= self.expires_at
     }
     
     /// Get time until expiration (in seconds)
-    pub fn expires_in(&self) -> u64 {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        if now >= self.expires_at {
+    ///
+    /// # Arguments
+    ///
+    /// * `current_timestamp_secs` - Current Unix timestamp in seconds
+    pub fn expires_in_at(&self, current_timestamp_secs: u64) -> u64 {
+        if current_timestamp_secs >= self.expires_at {
             0
         } else {
-            self.expires_at - now
+            self.expires_at - current_timestamp_secs
         }
     }
 }
@@ -124,15 +123,24 @@ impl PPKStore {
     }
     
     /// Get the current PPK for a peer (if not expired)
-    pub fn get(&self, peer_id: &[u8; 32]) -> Option<&PostQuantumPSK> {
+    ///
+    /// # Arguments
+    ///
+    /// * `peer_id` - Peer identity bytes
+    /// * `current_timestamp_secs` - Current Unix timestamp in seconds
+    pub fn get(&self, peer_id: &[u8; 32], current_timestamp_secs: u64) -> Option<&PostQuantumPSK> {
         self.ppks
             .iter()
-            .find(|p| p.peer_id() == peer_id && !p.is_expired())
+            .find(|p| p.peer_id() == peer_id && !p.is_expired_at(current_timestamp_secs))
     }
     
     /// Remove expired PPKs
-    pub fn cleanup_expired(&mut self) {
-        self.ppks.retain(|p| !p.is_expired());
+    ///
+    /// # Arguments
+    ///
+    /// * `current_timestamp_secs` - Current Unix timestamp in seconds
+    pub fn cleanup_expired(&mut self, current_timestamp_secs: u64) {
+        self.ppks.retain(|p| !p.is_expired_at(current_timestamp_secs));
     }
     
     /// Remove all PPKs for a peer

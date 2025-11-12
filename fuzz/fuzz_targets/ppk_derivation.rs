@@ -18,12 +18,13 @@ fuzz_target!(|data: &[u8]| {
         let rotation_bytes: [u8; 8] = data[80..88].try_into().unwrap();
         let rotation_interval = u64::from_le_bytes(rotation_bytes).max(1).min(3600);
         
-        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, rotation_interval);
+        let now = 1000u64; // Test timestamp
+        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, rotation_interval, now);
         
         // Verify PPK properties
         assert_eq!(ppk.peer_id(), &peer_id);
-        assert!(!ppk.is_expired()); // Should not be expired immediately
-        assert!(ppk.expires_in() <= rotation_interval);
+        assert!(!ppk.is_expired_at(now)); // Should not be expired immediately
+        assert!(ppk.expires_in_at(now) <= rotation_interval);
         
         // Verify key is non-zero
         assert!(ppk.key().iter().any(|&b| b != 0));

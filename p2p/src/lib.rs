@@ -149,8 +149,12 @@ async fn rotate_once(interval: Duration) {
     guard.replace((pk, sk));
 
     // Cleanup expired PPKs on rotation
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     let mut ppk_store = PPK_STORE.write().await;
-    ppk_store.cleanup_expired();
+    ppk_store.cleanup_expired(now);
 
     let elapsed = start.elapsed();
     let epoch = metrics::record_rotation_success(elapsed);
@@ -181,11 +185,17 @@ pub async fn derive_and_store_ppk(
     let mut salt = [0u8; 16];
     rand::thread_rng().fill_bytes(&mut salt);
     
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    
     let ppk = PostQuantumPSK::derive(
         kyber_shared,
         peer_id_bytes,
         &salt,
         rotation_interval_secs,
+        now,
     );
     
     let mut store = PPK_STORE.write().await;
@@ -200,8 +210,12 @@ pub async fn derive_and_store_ppk(
 
 /// Get PPK for a peer (if available and not expired)
 pub async fn get_ppk_for_peer(peer_id_bytes: &[u8; 32]) -> Option<PostQuantumPSK> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     let store = PPK_STORE.read().await;
-    store.get(peer_id_bytes).cloned()
+    store.get(peer_id_bytes, now).cloned()
 }
 
 pub async fn init_swarm(
