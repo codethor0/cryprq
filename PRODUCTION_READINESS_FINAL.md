@@ -109,30 +109,30 @@ All 10 enhancements implemented and verified:
 ### Docker Environment
 
 ```bash
-# Start services
+## Start services
 docker compose up -d cryprq-listener
 
-# Run tests
+## Run tests
 docker exec -it cryprq-listener bash -c "cargo test"
 
-# Validate crypto
+## Validate crypto
 bash scripts/crypto-validation.sh
 ```
 
 ### Performance Testing
 
 ```bash
-# Run performance tests
+## Run performance tests
 bash scripts/performance-tests.sh
 
-# Benchmark handshake
+## Benchmark handshake
 cargo bench
 ```
 
 ### End-to-End Testing
 
 ```bash
-# Run E2E tests
+## Run E2E tests
 bash scripts/end-to-end-tests.sh
 ```
 

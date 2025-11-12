@@ -70,7 +70,7 @@ If health gates fail:
 
 CI comment on release PR:
 ```yaml
-# .github/workflows/health-gates.yml
+## .github/workflows/health-gates.yml
 - name: Check Health Gates
   run: |
     CRASH_RATE=$(get_crash_rate)

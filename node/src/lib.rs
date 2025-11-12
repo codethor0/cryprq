@@ -65,11 +65,13 @@ mod error;
 mod padding;
 mod tls;
 mod traffic_shaping;
+pub mod tun;
 
 pub use dns::{resolve_hostname, DnsConfig, DnsError};
 pub use error::TunnelError;
 pub use padding::{pad_packet, unpad_packet, PaddingConfig};
 pub use tls::{TlsClient, TlsConfig, TlsError, TlsServer, TlsStream};
+pub use tun::{TunConfig, TunInterface};
 pub use traffic_shaping::TrafficShaper;
 
 const MAX_NONCE_VALUE: u64 = u64::MAX - 1000; // Force rekey before overflow
@@ -366,7 +368,7 @@ impl Tunnel {
         };
 
         // Increment nonce counter (fast, drop lock immediately)
-        let nonce = {
+        let (nonce, nonce_value) = {
             let mut counter = self
                 .nonce_counter
                 .write()
@@ -378,15 +380,20 @@ impl Tunnel {
             }
 
             *counter += 1;
+            let nonce_value = *counter;
             let nonce_bytes = counter.to_le_bytes();
             let mut nonce_arr = [0u8; 12];
             nonce_arr[..8].copy_from_slice(&nonce_bytes);
-            Nonce::from(nonce_arr)
+            (Nonce::from(nonce_arr), nonce_value)
         };
 
         let ciphertext = cipher
             .encrypt(&nonce, Payload { msg: pkt, aad: b"" })
             .map_err(|_| TunnelError::EncryptionFailed)?;
+        
+        // Log encryption event for debugging
+        log::debug!("🔐 ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})", 
+                   pkt.len(), ciphertext.len(), nonce_value);
 
         let peer_addr = {
             *self
@@ -505,6 +512,10 @@ impl Tunnel {
                 },
             )
             .map_err(|_| TunnelError::DecryptionFailed)?;
+        
+        // Log decryption event for debugging
+        log::debug!("🔓 DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})", 
+                   ciphertext.len(), plaintext.len(), nonce_value);
 
         // Return buffer to pool for reuse
         self.buffer_pool.put(buf);

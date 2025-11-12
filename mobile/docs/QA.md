@@ -237,7 +237,7 @@ This document provides a reproducible QA checklist for CrypRQ Mobile before rele
 **Command:**
 ```bash
 grep -i "bearer\|privKey\|authorization" logs.txt
-# Should return no matches
+## Should return no matches
 ```
 
 ---
@@ -286,19 +286,19 @@ Notes: [Any issues found]
 ## Commands
 
 ```bash
-# Start fake backend
+## Start fake backend
 docker compose -f mobile/docker-compose.yml up -d fake-cryprq
 
-# Run Android build
+## Run Android build
 cd mobile && npm run android:build
 
-# Run iOS build
+## Run iOS build
 cd mobile && npm run ios:build
 
-# Run Detox E2E (Android)
+## Run Detox E2E (Android)
 cd mobile && npx detox test -c android.emu.debug
 
-# Run Detox E2E (iOS)
+## Run Detox E2E (iOS)
 cd mobile && npx detox test -c ios.sim.debug
 ```
 

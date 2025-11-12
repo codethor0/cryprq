@@ -91,10 +91,10 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 **Edit `config/flags.json` → save; UI hot-reloads.**
 
 ```bash
-# Disable charts
+## Disable charts
 vim config/flags.json
-# Change: "enableCharts": false
-# Save → UI updates automatically
+## Change: "enableCharts": false
+## Save → UI updates automatically
 ```
 
 **Verify:**
@@ -118,13 +118,13 @@ CRYPRQ_FLAGS='{"enableCharts":false,"enableTrayEnhancements":false}' npm run dev
 **Run this anytime to verify flags + telemetry:**
 
 ```bash
-# 1. Check flags file exists and is valid JSON
+## 1. Check flags file exists and is valid JSON
 jq . config/flags.json > /dev/null && echo "✅ Flags file valid"
 
-# 2. Check telemetry directory exists (if telemetry was enabled)
+## 2. Check telemetry directory exists (if telemetry was enabled)
 [ -d ~/.cryprq/telemetry ] && echo "✅ Telemetry directory exists" || echo "ℹ️  Telemetry not enabled yet"
 
-# 3. Check latest telemetry file (if exists)
+## 3. Check latest telemetry file (if exists)
 if [ -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl ]; then
   COUNT=$(wc -l < ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl)
   echo "✅ Telemetry active: $COUNT events today"

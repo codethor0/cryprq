@@ -41,50 +41,50 @@
 ### Desktop Release Steps
 
 ```bash
-# 1. Preflight (local)
+## 1. Preflight (local)
 cd gui
 make test              # Run dockerized tests
 make build-linux       # Build Linux artifacts locally
 ../scripts/smoke-tests.sh  # Quick smoke tests
 
-# 2. Cut release
+## 2. Cut release
 ./scripts/release.sh 1.1.0
 git push origin v1.1.0
 git push origin main
 
-# 3. CI will automatically:
-#    - Build artifacts for Linux/Windows/macOS
-#    - Create GitHub Release
-#    - Attach artifacts and CHANGELOG
+## 3. CI will automatically:
+##    - Build artifacts for Linux/Windows/macOS
+##    - Create GitHub Release
+##    - Attach artifacts and CHANGELOG
 
-# 4. Post-release spot checks
-#    - Tray: connect → rotate → disconnect
-#    - Fault inject: dev:session:simulateExit
-#    - Diagnostics export: verify <10MB, no secrets
+## 4. Post-release spot checks
+##    - Tray: connect → rotate → disconnect
+##    - Fault inject: dev:session:simulateExit
+##    - Diagnostics export: verify <10MB, no secrets
 ```
 
 ### Mobile Bootstrap Steps
 
 ```bash
-# 1. Initialize & build
+## 1. Initialize & build
 cd mobile
 npm install
 
-# Android
+## Android
 cd android && ./gradlew assembleDebug
 
-# iOS (macOS only)
+## iOS (macOS only)
 xcodebuild -workspace ios/CrypRQ.xcworkspace -scheme CrypRQ -configuration Debug -sdk iphonesimulator
 
-# 2. Start fake backend
+## 2. Start fake backend
 docker compose up -d fake-cryprq
 
-# 3. Run E2E tests
-# Android
+## 3. Run E2E tests
+## Android
 npx detox build -c android.emu.debug
 npx detox test -c android.emu.debug --headless --record-logs all
 
-# iOS
+## iOS
 npx detox build -c ios.sim.debug
 npx detox test -c ios.sim.debug --record-logs all
 ```

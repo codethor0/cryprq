@@ -13,6 +13,7 @@ use libp2p::{
     identity, mdns,
     multiaddr::Protocol,
     noise, ping,
+    request_response::{self, ProtocolSupport},
     swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
     tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
 };
@@ -23,9 +24,10 @@ use std::{
     convert::Infallible,
     env,
     str::FromStr,
-    sync::Mutex,
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+use tokio::sync::mpsc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::time::MissedTickBehavior;
@@ -35,6 +37,36 @@ use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, Pos
 
 mod metrics;
 pub use metrics::start_metrics_server;
+
+pub mod packet_forwarder;
+pub use packet_forwarder::Libp2pPacketForwarder;
+
+// Callback for when connection is established (for VPN packet forwarding)
+// Now includes recv_tx for forwarding incoming packets to TUN
+pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>) + Send + Sync>;
+static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));
+
+// Store recv_tx channels for each peer to forward incoming packets to TUN
+static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>>>> = 
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
+/// Register recv_tx channel for a peer (called from connection callback)
+pub async fn register_packet_recv_tx(peer_id: PeerId, recv_tx: Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>) {
+    let mut map = PACKET_RECV_TX.write().await;
+    map.insert(peer_id, recv_tx);
+}
+
+/// Get recv_tx channel for a peer (called from swarm event handler)
+pub async fn get_packet_recv_tx(peer_id: &PeerId) -> Option<Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>> {
+    let map = PACKET_RECV_TX.read().await;
+    map.get(peer_id).cloned()
+}
+
+/// Set callback to be called when connection is established
+/// The callback receives the peer_id and the swarm instance for packet forwarding
+pub async fn set_connection_callback(callback: ConnectionCallback) {
+    *CONNECTION_CALLBACK.write().await = Some(callback);
+}
 
 // Define the error type correctly
 #[derive(Debug, Error)]
@@ -64,6 +96,7 @@ pub struct MyBehaviour {
     mdns: mdns::tokio::Behaviour,
     ping: ping::Behaviour,
     limits: ConnectionLimitBehaviour,
+    request_response: request_response::Behaviour<packet_forwarder::PacketCodec>,
 }
 
 #[derive(Debug)]
@@ -71,6 +104,7 @@ pub enum MyBehaviourEvent {
     Mdns(mdns::Event),
     Ping(ping::Event),
     Limits(Infallible),
+    RequestResponse(request_response::Event<Vec<u8>, Vec<u8>>),
 }
 
 impl From<mdns::Event> for MyBehaviourEvent {
@@ -91,6 +125,12 @@ impl From<Infallible> for MyBehaviourEvent {
     }
 }
 
+impl From<request_response::Event<Vec<u8>, Vec<u8>>> for MyBehaviourEvent {
+    fn from(event: request_response::Event<Vec<u8>, Vec<u8>>) -> Self {
+        MyBehaviourEvent::RequestResponse(event)
+    }
+}
+
 // Public function to get the current key
 pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
     KEYS.read()
@@ -103,8 +143,8 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
 pub async fn set_allowed_peers(peers: &[String]) -> anyhow::Result<()> {
     let mut set = HashSet::with_capacity(peers.len());
     for entry in peers {
-        let peer_id =
-            PeerId::from_str(entry).with_context(|| format!("invalid peer id '{}'", entry))?;
+        let peer_id = PeerId::from_str(entry)
+            .context(format!("Invalid peer ID: {}", entry))?;
         set.insert(peer_id);
     }
     let mut guard = ALLOWED_PEERS.write().await;
@@ -194,7 +234,7 @@ pub async fn derive_and_store_ppk(
         kyber_shared,
         peer_id_bytes,
         &salt,
-        rotation_interval_secs,
+        rotation_interval_secs * 2, // Expire after 2 rotation intervals
         now,
     );
 
@@ -235,10 +275,19 @@ pub async fn init_swarm(
         .with_behaviour(|key| {
             let peer_id = PeerId::from(key.public());
             let mdns_behaviour = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
+            
+            // Create request-response behaviour for packet forwarding
+            let protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
+            let request_response_behaviour = request_response::Behaviour::new(
+                [(protocol_str, ProtocolSupport::Full)],
+                request_response::Config::default(),
+            );
+            
             Ok(MyBehaviour {
                 mdns: mdns_behaviour,
                 ping: ping::Behaviour::new(ping::Config::new()),
                 limits: connection_limits_behaviour(),
+                request_response: request_response_behaviour,
             })
         })?
         .with_swarm_config(|c| c)
@@ -257,9 +306,19 @@ pub async fn start_listener(addr: &str) -> Result<()> {
     swarm.listen_on(listen_addr)?;
     metrics::mark_swarm_initialized();
 
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
+
     use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+    
     loop {
-        match swarm.select_next_some().await {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+        
+        match event {
             SwarmEvent::NewListenAddr { address, .. } => {
                 println!("Listening on {address}");
             }
@@ -272,12 +331,20 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                         "event=peer_denied peer_id={} reason=not_allowlisted",
                         peer_id
                     );
-                    let _ = swarm.disconnect_peer_id(peer_id);
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(peer_id);
                 } else {
                     metrics::record_handshake_success();
                     metrics::inc_active_peers();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Inbound connection established with {peer_id} via {endpoint:?}");
+                    
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        // Create a placeholder recv_tx - the actual one will come from PacketForwarder
+                        let (recv_tx, _) = tokio::sync::mpsc::unbounded_channel();
+                        callback(peer_id, swarm_for_loop.clone(), Arc::new(tokio::sync::Mutex::new(recv_tx)));
+                    }
                 }
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
@@ -304,6 +371,43 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                 println!("Ping event: {event:?}");
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::Limits(_)) => {}
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, peer, .. } => {
+                        match message {
+                            request_response::Message::Request { request, channel, .. } => {
+                                // Incoming packet from peer - send empty response and forward packet to TUN
+                                let mut s = swarm_for_loop.lock().await;
+                                let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
+                                log::debug!("🔓 DECRYPT: Received {} bytes packet from peer {}", request.len(), peer);
+                                
+                                // Forward packet to TUN interface via recv_tx channel
+                                if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                    let recv_tx_guard = recv_tx_arc.lock().await;
+                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                    } else {
+                                        log::debug!("✅ Forwarded {} bytes packet to TUN", request.len());
+                                    }
+                                } else {
+                                    log::debug!("No recv_tx channel registered for peer {}", peer);
+                                }
+                            }
+                            request_response::Message::Response { response, request_id, .. } => {
+                                // Response to our request - acknowledgment
+                                log::debug!("✅ Received response for request {:?} ({} bytes)", request_id, response.len());
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure { error, request_id, .. } => {
+                        log::warn!("Request-response outbound failure for {:?}: {:?}", request_id, error);
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {:?}", error);
+                    }
+                    _ => {}
+                }
+            }
             other => {
                 println!("Unhandled event: {other:?}");
             }
@@ -342,9 +446,19 @@ pub async fn dial_peer(addr: String) -> Result<()> {
 
     metrics::mark_swarm_initialized();
 
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
+
     use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+    
     loop {
-        match swarm.select_next_some().await {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+        
+        match event {
             SwarmEvent::ConnectionEstablished {
                 peer_id: remote,
                 endpoint,
@@ -356,12 +470,22 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                         "event=peer_denied peer_id={} reason=not_allowlisted",
                         remote
                     );
-                    let _ = swarm.disconnect_peer_id(remote);
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(remote);
                 } else {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Connected to {remote} via {endpoint:?}");
-                    break;
+                    
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        // Create a placeholder recv_tx - the actual one will come from PacketForwarder
+                        let (recv_tx, _) = tokio::sync::mpsc::unbounded_channel();
+                        callback(remote, swarm_for_loop.clone(), Arc::new(tokio::sync::Mutex::new(recv_tx)));
+                    }
+                    
+                    // Keep connection alive - continue processing events
+                    // Don't break - the connection needs to stay active for VPN mode
                 }
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {
@@ -371,22 +495,64 @@ pub async fn dial_peer(addr: String) -> Result<()> {
             SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
                 println!("Ping event: {event:?}");
             }
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, peer, .. } => {
+                        match message {
+                            request_response::Message::Request { request, channel, .. } => {
+                                // Incoming packet from peer - send empty response and forward packet to TUN
+                                let mut s = swarm_for_loop.lock().await;
+                                let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
+                                log::debug!("🔓 DECRYPT: Received {} bytes packet from peer {}", request.len(), peer);
+                                
+                                // Forward packet to TUN interface via recv_tx channel
+                                if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                    let recv_tx_guard = recv_tx_arc.lock().await;
+                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                    } else {
+                                        log::debug!("✅ Forwarded {} bytes packet to TUN", request.len());
+                                    }
+                                } else {
+                                    log::debug!("No recv_tx channel registered for peer {}", peer);
+                                }
+                            }
+                            request_response::Message::Response { response, request_id, .. } => {
+                                // Response to our request - acknowledgment
+                                log::debug!("✅ Received response for request {:?} ({} bytes)", request_id, response.len());
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure { error, request_id, .. } => {
+                        log::warn!("Request-response outbound failure for {:?}: {:?}", request_id, error);
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {:?}", error);
+                    }
+                    _ => {}
+                }
+            }
             SwarmEvent::Dialing {
                 peer_id,
                 connection_id,
             } => {
                 metrics::record_handshake_attempt();
-                println!("Dialing {peer_id:?} (connection {connection_id:?})");
+                if let Some(pid) = peer_id {
+                    println!("Dialing peer {pid} (connection {connection_id:?})");
+                } else {
+                    println!("Dialing peer (connection {connection_id:?})");
+                }
             }
-            SwarmEvent::ConnectionClosed { .. } => {
-                // no active peer tracking for dialer since we exit on connect
+            SwarmEvent::ConnectionClosed { peer_id, .. } => {
+                println!("Connection closed with {peer_id:?}");
+                // For VPN mode, we might want to reconnect
+                // For now, just log and continue
             }
             other => {
                 println!("Unhandled event: {other:?}");
             }
         }
     }
-    Ok(())
 }
 
 #[derive(Debug, Clone)]

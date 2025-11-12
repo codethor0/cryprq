@@ -17,7 +17,7 @@ Verify the following secrets are configured:
 
 **Verification:**
 ```bash
-# Check if secrets are set (will show empty if not set)
+## Check if secrets are set (will show empty if not set)
 gh secret list
 ```
 
@@ -84,7 +84,7 @@ git push origin main
 
 ### macOS
 ```bash
-# After release artifacts are downloaded
+## After release artifacts are downloaded
 spctl --assess --type open --verbose dist-package/*.dmg
 ```
 
@@ -94,7 +94,7 @@ spctl --assess --type open --verbose dist-package/*.dmg
 
 ### Windows
 ```bash
-# On Windows machine (or via Wine)
+## On Windows machine (or via Wine)
 signtool verify /pa dist-package/*.exe
 ```
 
@@ -118,8 +118,8 @@ signtool verify /pa dist-package/*.exe
 
 ### Export Diagnostics Once
 ```bash
-# In the app: Help → Export Diagnostics
-# Then verify:
+## In the app: Help → Export Diagnostics
+## Then verify:
 unzip -q cryprq-diagnostics-*.zip -d /tmp/diag-check
 grep -r -E "bearer |privKey=|authorization:" /tmp/diag-check || echo "✅ No secrets found"
 ```
@@ -147,20 +147,20 @@ grep -r -E "bearer |privKey=|authorization:" /tmp/diag-check || echo "✅ No sec
 cd mobile
 npm install
 
-# Start fake backend
+## Start fake backend
 docker compose up -d fake-cryprq
 
-# Android E2E
+## Android E2E
 npx detox test -c android.emu.debug --headless
 
-# iOS E2E (on macOS)
+## iOS E2E (on macOS)
 npx detox test -c ios.sim.debug --record-logs all
 ```
 
 ### Tag to Build Signed Artifacts
 
 ```bash
-# Tag mobile release
+## Tag mobile release
 git tag mobile-v1.0.0
 git push origin mobile-v1.0.0
 ```
@@ -223,9 +223,9 @@ git push origin mobile-v1.0.0
 
 **Verify:**
 ```bash
-# Check for orphaned cryprq processes
+## Check for orphaned cryprq processes
 ps aux | grep cryprq | grep -v grep
-# Should return nothing if kill-switch worked
+## Should return nothing if kill-switch worked
 ```
 
 ### HTTPS Enforcement
@@ -241,8 +241,8 @@ ps aux | grep cryprq | grep -v grep
 
 ### Redaction Check
 ```bash
-# Export diagnostics
-# Then:
+## Export diagnostics
+## Then:
 unzip -q cryprq-diagnostics-*.zip -d /tmp/redact-check
 if grep -r -E "bearer |privKey=|authorization:" /tmp/redact-check; then
   echo "❌ Secrets leaked!"

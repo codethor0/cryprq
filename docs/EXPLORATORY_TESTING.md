@@ -91,7 +91,7 @@ bash scripts/exploratory-testing.sh
 ### Comprehensive Test Suite
 
 ```bash
-# Run all exploratory tests
+## Run all exploratory tests
 bash scripts/exploratory-testing.sh
 bash scripts/performance-benchmark.sh
 bash scripts/crypto-validation.sh
@@ -101,7 +101,7 @@ bash scripts/end-to-end-tests.sh
 ### Docker Environment
 
 ```bash
-# Run in Docker
+## Run in Docker
 docker exec cryprq-test-runner bash -c "cd /workspace && bash scripts/exploratory-testing.sh"
 ```
 

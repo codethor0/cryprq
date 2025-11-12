@@ -22,11 +22,11 @@ docker build -t cryprq-node:latest -f Dockerfile .
 ### Run Container
 
 ```bash
-# Run as listener
+## Run as listener
 docker run -d --name cryprq-listener -p 9999:9999/udp cryprq-node:latest \
   --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Run as dialer
+## Run as dialer
 docker run --rm cryprq-node:latest \
   --peer /ip4/<LISTENER_IP>/udp/9999/quic-v1
 ```
@@ -36,13 +36,13 @@ docker run --rm cryprq-node:latest \
 ### Basic Setup
 
 ```bash
-# Start listener
+## Start listener
 docker compose up -d cryprq-listener
 
-# Run dialer test
+## Run dialer test
 docker compose run --rm cryprq-dialer
 
-# Stop and clean up
+## Stop and clean up
 docker compose down -v
 ```
 
@@ -132,34 +132,34 @@ Measures:
 ### Container Won't Start
 
 ```bash
-# Check logs
+## Check logs
 docker logs cryprq-listener
 
-# Check container status
+## Check container status
 docker ps -a
 
-# Inspect container
+## Inspect container
 docker inspect cryprq-listener
 ```
 
 ### Network Issues
 
 ```bash
-# Check network
+## Check network
 docker network ls
 docker network inspect cryprq-network
 
-# Test connectivity
+## Test connectivity
 docker exec cryprq-listener ping -c 3 8.8.8.8
 ```
 
 ### Build Failures
 
 ```bash
-# Clean build cache
+## Clean build cache
 docker builder prune
 
-# Rebuild without cache
+## Rebuild without cache
 docker build --no-cache -t cryprq-node:latest -f Dockerfile .
 ```
 
@@ -176,7 +176,7 @@ The repository includes GitHub Actions workflows:
 ### Local CI Simulation
 
 ```bash
-# Run all checks locally
+## Run all checks locally
 bash scripts/test-unit.sh
 bash scripts/test-integration.sh
 bash scripts/test-e2e.sh

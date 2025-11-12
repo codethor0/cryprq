@@ -20,6 +20,7 @@ export const MainLayout: React.FC = () => {
         flex: 1,
         overflow: 'auto',
         padding: '32px',
+        paddingBottom: '232px',
       }}>
         <Outlet />
       </main>

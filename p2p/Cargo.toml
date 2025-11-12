@@ -21,7 +21,8 @@ libp2p = { version = "0.56", features = [
     "macros",
     "mdns",
     "ping",
-    "kad"
+    "kad",
+    "request-response"
 ] }
 cryprq-crypto = { path = "../crypto" }
 zeroize = "1.8"
@@ -32,3 +33,7 @@ void = "1"
 thiserror = "1.0"
 prometheus = "0.13"
 hyper = { version = "0.14", features = ["full"] }
+bytes = "1.5"
+async-trait = "0.1"
+futures = "0.3"
+node = { path = "../node" }

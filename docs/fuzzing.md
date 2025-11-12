@@ -67,10 +67,10 @@ cargo fuzz run fuzz_target_1 -- -max_total_time=300  # 5 minutes
 
 ```bash
 cd fuzz
-# Create corpus directory
+## Create corpus directory
 mkdir -p corpus/fuzz_target_1
 
-# Run with corpus
+## Run with corpus
 cargo fuzz run fuzz_target_1 -- -max_total_time=300 corpus/fuzz_target_1
 ```
 

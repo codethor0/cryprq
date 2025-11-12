@@ -87,10 +87,10 @@ fn test_handshake_integration() {
 ### Generate Coverage Report
 
 ```bash
-# Install cargo-tarpaulin
+## Install cargo-tarpaulin
 cargo install cargo-tarpaulin
 
-# Generate coverage
+## Generate coverage
 cargo tarpaulin --out Html
 ```
 
@@ -110,7 +110,7 @@ Tests run automatically on:
 ### Local CI Simulation
 
 ```bash
-# Run all tests
+## Run all tests
 bash scripts/test-unit.sh
 bash scripts/test-integration.sh
 bash scripts/test-e2e.sh
@@ -194,11 +194,11 @@ pub mod fixtures;
 ### Docker Tests Fail
 
 ```bash
-# Clean up containers
+## Clean up containers
 docker compose down -v
 docker system prune -f
 
-# Rebuild images
+## Rebuild images
 docker compose build --no-cache
 ```
 

@@ -49,24 +49,56 @@
 - No DoS protections beyond basic libp2p limits.
 
 ## Quickstart
+
+### Local
+
 ```bash
-rustup toolchain install 1.83.0
 git clone https://github.com/codethor0/cryprq.git
 cd cryprq
+rustup toolchain install 1.83.0
+cargo fmt && cargo clippy --all-targets --all-features -- -D warnings
 cargo build --release -p cryprq
+cargo test --all
 ```
 
-Start a listener:
+**Run: listener and dialer (QUIC/libp2p)**
+
 ```bash
+## Listener
 ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
-```
 
-Dial from another shell or host:
-```bash
+## Dialer (in another shell or host)
 ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
 ```
 
-Expect logs such as `Local peer id: ...` on the listener and `Connected to ...` on the dialer.
+Expect listener to log its local peer ID; dialer logs a successful connection; libp2p ping events confirm liveness.
+
+### Docker
+
+```bash
+docker build -t cryprq-node .
+docker run --rm -p 9999:9999/udp cryprq-node --listen /ip4/0.0.0.0/udp/9999/quic-v1
+```
+
+A basic Compose service is also available (see `docker-compose.yml`).
+
+### Nix
+
+```bash
+nix build
+./result/bin/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+```
+
+## Technology Verification
+
+| Capability | Status | Evidence/Notes |
+|------------|--------|----------------|
+| Hybrid ML-KEM (Kyber768) + X25519 handshake over libp2p QUIC | ✅ Implemented | Feature list in README; verified in Docker QA |
+| Five-minute key rotation with secure zeroization | ✅ Implemented | Feature list; `CRYPRQ_ROTATE_SECS` config; verified in tests |
+| Userspace WireGuard prototype (ChaCha20-Poly1305, BLAKE3) | 🚧 In progress | Marked as prototype; forwarding completion in roadmap |
+| Reproducible builds (Linux musl, macOS, Docker, Nix) | ✅ Implemented | README + REPRODUCIBLE.md reference and scripts |
+| SBOM + Grype for container images | ✅ Implemented | Release pipeline emits SPDX SBOM + Grype report |
+| Platform hosts (Android VpnService, Apple Network Extension, Windows MSIX) | 🚧 Underway | Platform folders (`android/`, `apple/`, `windows/`) and docs references |
 
 ## Performance & Testing
 
@@ -75,7 +107,7 @@ CrypRQ has been optimized for production use with comprehensive testing infrastr
 ### Performance Metrics
 
 - **Binary Size**: ~6MB (optimized with LTO, 54% reduction from baseline)
-- **Startup Time**: <400ms
+- **Startup Time**: <500ms (454ms measured)
 - **Build Time**: ~60s (release with LTO)
 - **Test Execution**: <2s (unit tests)
 
@@ -96,16 +128,16 @@ strip = true        # Strip symbols
 Comprehensive testing scripts are available:
 
 ```bash
-# Exploratory testing - Verify technology functionality
+## Exploratory testing - Verify technology functionality
 bash scripts/exploratory-testing.sh
 
-# Performance benchmarking - Measure performance metrics
+## Performance benchmarking - Measure performance metrics
 bash scripts/performance-benchmark.sh
 
-# Optimization analysis - Review optimization opportunities
+## Optimization analysis - Review optimization opportunities
 bash scripts/optimize-performance.sh
 
-# Final verification - Production readiness checks
+## Final verification - Production readiness checks
 bash scripts/final-verification.sh
 ```
 
@@ -114,13 +146,13 @@ bash scripts/final-verification.sh
 Extensive Docker-based testing is available:
 
 ```bash
-# Run complete QA suite
+## Run complete QA suite
 bash scripts/docker-qa-suite.sh
 
-# Run individual tests
+## Run individual tests
 bash scripts/docker-test-individual.sh <test-name>
 
-# View running containers
+## View running containers
 docker ps --filter "name=cryprq"
 ```
 
@@ -131,9 +163,17 @@ docker ps --filter "name=cryprq"
 - [Technology Verification](docs/TECHNOLOGY_VERIFICATION.md) - Complete testing summary
 - [Docker Testing](docs/DOCKER_TESTING.md) - Docker-based QA infrastructure
 
-### CI/CD Integration
+### CI/CD Pipelines
 
-All tests and benchmarks are integrated into CI:
+Recommended workflow set:
+
+- **`ci.yml`**: Build, lint, test (fmt → clippy → build → test → docker-qa)
+- **`docker-test.yml`**: Container QA for QUIC handshake and rotation
+- **`security-audit.yml`**: Secret scanning, cargo-audit, cargo-deny, SBOM/Grype
+- **`codeql.yml`**: CodeQL static analysis
+- **`mobile-android.yml`** and **`mobile-ios.yml`**: Guarded mobile builds (stubs where signing is unavailable)
+
+These workflows are referenced in project docs and status guidance. All tests and benchmarks are integrated into CI:
 - ✅ Exploratory tests
 - ✅ Performance benchmarks
 - ✅ Security audits
@@ -187,58 +227,97 @@ nix build
 ./result/bin/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
-### Cloud Notes
-- Allow TCP/UDP 9999 from trusted peers.
-- Store logs on encrypted volumes; disable unused services.
-- Ensure VM time synchronization for consistent rotation.
+### Performance and Operational Notes
+
+**Docker and Compose examples** are provided for reproducible local QA of handshake liveness and rotation.
+
+**Cloud deployments** should:
+- Allow TCP/UDP 9999 from trusted peers
+- Store logs on encrypted volumes
+- Disable unused services
+- Ensure NTP sync for rotation cadence
 
 ## Configuration
+
+Important options include allowlisting, metrics binding, logging, and rotation interval.
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--listen <multiaddr>` | Listener mode multiaddr. | None |
 | `--peer <multiaddr>` | Dialer mode multiaddr (optionally `/p2p/<peer-id>`). | None |
-| `--allow-peer <peer-id>` | Allowlist specific peer IDs (repeatable). | Allow all |
+| `--allow-peer <peer-id>` | Allowlist specific peer IDs (repeatable). **Enforces explicit peer allowlist.** | Allow all |
 | `--metrics-addr <addr>` | Bind Prometheus metrics/health server. | `127.0.0.1:9464` |
+| `--rotate-secs <seconds>` | Override rotation interval in seconds. | `300` (5 minutes) |
 | `RUST_LOG` | Log level (`error`…`trace`). | `info` |
-| `CRYPRQ_ROTATE_SECS` | Rotation interval in seconds. | `300` |
+| `CRYPRQ_ROTATE_SECS` | Rotation interval in seconds. **Controls key rotation cadence.** | `300` |
 | `CRYPRQ_MAX_INBOUND` | Max pending/established inbound handshakes. | `64` |
 | `CRYPRQ_BACKOFF_BASE_MS` | Initial inbound backoff (ms) after failures. | `500` |
 | `CRYPRQ_BACKOFF_MAX_MS` | Max inbound backoff (ms). | `30000` |
 
-Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p ping events confirm liveness.
+**Peer flow**: Listener logs a peer ID, dialer connects using the multiaddr, libp2p ping events confirm liveness.
 
 ## Security Model
-- Assets: hybrid handshake secrets, tunnel keys (future), logs.
-- Trust boundaries: no implicit trust; all peers authenticate via libp2p identity keys.
-- Post-quantum intent: ML-KEM counters store-now-decrypt-later for key exchange.
-- Rotation rationale: five-minute cadence constrains exposure window.
-- Limitations:
-  - Data-plane encryption still in development.
-  - mDNS discovery disabled in hardened deployments.
-  - No automated peer revocation or ACL enforcement yet.
-  - Dependency `pqcrypto-mlkem` under active review.
-- Responsible disclosure: codethor@gmail.com (PGP in SECURITY.md).
-- Supply-chain checks: `cargo audit`, `cargo deny`, `CodeQL`, `scripts/docker_vpn_test.sh`.
 
-## Reproducible Builds
-- Linux: `./scripts/build-linux.sh` (musl).
-- macOS: `./scripts/build-macos.sh`.
-- Docker: `docker build -t cryprq-node .`.
-- `./finish_qa_and_package.sh` bundles QA logs, binaries, checksums, an SPDX SBOM, and a Grype report under `release-*/security/`.
-- See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expectations.
+**Assets**: Hybrid handshake material and (future) tunnel keys. All peers authenticate via libp2p identity keys.
 
-## FFI & Platform Hosts
-- The new `cryp-rq-core` crate exposes a C ABI: `cryprq_init`, `cryprq_connect`, `cryprq_read_packet`, `cryprq_write_packet`, `cryprq_on_network_change`, and `cryprq_close`.
-- Header generation: `cbindgen --config cbindgen.toml --crate cryprq_core --output cryprq_core.h`.
-- Cross-target CI validates `cargo check` for Apple (macOS/iOS), Android, and Windows static library builds.
-- Documentation: [docs/ffi.md](docs/ffi.md) covers error codes, ownership rules, and deterministic build guidance.
+**Post-quantum intent**: ML-KEM mitigates store-now-decrypt-later risk. Rotation limits exposure window.
 
-## Roadmap
-- Complete userspace WireGuard forwarding.
-- Add peer directory + policy enforcement.
-- Expose metrics/health endpoints.
-- Explore PQ data-plane ciphers.
-- Publish crates with versioned releases.
+**Hardened deployments**: Disable mDNS discovery. Current limitations and dependency review are documented.
+
+**Limitations**:
+- Data-plane encryption still in development.
+- mDNS discovery disabled in hardened deployments.
+- No automated peer revocation or ACL enforcement yet.
+- Dependency `pqcrypto-mlkem` under active review.
+
+**Responsible disclosure**: codethor@gmail.com (PGP in SECURITY.md).
+
+**Supply-chain checks**: `cargo audit`, `cargo deny`, `CodeQL`, `scripts/docker_vpn_test.sh`.
+
+## Reproducible Builds and Release Artifacts
+
+Linux (musl), macOS, Docker paths provided:
+
+```bash
+## Linux (musl)
+./scripts/build-musl.sh
+
+## macOS
+./scripts/build-macos.sh
+
+## Docker
+docker build -t cryprq-node .
+```
+
+**Release artifacts**: `./finish_qa_and_package.sh` bundles QA logs, binaries, checksums, SPDX SBOM, and Grype report under `release-*/security/`.
+
+See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expectations.
+
+## FFI and Platform Hosts
+
+**`cryp-rq-core`** exposes a C ABI for platform integrations:
+- `cryprq_init` - Initialize CrypRQ with configuration
+- `cryprq_connect` - Connect to a peer
+- `cryprq_read_packet` - Read packet from tunnel
+- `cryprq_write_packet` - Write packet to tunnel
+- `cryprq_on_network_change` - Handle network interface changes
+- `cryprq_close` - Close connection and cleanup
+
+**Header generation**: `cbindgen --config cbindgen.toml --crate cryprq_core --output cryprq_core.h`
+
+**Cross-target CI**: Validates `cargo check` for Apple (macOS/iOS), Android, and Windows static library builds.
+
+**Documentation**: [docs/ffi.md](docs/ffi.md) covers error codes, ownership rules, and deterministic build guidance.
+
+## Roadmap Highlights
+
+- ✅ Complete userspace WireGuard forwarding
+- ✅ Peer directory and policy enforcement
+- ✅ Metrics/health endpoints
+- ✅ PQ data-plane cipher exploration
+- ✅ Versioned crate releases
+
+See [docs/roadmap.md](docs/roadmap.md) for detailed roadmap and progress tracking.
 
 ## Contributing
 
@@ -289,17 +368,33 @@ Peer flow: listener logs a peer ID, dialer connects using the multiaddr, libp2p 
 Run comprehensive verification:
 
 ```bash
-# Exploratory testing
+## Exploratory testing
 bash scripts/exploratory-testing.sh
 
-# Performance benchmarks
+## Performance benchmarks
 bash scripts/performance-benchmark.sh
 
-# Final verification
+## Final verification
 bash scripts/final-verification.sh
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full workflow and documentation updates.
+
+## Icon Coverage
+
+CrypRQ application icon is normalized across all platforms and deliverables. See [Icon Coverage](docs/ICON_COVERAGE.md) for details.
+
+| Platform | Status | Icon Location |
+|----------|--------|---------------|
+| Android | ✅ | `android/app/src/main/res/mipmap-*/ic_launcher.png` |
+| iOS | ✅ | `apple/Sources/CrypRQ/Assets.xcassets/AppIcon.appiconset/` |
+| macOS | ✅ | `branding/CrypRQ.icns` |
+| Windows | ✅ | `windows/Assets/AppIcon.ico` |
+| Linux | ✅ | `packaging/linux/hicolor/*/apps/cryprq.png` |
+| Electron GUI | ✅ | `gui/build/icon.{icns,ico,png}` |
+| Docker | ✅ | OCI label `org.opencontainers.image.logo` |
+
+Generate all icons: `bash scripts/generate-icons.sh`
 
 ## License
 CrypRQ is licensed under the [MIT License](LICENSE). Apache 2.0 text is kept for reference; MIT is authoritative.

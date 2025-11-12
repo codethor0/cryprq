@@ -14,7 +14,7 @@
 
 ```bash
 SHIP=true ./scripts/one-shot.sh --ship
-# Or
+## Or
 ./scripts/one-shot.sh --ship
 ```
 
@@ -22,7 +22,7 @@ SHIP=true ./scripts/one-shot.sh --ship
 
 ```bash
 RUN_POST=true ./scripts/one-shot.sh --post
-# Or
+## Or
 ./scripts/one-shot.sh --post
 ```
 

@@ -1,0 +1,15 @@
+{
+  "name": "cryprq",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:web:install": "npx -y playwright install --with-deps",
+    "test:web": "playwright test --reporter=line --project=chromium --project=firefox --project=webkit",
+    "test:browser": "playwright test tests/browser-docker.spec.ts --headed",
+    "test:browser:headless": "playwright test tests/browser-docker.spec.ts",
+    "automated-test": "./scripts/automated-browser-test.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

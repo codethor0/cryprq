@@ -84,13 +84,13 @@ Each line is a JSON object:
 
 **How to read**:
 ```bash
-# Filter by event type
+## Filter by event type
 jq -c 'fromjson | select(.event=="session.error")' logs/cryprq-*.log
 
-# Filter by level
+## Filter by level
 jq -c 'fromjson | select(.lvl=="error")' logs/cryprq-*.log
 
-# Get state transitions
+## Get state transitions
 jq -c 'fromjson | select(.event=="session.state") | {ts,state:.data.state}' logs/cryprq-*.log
 ```
 
@@ -104,7 +104,7 @@ jq -c 'fromjson | select(.event=="session.state") | {ts,state:.data.state}' logs
 
 **Diagnosis**:
 ```bash
-# Check session-summary.json for error events
+## Check session-summary.json for error events
 jq '.last50Events[] | select(.event=="session.error")' session-summary.json
 ```
 
@@ -121,7 +121,7 @@ jq '.last50Events[] | select(.event=="session.error")' session-summary.json
 
 **Diagnosis**:
 ```bash
-# Check logs for "BINARY_NOT_FOUND"
+## Check logs for "BINARY_NOT_FOUND"
 jq -c 'fromjson | select(.msg | contains("BINARY_NOT_FOUND"))' logs/cryprq-*.log
 ```
 
@@ -138,10 +138,10 @@ jq -c 'fromjson | select(.msg | contains("BINARY_NOT_FOUND"))' logs/cryprq-*.log
 
 **Diagnosis**:
 ```bash
-# Check metrics-snapshot.json timestamp
+## Check metrics-snapshot.json timestamp
 jq '.timestamp' metrics-snapshot.json
 
-# Check for timeout events
+## Check for timeout events
 jq -c 'fromjson | select(.event=="metrics.timeout")' logs/cryprq-*.log
 ```
 
@@ -158,10 +158,10 @@ jq -c 'fromjson | select(.event=="metrics.timeout")' logs/cryprq-*.log
 
 **Diagnosis**:
 ```bash
-# Check rotation events
+## Check rotation events
 jq -c 'fromjson | select(.event | startswith("rotation"))' logs/cryprq-*.log
 
-# Check session summary
+## Check session summary
 jq '.rotations' session-summary.json
 ```
 
@@ -219,19 +219,19 @@ jq '.rotations' session-summary.json
 
 ### Desktop Log Analysis
 ```bash
-# Last 10 errors
+## Last 10 errors
 jq -c 'fromjson | select(.lvl=="error")' ~/.cryprq/logs/cryprq-*.log | tail -10
 
-# State transitions
+## State transitions
 jq -c 'fromjson | select(.event=="session.state") | {ts,state:.data.state}' ~/.cryprq/logs/cryprq-*.log | tail -20
 
-# Rotation events
+## Rotation events
 jq -c 'fromjson | select(.event | startswith("rotation"))' ~/.cryprq/logs/cryprq-*.log | tail -10
 ```
 
 ### Redaction Check
 ```bash
-# Verify no secrets leaked
+## Verify no secrets leaked
 if grep -R -E "bearer |privKey=|authorization:" ~/.cryprq/logs; then
   echo "❌ Secrets leaked!"
 else
@@ -241,10 +241,10 @@ fi
 
 ### Mobile Log Analysis
 ```bash
-# Android logs
+## Android logs
 adb logcat | grep -i cryprq
 
-# iOS logs (device)
+## iOS logs (device)
 idevicesyslog | grep -i cryprq
 ```
 

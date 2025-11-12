@@ -37,13 +37,13 @@ npm run build:electron  # Compile Electron main process
 ### Production Build
 
 ```bash
-# Build for current platform
+## Build for current platform
 npm run build
 
-# Build for macOS
+## Build for macOS
 npm run build:mac
 
-# Build for Windows
+## Build for Windows
 npm run build:win
 ```
 

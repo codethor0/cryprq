@@ -17,14 +17,14 @@
 ## 🔍 Quick Checks (Every 2h)
 
 ```bash
-# 1. Observability
+## 1. Observability
 ./scripts/observability-checks.sh  # All PASS
 
-# 2. Redaction
+## 2. Redaction
 grep -r "bearer \|privKey=\|authorization:" ~/.cryprq/logs  # No hits
 
-# 3. Support inbox
-# Check: 0 unresolved "can't connect" reports
+## 3. Support inbox
+## Check: 0 unresolved "can't connect" reports
 ```
 
 ## 🚨 Rollback

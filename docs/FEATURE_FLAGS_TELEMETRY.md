@@ -28,9 +28,9 @@ Runtime feature toggles via JSON file or ENV variable. Hot-reloads without rebui
 
 **Edit flags.json** (hot-reloads):
 ```bash
-# Edit config/flags.json
+## Edit config/flags.json
 vim config/flags.json
-# Save - UI updates automatically
+## Save - UI updates automatically
 ```
 
 **ENV override** (per-process):
@@ -91,10 +91,10 @@ Opt-in event counters (no PII). Stored locally in JSONL format.
 
 **Parse telemetry** (when enabled):
 ```bash
-# Count events
+## Count events
 jq -cr 'fromjson | select(.event=="connect")' ~/.cryprq/telemetry/events-*.jsonl | wc -l
 
-# Connect success rate
+## Connect success rate
 CONNECT=$(jq -cr 'fromjson | select(.event=="connect")' ~/.cryprq/telemetry/events-*.jsonl | wc -l)
 ERROR=$(jq -cr 'fromjson | select(.event=="error")' ~/.cryprq/telemetry/events-*.jsonl | wc -l)
 echo "Success rate: $(( ($CONNECT - $ERROR) * 100 / $CONNECT ))%"
@@ -110,26 +110,26 @@ echo "Success rate: $(( ($CONNECT - $ERROR) * 100 / $CONNECT ))%"
 ### Method 1: Edit flags.json
 
 ```bash
-# Edit config/flags.json
+## Edit config/flags.json
 vim config/flags.json
 
-# Change enableCharts to false
+## Change enableCharts to false
 {
   "enableCharts": false,
   "enableTrayEnhancements": true,
   "enableNewToasts": true
 }
 
-# Save - UI hot-reloads (if watching enabled)
+## Save - UI hot-reloads (if watching enabled)
 ```
 
 ### Method 2: ENV Override
 
 ```bash
-# Disable charts for this run
+## Disable charts for this run
 CRYPRQ_FLAGS='{"enableCharts":false}' npm run dev
 
-# Disable multiple flags
+## Disable multiple flags
 CRYPRQ_FLAGS='{"enableCharts":false,"enableNewToasts":false}' npm run dev
 ```
 
@@ -140,10 +140,10 @@ CRYPRQ_FLAGS='{"enableCharts":false,"enableNewToasts":false}' npm run dev
 
 **Verify**:
 ```bash
-# Check telemetry directory exists
+## Check telemetry directory exists
 ls -la ~/.cryprq/telemetry/
 
-# View recent events
+## View recent events
 tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 ```
 

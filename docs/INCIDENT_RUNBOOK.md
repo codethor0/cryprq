@@ -13,16 +13,16 @@ Request from user:
 ### Step 2: Analyze Diagnostics
 
 ```bash
-# Extract diagnostics ZIP
+## Extract diagnostics ZIP
 unzip -q cryprq-diagnostics-*.zip -d /tmp/diag-analysis
 
-# Check session summary
+## Check session summary
 cat /tmp/diag-analysis/session-summary.json | jq '.sessions'
 
-# Check last events
+## Check last events
 cat /tmp/diag-analysis/session-summary.json | jq '.last50Events[-10:]'
 
-# Check for errors
+## Check for errors
 cat /tmp/diag-analysis/logs/*.log | jq -c 'fromjson | select(.lvl=="error")' | tail -20
 ```
 
@@ -111,7 +111,7 @@ cat /tmp/diag-analysis/logs/*.log | jq -c 'fromjson | select(.lvl=="error")' | t
 ### Step 1: Verify Rotation Events
 
 ```bash
-# Check logs for rotation events
+## Check logs for rotation events
 cat ~/.cryprq/logs/cryprq-*.log | jq -c 'fromjson | select(.event | startswith("rotation"))' | tail -10
 ```
 
@@ -158,7 +158,7 @@ cat ~/.cryprq/logs/cryprq-*.log | jq -c 'fromjson | select(.event | startswith("
 ### Step 1: Verify Signature
 
 ```powershell
-# On Windows
+## On Windows
 signtool verify /pa CrypRQ.exe
 ```
 

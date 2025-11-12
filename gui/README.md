@@ -38,13 +38,13 @@ This will:
 ### Build
 
 ```bash
-# Build for current platform
+## Build for current platform
 npm run build
 
-# Build for macOS
+## Build for macOS
 npm run build:mac
 
-# Build for Windows
+## Build for Windows
 npm run build:win
 ```
 
@@ -131,13 +131,13 @@ See `docs/wireframes/` for UI mockups (to be created).
 For Docker-based testing and cross-platform builds:
 
 ```bash
-# Run all tests in Docker
+## Run all tests in Docker
 make test
 
-# Build Linux artifacts (AppImage, .deb)
+## Build Linux artifacts (AppImage, .deb)
 make build-linux
 
-# Build Windows artifacts (unsigned .exe)
+## Build Windows artifacts (unsigned .exe)
 make build-win
 ```
 

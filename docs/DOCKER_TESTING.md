@@ -45,23 +45,23 @@ This comprehensive test suite runs:
 ### 3. Run Individual Tests
 
 ```bash
-# Run specific test
+## Run specific test
 bash scripts/docker-test-individual.sh <test-name>
 
-# Available test names:
-# - secret-scan
-# - dependency-scan
-# - static-analysis
-# - dynamic-analysis
-# - security-audit
-# - crypto-validation
-# - unit-tests
-# - integration-tests
-# - e2e-tests
-# - performance-tests
-# - build
-# - code-quality
-# - all (runs complete suite)
+## Available test names:
+## - secret-scan
+## - dependency-scan
+## - static-analysis
+## - dynamic-analysis
+## - security-audit
+## - crypto-validation
+## - unit-tests
+## - integration-tests
+## - e2e-tests
+## - performance-tests
+## - build
+## - code-quality
+## - all (runs complete suite)
 ```
 
 ## Manual Docker Commands
@@ -69,20 +69,20 @@ bash scripts/docker-test-individual.sh <test-name>
 ### Start Containers
 
 ```bash
-# Start all services
+## Start all services
 docker compose up -d
 
-# Start specific service
+## Start specific service
 docker compose up -d cryprq-listener
 ```
 
 ### Check Container Status
 
 ```bash
-# List running containers
+## List running containers
 docker compose ps
 
-# View logs
+## View logs
 docker compose logs cryprq-listener
 docker compose logs cryprq-dialer
 ```
@@ -90,10 +90,10 @@ docker compose logs cryprq-dialer
 ### Run Tests in Container
 
 ```bash
-# Create test runner container
+## Create test runner container
 docker compose run -d --name cryprq-test-runner cryprq-test-runner sleep 3600
 
-# Run specific test
+## Run specific test
 docker exec -it cryprq-test-runner bash -c "bash scripts/secret-scan.sh"
 docker exec -it cryprq-test-runner bash -c "bash scripts/crypto-validation.sh"
 docker exec -it cryprq-test-runner bash -c "cargo test --lib --all"
@@ -102,10 +102,10 @@ docker exec -it cryprq-test-runner bash -c "cargo test --lib --all"
 ### Interactive Shell
 
 ```bash
-# Get interactive shell in container
+## Get interactive shell in container
 docker exec -it cryprq-test-runner bash
 
-# Inside container, you can run:
+## Inside container, you can run:
 cargo test
 cargo build --release
 bash scripts/crypto-validation.sh
@@ -244,36 +244,36 @@ docker exec -it cryprq-test-runner bash
 ### Container Won't Start
 
 ```bash
-# Check Docker daemon
+## Check Docker daemon
 docker info
 
-# Check logs
+## Check logs
 docker compose logs
 
-# Rebuild images
+## Rebuild images
 docker compose build --no-cache
 ```
 
 ### Tests Fail in Container
 
 ```bash
-# Check container status
+## Check container status
 docker compose ps
 
-# View container logs
+## View container logs
 docker logs cryprq-test-runner
 
-# Get interactive shell to debug
+## Get interactive shell to debug
 docker exec -it cryprq-test-runner bash
 ```
 
 ### Out of Disk Space
 
 ```bash
-# Clean up Docker resources
+## Clean up Docker resources
 docker system prune -a
 
-# Remove unused images
+## Remove unused images
 docker image prune -a
 ```
 
@@ -282,7 +282,7 @@ docker image prune -a
 If port 9999 is already in use:
 
 ```yaml
-# Edit docker-compose.yml to use different port
+## Edit docker-compose.yml to use different port
 ports:
   - "9998:9999/udp"
 ```

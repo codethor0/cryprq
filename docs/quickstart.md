@@ -21,15 +21,15 @@ cargo build --release -p cryprq
   --listen /ip4/0.0.0.0/udp/9999/quic-v1 \
   --allow-peer 12D3KooExamplePeerID \
   --metrics-addr 127.0.0.1:9464
-# Logs include:
-# Local peer id: 12D3Koo...
-# Listening on /ip4/0.0.0.0/udp/9999/quic-v1
+## Logs include:
+## Local peer id: 12D3Koo...
+## Listening on /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 
 ## Dial the Listener
 ```bash
 ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
-# Expect: Connected to <peer-id>
+## Expect: Connected to <peer-id>
 ```
 
 ## Verify

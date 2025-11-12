@@ -42,11 +42,11 @@
 
 ### Desktop: Charts Don't Appear
 ```bash
-# Check fake backend
+## Check fake backend
 curl http://localhost:9464/metrics
 
-# Check connection status
-# Look for "Connected" status in Dashboard
+## Check connection status
+## Look for "Connected" status in Dashboard
 ```
 
 ### Desktop: Rotation Toast Missing
@@ -62,13 +62,13 @@ curl http://localhost:9464/metrics
 ## Quick Verification Commands
 
 ```bash
-# Desktop: Check fake backend
+## Desktop: Check fake backend
 curl -s http://localhost:9464/metrics | head -5
 
-# Desktop: Check logs
+## Desktop: Check logs
 tail -20 ~/.cryprq/logs/cryprq-*.log | jq -c 'fromjson | select(.event=="session.state")'
 
-# Mobile: Check app logs (via adb/logcat)
+## Mobile: Check app logs (via adb/logcat)
 adb logcat | grep -i cryprq | tail -20
 ```
 

@@ -16,7 +16,7 @@ This module provides the Android `VpnService` carrier for CrypRQ. The JNI bridge
 ## Build Steps
 
 ```bash
-# from repository root
+## from repository root
 ANDROID_NDK_HOME=/opt/homebrew/share/android-ndk ./android/rust/build-android.sh
 cd android
 ./gradlew assembleDebug

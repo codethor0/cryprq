@@ -3,7 +3,7 @@
 ## 🚀 Fast Path (All-in-One)
 
 ```bash
-# Run the go-live script
+## Run the go-live script
 ./scripts/go-live.sh 1.1.0
 ```
 
@@ -48,10 +48,10 @@ git push origin main
 
 ### 5. Post-Release Verification
 ```bash
-# After CI completes
+## After CI completes
 ./scripts/verify-release.sh
 
-# Run sanity checks
+## Run sanity checks
 ./scripts/sanity-checks.sh
 ```
 

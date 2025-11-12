@@ -22,7 +22,7 @@ The Docker setup enables:
 ```bash
 cd gui
 make test
-# or
+## or
 docker compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from tests
 ```
 
@@ -31,7 +31,7 @@ docker compose -f docker-compose.yml up --build --abort-on-container-exit --exit
 ```bash
 cd gui
 make build-linux
-# or
+## or
 docker compose -f docker-compose.yml --profile linux-build up --build
 ```
 
@@ -44,7 +44,7 @@ Artifacts will be in `gui/dist/`:
 ```bash
 cd gui
 make build-win
-# or
+## or
 docker compose -f docker-compose.yml --profile win-build up --build
 ```
 
@@ -119,11 +119,11 @@ The `fake-cryprq` service simulates the CrypRQ CLI for E2E testing:
 ## NPM Scripts
 
 ```bash
-# Development
+## Development
 npm run dev              # Start dev server
 npm run dev:xvfb         # Start dev server with Xvfb (headless)
 
-# Testing
+## Testing
 npm run lint             # Run ESLint
 npm run typecheck        # TypeScript type checking
 npm run test:unit        # Run unit tests (Vitest)
@@ -131,7 +131,7 @@ npm run test:playwright  # Run E2E tests (Playwright)
 npm run test:ci          # Run all tests (lint + typecheck + unit + e2e)
 npm run e2e:headless     # Run E2E tests with Xvfb
 
-# Building
+## Building
 npm run build:linux      # Build Linux artifacts
 npm run build:win-unsigned # Build unsigned Windows installer
 npm run build:mac        # Build macOS DMG (macOS only)

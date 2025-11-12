@@ -5,8 +5,9 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server};
-use std::{env, net::SocketAddr, process, time::Duration};
+use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server, Libp2pPacketForwarder, register_packet_recv_tx};
+use std::{env, net::SocketAddr, sync::Arc, time::Duration};
+use node::{TunConfig, TunInterface};
 
 #[derive(Parser, Debug)]
 #[command(name = "cryprq", about = "Post-Quantum VPN")]
@@ -17,28 +18,17 @@ struct Args {
     #[arg(long, help = "Address to listen on (multiaddr)")]
     listen: Option<String>,
 
-    #[arg(
-        long,
-        help = "Address to bind the metrics/health server (e.g., 127.0.0.1:9464)"
-    )]
-    metrics_addr: Option<String>,
+    #[arg(long, help = "Enable VPN mode (system-wide routing)")]
+    vpn: bool,
 
-    #[arg(long, help = "Override rotation interval in seconds (defaults to 300)")]
-    rotate_secs: Option<u64>,
+    #[arg(long, default_value = "cryprq0", help = "TUN interface name")]
+    tun_name: String,
 
-    #[arg(
-        long = "allow-peer",
-        help = "Allowlisted peer ID (may be supplied multiple times)",
-        action = clap::ArgAction::Append
-    )]
-    allow_peers: Vec<String>,
+    #[arg(long, default_value = "10.0.0.1", help = "TUN interface IP address")]
+    tun_address: String,
 
-    #[arg(
-        long = "no-post-quantum",
-        help = "Disable post-quantum encryption (fallback to X25519-only). Not recommended. Default: post-quantum enabled.",
-        action = clap::ArgAction::SetTrue
-    )]
-    no_post_quantum: bool,
+    #[arg(long, help = "Metrics server address")]
+    metrics: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -47,80 +37,154 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    if args.listen.is_some() == args.peer.is_some() {
-        eprintln!("Error: supply exactly one of --listen or --peer");
-        process::exit(1);
-    }
-
-    let rotation_secs = args
-        .rotate_secs
-        .or_else(|| {
-            env::var("CRYPRQ_ROTATE_SECS")
-                .ok()
-                .and_then(|v| v.parse::<u64>().ok())
-        })
-        .unwrap_or(300)
-        .max(1);
-    let rotation_interval = Duration::from_secs(rotation_secs);
-
-    // Post-quantum encryption flag (default: enabled)
-    let post_quantum_enabled = !args.no_post_quantum;
-    if !post_quantum_enabled {
-        log::warn!("Post-quantum encryption is DISABLED. Using X25519-only (not recommended for long-term security).");
-    } else {
-        log::info!("Post-quantum encryption enabled: ML-KEM (Kyber768) + X25519 hybrid");
-    }
-
-    if let Some(metrics_addr_str) = args
-        .metrics_addr
-        .or_else(|| env::var("CRYPRQ_METRICS_ADDR").ok())
-    {
-        let metrics_addr: SocketAddr = metrics_addr_str
-            .parse()
-            .with_context(|| format!("Invalid metrics address: {metrics_addr_str}"))?;
+    // Start metrics server if requested
+    if let Some(addr) = args.metrics {
         tokio::spawn(async move {
-            if let Err(err) = start_metrics_server(metrics_addr).await {
-                log::error!(
-                    "event=metrics_server_error addr={} error={}",
-                    metrics_addr,
-                    err
-                );
+            if let Err(e) = start_metrics_server(addr).await {
+                eprintln!("Metrics server error: {}", e);
             }
         });
     }
 
-    let env_allow: Vec<String> = env::var("CRYPRQ_ALLOW_PEERS")
-        .ok()
-        .map(|v| {
-            v.split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(String::from)
-                .collect()
-        })
-        .unwrap_or_default();
-    let combined_allow = args
-        .allow_peers
-        .into_iter()
-        .chain(env_allow.into_iter())
-        .collect::<Vec<_>>();
-    if !combined_allow.is_empty() {
-        p2p::set_allowed_peers(&combined_allow)
-            .await
-            .with_context(|| "Failed to configure allowed peers")?;
-    }
-
     // Start key rotation task
+    let rotation_interval = Duration::from_secs(
+        env::var("CRYPRQ_ROTATE_SECS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(300),
+    );
     tokio::spawn(async move {
         start_key_rotation(rotation_interval).await;
     });
 
+    // Handle VPN mode - store TUN interface in shared state for callback access
+    let tun_interface_shared: Arc<tokio::sync::Mutex<Option<TunInterface>>> = Arc::new(tokio::sync::Mutex::new(None));
+    
+    if args.vpn {
+        log::info!("🔒 VPN MODE ENABLED - System-wide routing mode");
+        log::info!("Creating TUN interface for packet forwarding...");
+        
+        let tun_config = TunConfig {
+            name: args.tun_name.clone(),
+            address: args.tun_address.clone(),
+            netmask: "255.255.255.0".to_string(),
+            mtu: 1420,
+        };
+
+        let tun = TunInterface::create(tun_config).await
+            .context("Failed to create TUN interface")?;
+        
+        // Try to configure IP (may fail without root/admin)
+        if let Err(e) = tun.configure_ip().await {
+            log::warn!("Failed to configure TUN interface IP (may need root/admin): {}", e);
+            log::warn!("VPN mode: P2P tunnel encryption is active, but system routing requires Network Extension");
+        } else {
+            log::info!("✅ TUN interface {} configured with IP {}", tun.name(), args.tun_address);
+        }
+
+        // Store TUN interface in shared state
+        *tun_interface_shared.lock().await = Some(tun);
+    }
+
+    // Start listener or dialer
     if let Some(addr) = args.listen {
         println!("Starting listener on {}", addr);
+        if args.vpn {
+            log::info!("VPN Mode: Listener will accept connections and route traffic through TUN interface");
+            log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
+            
+            // Set up callback to start packet forwarding when connection is established
+            let tun_shared = tun_interface_shared.clone();
+            let tun_name = args.tun_name.clone();
+            
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
+                let tun_shared_clone = tun_shared.clone();
+                let tun_name_clone = tun_name.clone();
+                
+                tokio::spawn(async move {
+                    log::info!("✅ Connection established with {peer_id} - Starting VPN packet forwarding");
+                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
+                    
+                    // Get TUN interface from shared state
+                    let mut tun_guard = tun_shared_clone.lock().await;
+                    if let Some(mut tun) = tun_guard.take() {
+                        // Create packet forwarder
+                        let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        
+                        // Store recv_tx for forwarding incoming packets from swarm events
+                        // The swarm event handler will use this to forward packets to TUN
+                        let forwarder_recv_tx = forwarder.recv_tx();
+                        
+                        // Register recv_tx channel so swarm event handler can forward packets
+                        register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
+                        
+                        let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
+                        
+                        // Start packet forwarding loop
+                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        if let Err(e) = tun.start_forwarding(forwarder_arc).await {
+                            log::error!("Failed to start packet forwarding: {}", e);
+                        } else {
+                            log::info!("✅ Packet forwarding loop started successfully");
+                        }
+                    } else {
+                        log::error!("TUN interface not available for packet forwarding");
+                    }
+                });
+            })).await;
+        }
         start_listener(&addr).await?;
     } else if let Some(peer_addr) = args.peer {
         println!("Dialing peer {}", peer_addr);
+        if args.vpn {
+            log::info!("VPN Mode: Dialer will establish encrypted tunnel and route traffic through TUN interface");
+            log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
+            
+            // Set up callback to start packet forwarding when connection is established
+            let tun_shared = tun_interface_shared.clone();
+            let tun_name = args.tun_name.clone();
+            
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
+                let tun_shared_clone = tun_shared.clone();
+                let tun_name_clone = tun_name.clone();
+                
+                tokio::spawn(async move {
+                    log::info!("✅ Connected to {peer_id} - Starting VPN packet forwarding");
+                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
+                    
+                    // Get TUN interface from shared state
+                    let mut tun_guard = tun_shared_clone.lock().await;
+                    if let Some(mut tun) = tun_guard.take() {
+                        // Create packet forwarder
+                        let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        let forwarder_recv_tx = forwarder.recv_tx();
+                        
+                        // Register recv_tx channel so swarm event handler can forward packets
+                        register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
+                        
+                        let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
+                        
+                        // Start packet forwarding loop
+                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        if let Err(e) = tun.start_forwarding(forwarder_arc).await {
+                            log::error!("Failed to start packet forwarding: {}", e);
+                        } else {
+                            log::info!("✅ Packet forwarding loop started successfully");
+                        }
+                    } else {
+                        log::error!("TUN interface not available for packet forwarding");
+                    }
+                });
+            })).await;
+        }
+        // Keep connection alive - don't exit immediately
         dial_peer(peer_addr).await?;
+        // Connection established - keep running for VPN mode
+        if args.vpn {
+            log::info!("Connection established - keeping alive for VPN mode");
+            // Keep the process running
+            tokio::signal::ctrl_c().await?;
+        }
     }
 
     Ok(())

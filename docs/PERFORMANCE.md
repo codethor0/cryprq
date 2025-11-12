@@ -9,13 +9,13 @@ This guide covers performance optimization, benchmarking, and profiling for Cryp
 ### Run Performance Benchmarks
 
 ```bash
-# Basic performance check
+## Basic performance check
 bash scripts/performance-benchmark.sh
 
-# Detailed benchmarks (requires nightly)
+## Detailed benchmarks (requires nightly)
 cargo +nightly bench
 
-# Performance optimization analysis
+## Performance optimization analysis
 bash scripts/optimize-performance.sh
 ```
 
@@ -43,10 +43,10 @@ strip = true        # Strip symbols for smaller binary
 ### Running Benchmarks
 
 ```bash
-# Run all benchmarks
+## Run all benchmarks
 bash scripts/benchmark.sh
 
-# Or directly with cargo
+## Or directly with cargo
 cargo +nightly bench
 ```
 
@@ -69,28 +69,28 @@ cargo +nightly bench
 ### CPU Profiling
 
 ```bash
-# Generate flamegraph
+## Generate flamegraph
 cargo install flamegraph
 cargo flamegraph --bin cryprq
 
-# Use perf (Linux)
+## Use perf (Linux)
 perf record ./target/release/cryprq
 perf report
 
-# Use Instruments (macOS)
+## Use Instruments (macOS)
 instruments -t 'Time Profiler' ./target/release/cryprq
 ```
 
 ### Memory Profiling
 
 ```bash
-# Valgrind (Linux)
+## Valgrind (Linux)
 valgrind --leak-check=full ./target/release/cryprq
 
-# Heaptrack (Linux)
+## Heaptrack (Linux)
 heaptrack ./target/release/cryprq
 
-# Memory profiling script
+## Memory profiling script
 bash scripts/profile.sh
 ```
 

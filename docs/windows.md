@@ -81,7 +81,7 @@ $buildDir = Join-Path $root "build"
 Remove-Item $buildDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $buildDir | Out-Null
 
-# Copy payload
+## Copy payload
 Copy-Item "$repo\target\release\cryprq.exe" "$buildDir\CrypRQ" -Force
 Copy-Item "$root\..\packaging\AppxManifest.xml" "$buildDir\AppxManifest.xml"
 Copy-Item "$root\..\packaging\VisualAssets" "$buildDir\VisualAssets" -Recurse

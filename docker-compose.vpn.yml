@@ -1,0 +1,59 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Docker Compose configuration for CrypRQ VPN container
+# This runs the VPN tunnel in a container, allowing the Mac to connect to it
+# The container handles all encryption, tunneling, and routing
+
+services:
+  cryprq-vpn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-vpn:latest
+    container_name: cryprq-vpn
+    restart: unless-stopped
+    network_mode: "bridge"
+    # Expose ports for p2p communication
+    ports:
+      - "9999:9999/udp"  # QUIC listener port
+      # Note: Web server (8787) runs on host, not in container
+    # Privileged mode required for TUN interface creation
+    privileged: true
+    # Capabilities needed for TUN and network manipulation
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    # Environment variables
+    environment:
+      - RUST_LOG=trace
+      - CRYPRQ_ROTATE_SECS=300
+    # Volume for persistent state (optional)
+    volumes:
+      - cryprq-data:/data
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # Command to run listener in VPN mode
+    # VPN mode creates TUN interface and handles routing
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1", "--vpn"]
+    # Alternative: run as dialer connecting to remote peer
+    # command: ["--peer", "/ip4/REMOTE_IP/udp/9999/quic-v1", "--vpn"]
+    stdin_open: true
+    tty: true
+
+volumes:
+  cryprq-data:
+    driver: local
+
+networks:
+  default:
+    name: cryprq-vpn-network
+    driver: bridge
+

@@ -119,22 +119,22 @@
 
 ### Manual Steps
 ```bash
-# 1. Secrets check
+## 1. Secrets check
 gh secret list
 
-# 2. SBOM + validation
+## 2. SBOM + validation
 ./scripts/generate-sbom.sh
 node store/validate.mjs
 
-# 3. Pre-release tests
+## 3. Pre-release tests
 cd gui && make test && make build-linux && ../scripts/smoke-tests.sh
 
-# 4. Release
+## 4. Release
 cd .. && ./scripts/release.sh 1.1.0
 git push origin v1.1.0
 git push origin main
 
-# 5. Post-release verification
+## 5. Post-release verification
 ./scripts/verify-release.sh
 ./scripts/sanity-checks.sh
 ```

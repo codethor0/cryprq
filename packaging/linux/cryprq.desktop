@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=CrypRQ
+Comment=Post-Quantum, Zero-Trust VPN
+Exec=cryprq
+Icon=cryprq
+Terminal=false
+Type=Application
+Categories=Network;Security;
+StartupNotify=false
+

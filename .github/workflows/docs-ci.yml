@@ -1,0 +1,48 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+name: docs-ci
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/no-emoji-gate.sh"
+      - "scripts/check-doc-links.sh"
+      - ".markdownlint.json"
+      - ".mlc.json"
+  push:
+    branches: [ main ]
+    paths:
+      - "**/*.md"
+      - "scripts/no-emoji-gate.sh"
+      - "scripts/check-doc-links.sh"
+      - ".markdownlint.json"
+      - ".mlc.json"
+
+jobs:
+  docs:
+    name: Documentation Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No-emoji gate
+        run: bash scripts/no-emoji-gate.sh
+
+      - name: Setup Node (for markdown/link tooling)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Prettier format check (non-blocking)
+        run: npx --yes prettier -c "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**" || true
+
+      - name: Markdownlint
+        run: npx --yes markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**"
+
+      - name: Link check
+        run: bash scripts/check-doc-links.sh
+

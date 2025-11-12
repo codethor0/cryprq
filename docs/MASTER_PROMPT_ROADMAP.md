@@ -193,7 +193,7 @@ if config.post_quantum {
 ```toml
 [dependencies]
 oqs = { git = "https://github.com/open-quantum-safe/liboqs-rust" }
-# Or use individual crates:
+## Or use individual crates:
 dilithium = "0.1"
 sphincsplus = "0.1"
 ```

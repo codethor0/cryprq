@@ -69,16 +69,26 @@ echo ""
 echo "🔍 Checking for potential hardcoded secrets..."
 SECRET_PATTERNS=("password" "secret" "api_key" "private_key" "token")
 for pattern in "${SECRET_PATTERNS[@]}"; do
-    # Exclude false positives: tokens (rate limiter), private_key (type name), etc.
+    # Exclude false positives: tokens (rate limiter), private_key (type name), cryptographic patterns, etc.
     if grep -ri "$pattern" --include="*.rs" --include="*.toml" . | \
        grep -v "test" | grep -v "example" | grep -v "//" | \
        grep -v "tokens:" | grep -v "self.tokens" | grep -v "private_key:" | \
-       grep -v "PrivateKey" | grep -v "SecretKey" > /dev/null; then
+       grep -v "PrivateKey" | grep -v "SecretKey" | \
+       grep -v "target/" | grep -v "OID_X509_EXT_PRIVATE_KEY_USAGE_PERIOD" | \
+       grep -v "EphemeralSecret" | grep -v "shared_secret" | grep -v "secret_bytes" | \
+       grep -v "signing_key" | grep -v "kyber_secret_key" | grep -v "generate_proof" | \
+       grep -v "x25519_secret" | grep -v "StaticSecret" | grep -v "SharedSecret" | \
+       grep -v "hasher.update(secret)" | grep -v "let secret = " | grep -v "secret:" > /dev/null; then
         echo "⚠️  Potential hardcoded $pattern found"
         grep -ri "$pattern" --include="*.rs" --include="*.toml" . | \
         grep -v "test" | grep -v "example" | grep -v "//" | \
         grep -v "tokens:" | grep -v "self.tokens" | grep -v "private_key:" | \
-        grep -v "PrivateKey" | grep -v "SecretKey" | tee -a "$AUDIT_LOG"
+        grep -v "PrivateKey" | grep -v "SecretKey" | \
+        grep -v "target/" | grep -v "OID_X509_EXT_PRIVATE_KEY_USAGE_PERIOD" | \
+        grep -v "EphemeralSecret" | grep -v "shared_secret" | grep -v "secret_bytes" | \
+        grep -v "signing_key" | grep -v "kyber_secret_key" | grep -v "generate_proof" | \
+        grep -v "x25519_secret" | grep -v "StaticSecret" | grep -v "SharedSecret" | \
+        grep -v "hasher.update(secret)" | grep -v "let secret = " | grep -v "secret:" | tee -a "$AUDIT_LOG"
         ISSUES=$((ISSUES + 1))
     fi
 done

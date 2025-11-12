@@ -23,24 +23,24 @@
 
 ### Reproducible Build
 ```bash
-# 1. Verify Git commit signatures
+## 1. Verify Git commit signatures
 git verify-commit HEAD
 git log --show-signature -1
 
-# 2. Clone with submodule verification
+## 2. Clone with submodule verification
 git clone --recurse-submodules https://github.com/codethor0/cryprq.git
 cd cryprq
 
-# 3. Verify rust-toolchain matches expected hash
+## 3. Verify rust-toolchain matches expected hash
 sha256sum rust-toolchain.toml
-# Expected: [HASH_TO_BE_FILLED]
+## Expected: [HASH_TO_BE_FILLED]
 
-# 4. Build with locked dependencies
+## 4. Build with locked dependencies
 cargo build --release --locked
 
-# 5. Verify binary checksum
+## 5. Verify binary checksum
 sha256sum target/release/cryprq
-# Compare with release checksums.txt
+## Compare with release checksums.txt
 ```
 
 ### Nix Reproducible Build
@@ -105,19 +105,19 @@ docker run --rm cryprq-build sha256sum /build/target/release/cryprq
 
 ### Verification (End-User)
 ```bash
-# 1. Download release
+## 1. Download release
 gh release download v0.x.y
 
-# 2. Verify checksums
+## 2. Verify checksums
 sha256sum -c checksums.txt
 
-# 3. Verify cosign signature
+## 3. Verify cosign signature
 cosign verify-blob --signature cryprq.sig \
   --certificate-identity=codethor0@users.noreply.github.com \
   --certificate-oidc-issuer=https://github.com/login/oauth \
   cryprq
 
-# 4. Verify SBOM signature
+## 4. Verify SBOM signature
 cosign verify-blob --signature bom.json.sig \
   --certificate-identity=codethor0@users.noreply.github.com \
   --certificate-oidc-issuer=https://github.com/login/oauth \

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { MainLayout } from '../Layout/MainLayout'
+import { DebugConsole } from '../Debug/DebugConsole'
 import { Dashboard } from '../Dashboard/Dashboard'
 import { Peers } from '../Peers/Peers'
 import { Settings } from '../Settings/Settings'
@@ -124,6 +125,7 @@ export const App: React.FC = () => {
           </Route>
         </Routes>
       </BrowserRouter>
+      <DebugConsole />
       <Toaster />
       <ErrorModal
         error={currentError}
