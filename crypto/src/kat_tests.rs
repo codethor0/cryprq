@@ -89,7 +89,7 @@ mod kat_tests {
     #[test]
     fn test_kyber768_wrong_key_rejection() {
         // Security test: Wrong secret key should not produce correct shared secret
-        use pqcrypto_traits::kem::{Ciphertext, SharedSecret};
+        use pqcrypto_traits::kem::SharedSecret;
         let (pk1, _sk1) = keypair();
         let (_pk2, sk2) = keypair();
 
@@ -107,7 +107,7 @@ mod kat_tests {
     #[test]
     fn test_kyber768_roundtrip_correctness() {
         // Security test: Verify roundtrip correctness
-        use pqcrypto_traits::kem::{Ciphertext, SharedSecret};
+        use pqcrypto_traits::kem::SharedSecret;
         let (pk, sk) = keypair();
         let (ss_encaps, ct) = encapsulate(&pk);
         let ss_decaps = decapsulate(&ct, &sk);
