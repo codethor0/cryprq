@@ -32,7 +32,7 @@ impl Codec for PacketCodec {
     type Request = Vec<u8>;
     type Response = Vec<u8>;
 
-    async fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
+    async fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> io::Result<Self::Request>
     where
         T: AsyncRead + Unpin + Send,
     {
@@ -41,14 +41,14 @@ impl Codec for PacketCodec {
         io.read_exact(&mut len_bytes).await?;
         let len = u32::from_be_bytes(len_bytes) as usize;
         if len > 65535 {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Packet too large"));
         }
         let mut buf = vec![0u8; len];
         io.read_exact(&mut buf).await?;
         Ok(buf)
     }
 
-    async fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
+    async fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> io::Result<Self::Response>
     where
         T: AsyncRead + Unpin + Send,
     {
@@ -57,14 +57,14 @@ impl Codec for PacketCodec {
         io.read_exact(&mut len_bytes).await?;
         let len = u32::from_be_bytes(len_bytes) as usize;
         if len > 65535 {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Packet too large"));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Packet too large"));
         }
         let mut buf = vec![0u8; len];
         io.read_exact(&mut buf).await?;
         Ok(buf)
     }
 
-    async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> std::io::Result<()>
+    async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> io::Result<()>
     where
         T: AsyncWrite + Unpin + Send,
     {
@@ -76,7 +76,7 @@ impl Codec for PacketCodec {
         Ok(())
     }
 
-    async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> std::io::Result<()>
+    async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> io::Result<()>
     where
         T: AsyncWrite + Unpin + Send,
     {
