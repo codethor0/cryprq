@@ -165,12 +165,13 @@ mod tests {
         let kyber_shared = [1u8; 32];
         let peer_id = [2u8; 32];
         let salt = [3u8; 16];
+        let now = 1000u64;
 
-        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300);
+        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300, now);
 
         assert_eq!(ppk.peer_id(), &peer_id);
-        assert!(!ppk.is_expired());
-        assert!(ppk.expires_in() <= 300);
+        assert!(!ppk.is_expired_at(now));
+        assert!(ppk.expires_in_at(now) <= 300);
     }
 
     #[test]
@@ -178,17 +179,16 @@ mod tests {
         let kyber_shared = [1u8; 32];
         let peer_id = [2u8; 32];
         let salt = [3u8; 16];
+        let now = 1000u64;
 
-        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 1);
+        let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 1, now);
 
         // Should not be expired immediately
-        assert!(!ppk.is_expired());
+        assert!(!ppk.is_expired_at(now));
 
-        // Wait 2 seconds
-        std::thread::sleep(std::time::Duration::from_secs(2));
-
-        // Should be expired now
-        assert!(ppk.is_expired());
+        // After expiration (2 seconds later)
+        let future_timestamp = now + 2;
+        assert!(ppk.is_expired_at(future_timestamp));
     }
 
     #[test]
