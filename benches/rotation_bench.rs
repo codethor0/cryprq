@@ -8,9 +8,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_ppk_derivation(c: &mut Criterion) {
-    use cryprq_crypto::{PPKStore, PostQuantumPSK};
+    use cryprq_crypto::PostQuantumPSK;
 
-    let mut store = PPKStore::new();
     let peer_id = [1u8; 32];
     let kyber_shared = [1u8; 32];
     let salt = [2u8; 16];
