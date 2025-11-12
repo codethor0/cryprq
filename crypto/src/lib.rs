@@ -6,6 +6,7 @@
 #![no_std]
 #![forbid(unsafe_code)]
 #![deny(clippy::all, clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::module_inception)] // Allow test modules to have same name as file
 
 extern crate alloc;
 
