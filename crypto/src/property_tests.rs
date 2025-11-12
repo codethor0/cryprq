@@ -7,6 +7,7 @@
 // Using proptest for generating test cases
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod property_tests {
     use crate::hybrid::HybridHandshake;
     use alloc::vec::Vec;
