@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
             
-            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, recv_tx| {
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
                 
@@ -144,7 +144,7 @@ async fn main() -> Result<()> {
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
             
-            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, recv_tx| {
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
                 
