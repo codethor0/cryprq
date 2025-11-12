@@ -7,7 +7,7 @@
 
 All 13 GitHub Actions workflows have been optimized and configured to pass reliably:
 
-###  Core Workflows (Critical)
+### Core Workflows (Critical)
 
 1. **CI** (`.github/workflows/ci.yml`)
    - Status:  Optimized
@@ -32,47 +32,47 @@ All 13 GitHub Actions workflows have been optimized and configured to pass relia
    - Caching: Cargo directories
    - Strategy: Continue on error, cached
 
-###  Mobile Workflows (Optional)
+### Mobile Workflows (Optional)
 
-5. **Mobile Android CI** (`.github/workflows/mobile-android.yml`)
+1. **Mobile Android CI** (`.github/workflows/mobile-android.yml`)
    - Status:  Optimized
    - Strategy: Skip if project not found, continue on error
 
-6. **Mobile iOS CI** (`.github/workflows/mobile-ios.yml`)
+2. **Mobile iOS CI** (`.github/workflows/mobile-ios.yml`)
    - Status:  Optimized
    - Strategy: Skip if workspace not found, continue on error
 
-7. **Mobile CI** (`.github/workflows/mobile-ci.yml`)
+3. **Mobile CI** (`.github/workflows/mobile-ci.yml`)
    - Status:  Configured
    - Strategy: Runs on mobile changes
 
-###  GUI Workflows
+### GUI Workflows
 
-8. **GUI CI/CD** (`.github/workflows/gui-ci.yml`)
+1. **GUI CI/CD** (`.github/workflows/gui-ci.yml`)
    - Status:  Configured
    - Strategy: Runs on GUI changes
 
-9. **Local Validate Mirror** (`.github/workflows/local-validate-mirror.yml`)
+2. **Local Validate Mirror** (`.github/workflows/local-validate-mirror.yml`)
    - Status:  Configured
    - Strategy: Mirrors local validation
 
-###  Release Workflows
+### Release Workflows
 
-10. **Release** (`.github/workflows/release.yml`)
+1. **Release** (`.github/workflows/release.yml`)
     - Status:  Configured
     - Strategy: Triggers on version tags
 
-11. **Release Verify** (`.github/workflows/release-verify.yml`)
+2. **Release Verify** (`.github/workflows/release-verify.yml`)
     - Status:  Configured
     - Strategy: Validates releases
 
-###  Utility Workflows
+### Utility Workflows
 
-12. **PR Cheat Sheet** (`.github/workflows/pr-cheat-sheet.yml`)
+1. **PR Cheat Sheet** (`.github/workflows/pr-cheat-sheet.yml`)
     - Status:  Configured
     - Strategy: Auto-comments on PRs
 
-13. **Fuzz Testing** (`.github/workflows/fuzz.yml`)
+2. **Fuzz Testing** (`.github/workflows/fuzz.yml`)
     - Status:  Configured
     - Strategy: Weekly schedule + manual
 
@@ -88,6 +88,7 @@ All workflows use aggressive caching:
 - **Build Artifacts**: `target/`
 
 Cache keys based on:
+
 - OS (`${{ runner.os }}`)
 - `Cargo.lock` hash (`${{ hashFiles('**/Cargo.lock') }}`)
 
@@ -114,15 +115,17 @@ bash scripts/run-workflows-locally.sh
 ```
 
 This script:
--  Runs all critical checks
--  Reports pass/fail status
--  Validates before push
--  Saves CI time
+
+- Runs all critical checks
+- Reports pass/fail status
+- Validates before push
+- Saves CI time
 
 ## Monitoring
 
 View workflow status at:
-- **GitHub Actions**: https://github.com/codethor0/cryprq/actions
+
+- **GitHub Actions**: <https://github.com/codethor0/cryprq/actions>
 - **Status Badge**: Add to README.md (optional)
 
 ## Troubleshooting
@@ -143,28 +146,28 @@ View workflow status at:
 
 ## Best Practices
 
-1.  **Test Locally First**: Always run local workflow script
-2.  **Monitor Status**: Check workflow status regularly
-3.  **Fix Fast**: Address failures promptly
-4.  **Optimize**: Use caching and parallel jobs
-5.  **Document**: Keep workflow docs up-to-date
+1. **Test Locally First**: Always run local workflow script
+2. **Monitor Status**: Check workflow status regularly
+3. **Fix Fast**: Address failures promptly
+4. **Optimize**: Use caching and parallel jobs
+5. **Document**: Keep workflow docs up-to-date
 
 ## Summary
 
 **Status**:  **ALL WORKFLOWS READY**
 
--  13 workflows configured
--  Critical checks: Fail fast
--  Optional checks: Continue on error
--  Caching: Optimized
--  Performance: Improved
--  Local testing: Available
--  Documentation: Complete
+- 13 workflows configured
+- Critical checks: Fail fast
+- Optional checks: Continue on error
+- Caching: Optimized
+- Performance: Improved
+- Local testing: Available
+- Documentation: Complete
 
 **All workflows should now pass 100% reliably!**
 
 For detailed documentation, see:
+
 - `docs/WORKFLOWS.md` - Complete workflow guide
 - `docs/CI_CD.md` - CI/CD pipeline documentation
 - `docs/DEVELOPMENT.md` - Development guide
-
