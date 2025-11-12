@@ -361,7 +361,8 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Connected to {remote} via {endpoint:?}");
-                    break;
+                    // Don't break - keep connection alive for VPN mode
+                    // The connection will stay active
                 }
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {

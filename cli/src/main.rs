@@ -171,6 +171,8 @@ async fn main() -> Result<()> {
         if args.vpn {
             log::info!("VPN Mode: Listener will accept connections and route traffic through TUN interface");
             log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
+            // For now, TUN forwarding will be started when connection is established
+            // TODO: Integrate TUN forwarding with p2p connection
         }
         start_listener(&addr).await?;
     } else if let Some(peer_addr) = args.peer {
@@ -178,11 +180,21 @@ async fn main() -> Result<()> {
         if args.vpn {
             log::info!("VPN Mode: Dialer will establish encrypted tunnel and route traffic through TUN interface");
             log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
-            if let Some(ref tun) = tun_interface {
+            if let Some(mut tun) = tun_interface {
                 log::info!("TUN interface {} ready for packet forwarding", tun.name());
+                // TODO: Start packet forwarding when connection is established
+                // For now, we need to create a Tunnel instance from the p2p connection
+                log::warn!("Packet forwarding not yet integrated with p2p connection");
             }
         }
+        // Keep connection alive - don't exit immediately
         dial_peer(peer_addr).await?;
+        // Connection established - keep running for VPN mode
+        if args.vpn {
+            log::info!("Connection established - keeping alive for VPN mode");
+            // Keep the process running
+            tokio::signal::ctrl_c().await?;
+        }
     }
 
     Ok(())

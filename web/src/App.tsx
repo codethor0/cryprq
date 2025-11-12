@@ -48,7 +48,7 @@ export default function App(){
         
         // Extract connected peer (dialer connects to peer, listener receives connection)
         // Match "Connected to <peer-id> via Dialer" or similar patterns
-        if (text.includes('Connected to') || text.includes('connected to') || text.includes('Connection established')) {
+        if (text.includes('Connected to') || text.includes('connected to')) {
           // Try to match peer ID (starts with 12D3KooW followed by alphanumeric)
           const match = text.match(/[Cc]onnected to (12D3KooW\w+)/);
           if (match) {
@@ -58,6 +58,8 @@ export default function App(){
               connectedPeer: match[1],
               mode: mode
             }));
+            // Log connection success
+            setEvents(prev => [...prev, {t: `✅ Connected to peer ${match[1]}`, level: 'peer'}]);
           } else {
             // Fallback: if we see "Connected to" but can't extract peer, still mark as connected
             setStatus(prev => ({ 
@@ -65,11 +67,22 @@ export default function App(){
               connected: true,
               mode: mode
             }));
+            setEvents(prev => [...prev, {t: '✅ Connection established', level: 'peer'}]);
           }
         }
         
-        // Also check for "Inbound connection established" messages
-        if (text.includes('Inbound connection established') || text.includes('connection established')) {
+        // Also check for "Inbound connection established" messages (listener side)
+        if (text.includes('Inbound connection established') || text.includes('Incoming connection attempt')) {
+          setStatus(prev => ({ 
+            ...prev, 
+            connected: true,
+            mode: mode
+          }));
+          setEvents(prev => [...prev, {t: '✅ Inbound connection established', level: 'peer'}]);
+        }
+        
+        // Check for "Connection established" messages
+        if (text.includes('Connection established') && !text.includes('Inbound')) {
           setStatus(prev => ({ 
             ...prev, 
             connected: true,
