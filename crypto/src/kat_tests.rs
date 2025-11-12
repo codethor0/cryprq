@@ -48,6 +48,7 @@ mod kat_tests {
         let (ss1, ct) = encapsulate(&pk);
 
         // Ciphertext should be 1088 bytes for Kyber768
+        use pqcrypto_traits::kem::Ciphertext;
         assert_eq!(ct.as_bytes().len(), 1088, "Ciphertext must be 1088 bytes");
 
         // Shared secret should be 32 bytes
