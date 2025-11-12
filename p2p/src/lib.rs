@@ -260,9 +260,9 @@ pub async fn init_swarm(
             let mdns_behaviour = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
             
             // Create request-response behaviour for packet forwarding
-            let protocol = packet_forwarder::PacketProtocol;
+            let codec = packet_forwarder::PacketCodec::default();
             let request_response_behaviour = request_response::Behaviour::new(
-                [(protocol, ProtocolSupport::Full)],
+                [(packet_forwarder::PACKET_PROTOCOL, ProtocolSupport::Full)],
                 request_response::Config::default(),
             );
             
@@ -358,11 +358,11 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                 match event {
                     request_response::Event::Message { message, .. } => {
                         match message {
-                            request_response::Message::Request { request, channel, peer, .. } => {
+                            request_response::Message::Request { request, channel, .. } => {
                                 // Incoming packet from peer - send empty response and forward packet to TUN
                                 let mut s = swarm_for_loop.lock().await;
                                 let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
-                                log::debug!("🔓 DECRYPT: Received {} bytes packet from {}", request.len(), peer);
+                                log::debug!("🔓 DECRYPT: Received {} bytes packet from peer", request.len());
                                 // TODO: Forward to TUN interface via callback's recv_tx
                             }
                             request_response::Message::Response { response, request_id, .. } => {
