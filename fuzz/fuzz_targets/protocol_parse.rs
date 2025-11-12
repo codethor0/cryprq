@@ -10,7 +10,7 @@ use libfuzzer_sys::fuzz_target;
 fuzz_target!(|data: &[u8]| {
     // Fuzz test protocol parsing (placeholder for future protocol implementation)
     // This will test parsing of multiaddr, peer IDs, etc.
-    
+
     // Basic bounds checking
     if data.len() > 0 {
         // Try to parse as string (for multiaddr/peer ID parsing)
@@ -21,4 +21,3 @@ fuzz_target!(|data: &[u8]| {
         }
     }
 });
-
