@@ -19,21 +19,31 @@ FAILED=0
 
 # cargo-audit
 echo "Running cargo-audit..."
-if cargo audit 2>&1 | tee "$ARTIFACT_DIR/audit.log"; then
-    echo "✅ cargo-audit passed"
+if command -v cargo-audit &> /dev/null; then
+    if cargo audit 2>&1 | tee "$ARTIFACT_DIR/audit.log"; then
+        echo "✅ cargo-audit passed"
+    else
+        echo "❌ cargo-audit found vulnerabilities"
+        FAILED=1
+    fi
 else
-    echo "❌ cargo-audit found vulnerabilities"
-    FAILED=1
+    echo "⚠️ cargo-audit not installed - skipping"
+    echo "Install with: cargo install cargo-audit --locked"
 fi
 echo ""
 
 # cargo-deny
 echo "Running cargo-deny..."
-if cargo deny check 2>&1 | tee "$ARTIFACT_DIR/deny.log"; then
-    echo "✅ cargo-deny passed"
+if command -v cargo-deny &> /dev/null; then
+    if cargo deny check 2>&1 | tee "$ARTIFACT_DIR/deny.log"; then
+        echo "✅ cargo-deny passed"
+    else
+        echo "❌ cargo-deny found issues"
+        FAILED=1
+    fi
 else
-    echo "❌ cargo-deny found issues"
-    FAILED=1
+    echo "⚠️ cargo-deny not installed - skipping"
+    echo "Install with: cargo install cargo-deny --locked"
 fi
 echo ""
 
@@ -55,10 +65,15 @@ fi
 
 # cargo-geiger (unsafe code audit)
 echo "Running cargo-geiger..."
-if cargo geiger --quiet 2>&1 | tee "$ARTIFACT_DIR/geiger.log"; then
-    echo "✅ cargo-geiger completed"
+if command -v cargo-geiger &> /dev/null; then
+    if cargo geiger --quiet 2>&1 | tee "$ARTIFACT_DIR/geiger.log"; then
+        echo "✅ cargo-geiger completed"
+    else
+        echo "⚠️ cargo-geiger encountered issues (non-blocking)"
+    fi
 else
-    echo "⚠️ cargo-geiger encountered issues (non-blocking)"
+    echo "⚠️ cargo-geiger not installed - skipping"
+    echo "Install with: cargo install cargo-geiger --locked"
 fi
 echo ""
 
