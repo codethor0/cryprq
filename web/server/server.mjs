@@ -43,13 +43,17 @@ app.post('/connect', (req,res)=>{
   const { execSync } = require('child_process');
   if(mode === 'listener') {
     try {
-      // Only kill processes if we don't already have a listener running
+      // Only kill processes if we don't already have THIS listener running
       // This prevents killing our own process
       if(!proc || currentMode !== 'listener' || currentPort !== port) {
-        // Kill any processes using this port (we're starting a new listener)
-        execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
-        execSync('sleep 0.5', {stdio: 'ignore'}); // Give processes time to die
-        push('status', `🧹 Cleaned up port ${port} - ready for listener`);
+        // Get PIDs using this port BEFORE we spawn
+        const existingPids = execSync(`lsof -ti:${port} 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
+        if(existingPids) {
+          // Kill existing processes (but remember we'll spawn a new one)
+          execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
+          execSync('sleep 0.5', {stdio: 'ignore'}); // Give processes time to die
+          push('status', `🧹 Cleaned up port ${port} - ready for listener`);
+        }
       }
     } catch(e) {}
   } else if(mode === 'dialer') {
