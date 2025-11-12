@@ -151,7 +151,7 @@ async fn rotate_once(interval: Duration) {
     // Cleanup expired PPKs on rotation
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
     let mut ppk_store = PPK_STORE.write().await;
     ppk_store.cleanup_expired(now);
@@ -187,7 +187,7 @@ pub async fn derive_and_store_ppk(
 
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     let ppk = PostQuantumPSK::derive(
@@ -215,7 +215,7 @@ pub async fn derive_and_store_ppk(
 pub async fn get_ppk_for_peer(peer_id_bytes: &[u8; 32]) -> Option<PostQuantumPSK> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
     let store = PPK_STORE.read().await;
     store.get(peer_id_bytes, now).cloned()
@@ -425,7 +425,13 @@ fn compute_backoff_duration(base_ms: u64, max_ms: u64, failures: u32) -> Duratio
 fn allow_incoming(addr: &Multiaddr) -> bool {
     let key = addr.to_string();
     let now = Instant::now();
-    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{}\"", e);
+            return true; // Allow on lock poisoning (fail open)
+        }
+    };
 
     if let Some(state) = guard.get_mut(&key) {
         if now < state.next_allowed {
@@ -452,7 +458,13 @@ fn allow_incoming(addr: &Multiaddr) -> bool {
 fn record_failure(addr: &Multiaddr) {
     let key = addr.to_string();
     let now = Instant::now();
-    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{}\"", e);
+            return; // Skip recording on lock poisoning
+        }
+    };
     let state = guard.entry(key).or_insert(BackoffState {
         failures: 0,
         next_allowed: now,
@@ -470,7 +482,13 @@ fn record_failure(addr: &Multiaddr) {
 
 fn clear_backoff_for(addr: &Multiaddr) {
     let key = addr.to_string();
-    let mut guard = BACKOFF.lock().expect("backoff lock poisoned");
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{}\"", e);
+            return; // Skip clearing on lock poisoning
+        }
+    };
     guard.remove(&key);
 }
 

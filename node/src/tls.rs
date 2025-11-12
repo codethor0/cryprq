@@ -110,7 +110,6 @@ pub struct TlsStream {
 impl TlsStream {
     /// Read data from TLS stream
     pub async fn read(&self, buf: &mut [u8]) -> Result<usize, TlsError> {
-        use tokio::io::AsyncReadExt;
         self.inner
             .readable()
             .await
@@ -122,7 +121,6 @@ impl TlsStream {
 
     /// Write data to TLS stream
     pub async fn write(&self, buf: &[u8]) -> Result<usize, TlsError> {
-        use tokio::io::AsyncWriteExt;
         self.inner
             .writable()
             .await

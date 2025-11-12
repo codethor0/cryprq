@@ -21,7 +21,8 @@ use blake3::Hasher;
 pub struct ZkProof {
     /// Proof commitment
     commitment: [u8; 32],
-    /// Proof response
+    /// Proof response (placeholder for future ZKP implementation)
+    #[allow(dead_code)]
     response: [u8; 32],
 }
 

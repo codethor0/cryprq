@@ -9,6 +9,9 @@
 //! different post-quantum algorithms. Currently supports ML-KEM (Kyber768),
 //! with plans for Dilithium (signatures) and SPHINCS+ (hash-based signatures).
 
+// Note: Kyber types are imported via cryprq-crypto::hybrid module
+// These imports are kept for potential future use but currently unused
+#[allow(unused_imports)]
 use pqcrypto_mlkem::mlkem768::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };
