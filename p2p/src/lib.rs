@@ -361,8 +361,8 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Connected to {remote} via {endpoint:?}");
-                    // Don't break - keep connection alive for VPN mode
-                    // The connection will stay active
+                    // Keep connection alive - continue processing events
+                    // Don't break - the connection needs to stay active for VPN mode
                 }
             }
             SwarmEvent::OutgoingConnectionError { error, .. } => {
@@ -379,15 +379,16 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 metrics::record_handshake_attempt();
                 println!("Dialing {peer_id:?} (connection {connection_id:?})");
             }
-            SwarmEvent::ConnectionClosed { .. } => {
-                // no active peer tracking for dialer since we exit on connect
+            SwarmEvent::ConnectionClosed { peer_id, .. } => {
+                println!("Connection closed with {peer_id:?}");
+                // For VPN mode, we might want to reconnect
+                // For now, just log and continue
             }
             other => {
                 println!("Unhandled event: {other:?}");
             }
         }
     }
-    Ok(())
 }
 
 #[derive(Debug, Clone)]
