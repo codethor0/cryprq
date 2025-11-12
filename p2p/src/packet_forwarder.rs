@@ -26,8 +26,18 @@ pub struct PacketCodec;
 /// Packet protocol identifier
 pub const PACKET_PROTOCOL: StreamProtocol = StreamProtocol::new("/cryprq/packet/1.0.0");
 
+// Wrapper to make StreamProtocol work with Codec trait
+#[derive(Clone)]
+pub struct ProtocolWrapper(StreamProtocol);
+
+impl AsRef<str> for ProtocolWrapper {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 impl Codec for PacketCodec {
-    type Protocol = StreamProtocol;
+    type Protocol = ProtocolWrapper;
     type Request = Vec<u8>;
     type Response = Vec<u8>;
 
@@ -63,26 +73,26 @@ impl Codec for PacketCodec {
         Ok(buf)
     }
 
-    async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: &Self::Request) -> std::io::Result<()>
+    async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = req.len() as u32;
         io.write_all(&len.to_be_bytes()).await?;
-        io.write_all(req).await?;
+        io.write_all(&req).await?;
         io.flush().await?;
         Ok(())
     }
 
-    async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: &Self::Response) -> std::io::Result<()>
+    async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = res.len() as u32;
         io.write_all(&len.to_be_bytes()).await?;
-        io.write_all(res).await?;
+        io.write_all(&res).await?;
         io.flush().await?;
         Ok(())
     }
