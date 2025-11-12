@@ -13,10 +13,12 @@ path = "src/lib.rs"
 
 [[bench]]
 name = "handshake_bench"
+path = "handshake_bench.rs"
 harness = false
 
 [[bench]]
 name = "rotation_bench"
+path = "rotation_bench.rs"
 harness = false
 
 [dependencies]
