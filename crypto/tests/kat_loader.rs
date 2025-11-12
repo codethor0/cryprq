@@ -37,7 +37,7 @@ pub fn load_kat_vectors(path: &str) -> Result<Vec<KatVector>, String> {
 }
 
 /// Verify a KAT vector against actual implementation
-pub fn verify_kat_vector(vector: &KatVector) -> Result<(), String> {
+pub fn verify_kat_vector(_vector: &KatVector) -> Result<(), String> {
     // Placeholder - actual implementation will use these imports
     #[allow(unused_imports)]
     use pqcrypto_mlkem::mlkem768::*;
