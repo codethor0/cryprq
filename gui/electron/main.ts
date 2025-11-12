@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell, dialog, IpcMainInvokeEvent } from 'electron'
 import * as path from 'path'
 import './main/session'
 import './main/metrics'
@@ -8,6 +8,7 @@ import './main/logging-ipc'
 import './main/diagnostics'
 import { startHeartbeatMonitor, stopHeartbeatMonitor } from './main/heartbeat'
 import { initTray, updateTray } from './main/tray'
+import { setupTrayUpdater } from './main/tray-updater'
 import {
   loadSettings,
   saveSettings,
@@ -155,16 +156,20 @@ function setupApplicationMenu() {
           {
             label: 'Export Diagnostics…',
             click: async () => {
-              const result = await ipcMain.invoke('diagnostics:export')
+              // Call diagnostics export handler directly
+              const { exportDiagnostics } = await import('./main/diagnostics')
+              const result = await exportDiagnostics()
               if (result.ok) {
                 dialog.showMessageBox(getMainWindow()!, {
                   type: 'info',
                   title: 'Diagnostics Exported',
                   message: `Diagnostics exported to:\n${result.path}`,
                   buttons: ['Open Folder', 'OK'],
-                }).then((response) => {
+                }).then((response: any) => {
                   if (response.response === 0) {
+                    if (result.path) {
                     shell.showItemInFolder(result.path)
+                  }
                   }
                 })
               }
@@ -221,16 +226,20 @@ function setupApplicationMenu() {
           {
             label: 'Export Diagnostics…',
             click: async () => {
-              const result = await ipcMain.invoke('diagnostics:export')
+              // Call diagnostics export handler directly
+              const { exportDiagnostics } = await import('./main/diagnostics')
+              const result = await exportDiagnostics()
               if (result.ok) {
                 dialog.showMessageBox(getMainWindow()!, {
                   type: 'info',
                   title: 'Diagnostics Exported',
                   message: `Diagnostics exported to:\n${result.path}`,
                   buttons: ['Open Folder', 'OK'],
-                }).then((response) => {
+                }).then((response: any) => {
                   if (response.response === 0) {
+                    if (result.path) {
                     shell.showItemInFolder(result.path)
+                  }
                   }
                 })
               }

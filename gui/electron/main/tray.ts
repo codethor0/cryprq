@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain } from 'electron'
 import * as path from 'path'
 
 let tray: Tray | null = null
+let currentMenu: Electron.Menu | null = null
 let currentTrayState: {
   status: 'connected' | 'rotating' | 'disconnected'
   currentPeer?: { alias?: string; peerId: string }
@@ -15,7 +16,7 @@ function getMainWindow(): BrowserWindow | undefined {
   return BrowserWindow.getAllWindows()[0]
 }
 
-function getTrayIcon(status: 'connected' | 'rotating' | 'disconnected'): nativeImage {
+function getTrayIcon(status: 'connected' | 'rotating' | 'disconnected'): Electron.NativeImage {
   // Try to load platform-specific icons
   const iconPath = (name: string) => {
     const basePath = path.join(__dirname, '../../assets/tray', name)
@@ -139,6 +140,7 @@ export function updateTray({
 
   const menu = Menu.buildFromTemplate(menuItems)
   tray.setContextMenu(menu)
+  currentMenu = menu // Store menu for dev hooks
   tray.setToolTip(`CrypRQ — ${status}`)
 
   // Update icon
@@ -157,11 +159,11 @@ export function getTray(): Tray | null {
 }
 
 function getCurrentMenuLabels(): string[] {
-  const menu = tray?.getContextMenu()
+  const menu = currentMenu
   const items: string[] = []
   
   if (menu) {
-    menu.items.forEach(item => {
+    menu.items.forEach((item: any) => {
       if (item.label && !item.enabled) {
         // Skip disabled items (status header)
         return
@@ -170,7 +172,7 @@ function getCurrentMenuLabels(): string[] {
         items.push(item.label)
       }
       if (item.submenu) {
-        item.submenu?.items.forEach(subItem => {
+        item.submenu?.items.forEach((subItem: any) => {
           if (subItem.label) {
             items.push(subItem.label)
           }

@@ -56,3 +56,11 @@ export interface LogEntry {
   message: string
 }
 
+export interface LogLine {
+  ts: string
+  level: 'error' | 'warn' | 'info' | 'debug'
+  source: 'cli' | 'ipc' | 'metrics' | 'app'
+  msg: string
+  meta?: Record<string, unknown>
+}
+

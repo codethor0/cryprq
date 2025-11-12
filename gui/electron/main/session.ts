@@ -137,7 +137,7 @@ ipcMain.handle('session:start', async (_e, args: SessionStartArgs) => {
     child = spawn(binPath, cmdArgs, {
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe'],
-    }) as ChildProcessWithoutNullStreams
+    }) as unknown as ChildProcessWithoutNullStreams
 
     child.stdout.setEncoding('utf8')
     child.stderr.setEncoding('utf8')
@@ -275,7 +275,7 @@ export async function stopSession(): Promise<{ ok: boolean; error?: string }> {
           status: 'idle',
         })
       )
-      resolve({ ok: true, force: true })
+      resolve({ ok: true })
     }, 1000)
 
     child?.on('exit', () => {
@@ -355,7 +355,7 @@ ipcMain.handle('session:restart', async (_e, args: SessionStartArgs) => {
     child = spawn(binPath, cmdArgs, {
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe'],
-    }) as ChildProcessWithoutNullStreams
+    }) as unknown as ChildProcessWithoutNullStreams
 
     child.stdout.setEncoding('utf8')
     child.stderr.setEncoding('utf8')

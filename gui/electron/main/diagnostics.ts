@@ -6,7 +6,7 @@ import AdmZip from 'adm-zip'
 import { getLogFiles, readTail, readStructuredLogs, redactSecrets } from './logging'
 import { loadSettings } from './settings'
 
-ipcMain.handle('diagnostics:export', async () => {
+export async function exportDiagnostics(): Promise<{ ok: boolean; path?: string }> {
   const zip = new AdmZip()
   const now = new Date()
   const ts = now.toISOString().replace(/[-:T]/g, '').slice(0, 13)
@@ -210,5 +210,8 @@ application-specific sensitive information before sharing.
   zip.writeZip(filePath)
 
   return { ok: true, path: filePath }
-})
+}
+
+// Register IPC handler
+ipcMain.handle('diagnostics:export', exportDiagnostics)
 

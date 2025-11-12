@@ -2,7 +2,7 @@
   "name": "cryprq-gui",
   "version": "1.0.1",
   "description": "CrypRQ Desktop GUI - Post-quantum VPN client",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
@@ -34,6 +34,7 @@
   "license": "MIT",
   "devDependencies": {
     "@electron/notarize": "^2.2.1",
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
