@@ -1,0 +1,69 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+version: '3.8'
+
+services:
+  # Main CrypRQ listener node
+  cryprq-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-listener
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
+    ports:
+      - "9999:9999/udp"
+    environment:
+      - RUST_LOG=info
+    networks:
+      - cryprq-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # CrypRQ dialer node (for testing)
+  cryprq-dialer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-dialer
+    depends_on:
+      - cryprq-listener
+    command: ["--peer", "/ip4/cryprq-listener/udp/9999/quic-v1"]
+    environment:
+      - RUST_LOG=info
+    networks:
+      - cryprq-network
+    profiles:
+      - test
+
+  # Test runner service
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    depends_on:
+      - cryprq-listener
+    environment:
+      - RUST_LOG=debug
+    networks:
+      - cryprq-network
+    volumes:
+      - ./tests:/app/tests
+      - ./target:/app/target
+    command: ["cargo", "test", "--all"]
+    profiles:
+      - test
+
+networks:
+  cryprq-network:
+    driver: bridge
+

@@ -1,0 +1,86 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+name: Mobile iOS CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mobile/**'
+      - 'ios/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'mobile/**'
+      - 'ios/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Install CocoaPods
+        run: gem install cocoapods
+
+      - name: Install pods
+        working-directory: mobile/ios
+        run: pod install
+
+      - name: Build iOS
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -workspace CrypRQ.xcworkspace \
+            -scheme CrypRQ \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            clean build
+
+  test:
+    name: Test iOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Install CocoaPods
+        run: gem install cocoapods
+
+      - name: Install pods
+        working-directory: mobile/ios
+        run: pod install
+
+      - name: Run iOS tests
+        working-directory: mobile/ios
+        run: |
+          xcodebuild test \
+            -workspace CrypRQ.xcworkspace \
+            -scheme CrypRQ \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15'
+

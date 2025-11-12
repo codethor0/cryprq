@@ -1,0 +1,70 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Documentation (not needed in image)
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Test artifacts
+test-results/
+coverage/
+*.profdata
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Mobile builds
+android/
+ios/
+mobile/
+gui/
+
+# Distribution artifacts
+dist/
+artifacts/
+
+# Nix
+flake.nix
+flake.lock
+shell.nix
+result/
+
+# Scripts (not needed in runtime image)
+scripts/
+
+# Config files (if not needed)
+*.example
+.env
+.env.local
+
