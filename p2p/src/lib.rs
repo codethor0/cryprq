@@ -36,6 +36,9 @@ use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, Pos
 mod metrics;
 pub use metrics::start_metrics_server;
 
+pub mod packet_forwarder;
+pub use packet_forwarder::Libp2pPacketForwarder;
+
 // Callback for when connection is established (for VPN packet forwarding)
 pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));

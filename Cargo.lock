@@ -2293,10 +2293,13 @@ name = "p2p"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "bytes",
  "cryprq-crypto",
  "hyper 0.14.32",
  "libp2p",
  "log",
+ "node",
  "once_cell",
  "prometheus",
  "rand 0.8.5",

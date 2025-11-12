@@ -33,3 +33,6 @@ void = "1"
 thiserror = "1.0"
 prometheus = "0.13"
 hyper = { version = "0.14", features = ["full"] }
+bytes = "1.5"
+async-trait = "0.1"
+node = { path = "../node" }

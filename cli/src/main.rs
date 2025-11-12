@@ -5,8 +5,8 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server};
-use std::{env, net::SocketAddr, process, sync::Arc, time::Duration};
+use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server, Libp2pPacketForwarder};
+use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use node::{TunConfig, TunInterface};
 
 #[derive(Parser, Debug)]
@@ -57,8 +57,10 @@ async fn main() -> Result<()> {
         start_key_rotation(rotation_interval).await;
     });
 
-    // Handle VPN mode
-    let mut tun_interface = if args.vpn {
+    // Handle VPN mode - store TUN interface in shared state for callback access
+    let tun_interface_shared: Arc<tokio::sync::Mutex<Option<TunInterface>>> = Arc::new(tokio::sync::Mutex::new(None));
+    
+    if args.vpn {
         log::info!("🔒 VPN MODE ENABLED - System-wide routing mode");
         log::info!("Creating TUN interface for packet forwarding...");
         
@@ -80,10 +82,9 @@ async fn main() -> Result<()> {
             log::info!("✅ TUN interface {} configured with IP {}", tun.name(), args.tun_address);
         }
 
-        Some(tun)
-    } else {
-        None
-    };
+        // Store TUN interface in shared state
+        *tun_interface_shared.lock().await = Some(tun);
+    }
 
     // Start listener or dialer
     if let Some(addr) = args.listen {
@@ -93,20 +94,36 @@ async fn main() -> Result<()> {
             log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
             
             // Set up callback to start packet forwarding when connection is established
-            if let Some(ref mut tun) = tun_interface {
-                let tun_name = tun.name().to_string();
-                p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+            let tun_shared = tun_interface_shared.clone();
+            let tun_name = args.tun_name.clone();
+            
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+                let tun_shared_clone = tun_shared.clone();
+                let tun_name_clone = tun_name.clone();
+                
+                tokio::spawn(async move {
                     log::info!("✅ Connection established with {peer_id} - Starting VPN packet forwarding");
-                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name);
+                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
                     
-                    // TODO: Start actual packet forwarding loop here
-                    // This requires:
-                    // 1. Create PacketForwarder implementation for libp2p
-                    // 2. Call tun.start_forwarding(forwarder)
-                    // 3. Handle packet forwarding between TUN and libp2p streams
-                    log::warn!("Packet forwarding loop not yet implemented - TUN interface ready but not forwarding");
-                })).await;
-            }
+                    // Get TUN interface from shared state
+                    let mut tun_guard = tun_shared_clone.lock().await;
+                    if let Some(mut tun) = tun_guard.take() {
+                        // Create packet forwarder
+                        let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
+                        
+                        // Start packet forwarding loop
+                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        if let Err(e) = tun.start_forwarding(forwarder_arc).await {
+                            log::error!("Failed to start packet forwarding: {}", e);
+                        } else {
+                            log::info!("✅ Packet forwarding loop started successfully");
+                        }
+                    } else {
+                        log::error!("TUN interface not available for packet forwarding");
+                    }
+                });
+            })).await;
         }
         start_listener(&addr).await?;
     } else if let Some(peer_addr) = args.peer {
@@ -116,20 +133,36 @@ async fn main() -> Result<()> {
             log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
             
             // Set up callback to start packet forwarding when connection is established
-            if let Some(ref mut tun) = tun_interface {
-                let tun_name = tun.name().to_string();
-                p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+            let tun_shared = tun_interface_shared.clone();
+            let tun_name = args.tun_name.clone();
+            
+            p2p::set_connection_callback(Arc::new(move |peer_id, swarm| {
+                let tun_shared_clone = tun_shared.clone();
+                let tun_name_clone = tun_name.clone();
+                
+                tokio::spawn(async move {
                     log::info!("✅ Connected to {peer_id} - Starting VPN packet forwarding");
-                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name);
+                    log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
                     
-                    // TODO: Start actual packet forwarding loop here
-                    // This requires:
-                    // 1. Create PacketForwarder implementation for libp2p
-                    // 2. Call tun.start_forwarding(forwarder)
-                    // 3. Handle packet forwarding between TUN and libp2p streams
-                    log::warn!("Packet forwarding loop not yet implemented - TUN interface ready but not forwarding");
-                })).await;
-            }
+                    // Get TUN interface from shared state
+                    let mut tun_guard = tun_shared_clone.lock().await;
+                    if let Some(mut tun) = tun_guard.take() {
+                        // Create packet forwarder
+                        let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
+                        let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
+                        
+                        // Start packet forwarding loop
+                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        if let Err(e) = tun.start_forwarding(forwarder_arc).await {
+                            log::error!("Failed to start packet forwarding: {}", e);
+                        } else {
+                            log::info!("✅ Packet forwarding loop started successfully");
+                        }
+                    } else {
+                        log::error!("TUN interface not available for packet forwarding");
+                    }
+                });
+            })).await;
         }
         // Keep connection alive - don't exit immediately
         dial_peer(peer_addr).await?;
