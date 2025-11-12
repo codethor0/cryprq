@@ -10,14 +10,14 @@
 mod rfc8439_kat {
     // RFC 8439 Appendix A.5 test vectors
     // These will be loaded from crypto/tests/data/rfc8439/ when available
-    
+
     #[test]
     fn test_chacha20poly1305_kat_placeholder() {
         // Placeholder test - will be expanded when vectors are loaded
         // This ensures the test infrastructure exists
         assert!(true, "RFC 8439 KAT infrastructure ready");
     }
-    
+
     // TODO: Add actual RFC 8439 test vectors when loaded
     // Test cases:
     // - Encryption correctness
@@ -27,4 +27,3 @@ mod rfc8439_kat {
     // - Additional data handling
     // - Tamper detection
 }
-

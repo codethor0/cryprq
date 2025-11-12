@@ -8,9 +8,9 @@
 #[cfg(test)]
 mod property_expanded {
     use crate::hybrid::HybridHandshake;
+    use alloc::vec::Vec;
     use pqcrypto_traits::kem::{PublicKey, SecretKey};
     use proptest::prelude::*;
-    use alloc::vec::Vec;
 
     proptest! {
         #[test]
@@ -20,13 +20,13 @@ mod property_expanded {
             // Property: Same inputs → same transcript hash
             let h1 = HybridHandshake::new();
             let h2 = HybridHandshake::new();
-            
+
             // Both should produce valid keys
             prop_assert_eq!(h1.x25519_secret().as_bytes().len(), 32);
             prop_assert_eq!(h2.x25519_secret().as_bytes().len(), 32);
             prop_assert_eq!(h1.kyber_public_key().as_bytes().len(), 1184);
             prop_assert_eq!(h1.kyber_secret_key().as_bytes().len(), 2400);
-            
+
             // Keys should be unique across handshakes
             prop_assert_ne!(
                 h1.x25519_secret().as_bytes(),
@@ -44,7 +44,7 @@ mod property_expanded {
         ) {
             // Property: Key sizes must be consistent
             let h = HybridHandshake::new();
-            
+
             prop_assert_eq!(h.x25519_secret().as_bytes().len(), 32);
             prop_assert_eq!(h.kyber_public_key().as_bytes().len(), 1184);
             prop_assert_eq!(h.kyber_secret_key().as_bytes().len(), 2400);
@@ -57,7 +57,7 @@ mod property_expanded {
             // Property: Malformed lengths should be rejected
             // This is a placeholder - actual implementation would test parsing
             prop_assume!(data.len() != 32 && data.len() != 1184 && data.len() != 2400);
-            
+
             // If we had a parser, we'd test it rejects invalid lengths
             // For now, just verify the test structure exists
             prop_assert!(true);
@@ -71,7 +71,7 @@ mod property_expanded {
             // Valid IDs would be in a specific range
             let valid_ids = [0x01u8, 0x02u8, 0x03u8];
             prop_assume!(!valid_ids.contains(&id));
-            
+
             // If we had a ciphersuite parser, we'd test it rejects invalid IDs
             // For now, just verify the test structure exists
             prop_assert!(true);
@@ -85,11 +85,10 @@ mod property_expanded {
             // Valid frames would have minimum lengths
             let min_frame_len = 64; // Example minimum
             prop_assume!(data.len() < min_frame_len);
-            
+
             // If we had a frame parser, we'd test it rejects truncated frames
             // For now, just verify the test structure exists
             prop_assert!(true);
         }
     }
 }
-

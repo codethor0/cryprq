@@ -44,51 +44,52 @@ pub fn parse_fips203_kat_file(contents: &str) -> Result<Vec<Fips203KatVector>, S
         ct: Vec::new(),
         ss: Vec::new(),
     };
-    
+
     let mut in_vector = false;
-    
+
     for line in contents.lines() {
         let line = line.trim();
-        
+
         // Skip comments and empty lines
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        
+
         // Parse key = value pairs
         if let Some((key, value)) = line.split_once('=') {
             let key = key.trim();
             let value = value.trim();
-            
+
             match key {
                 "count" => {
                     // Save previous vector if exists
                     if in_vector {
                         vectors.push(current.clone());
                     }
-                    current.count = value.parse()
+                    current.count = value
+                        .parse()
                         .map_err(|_| format!("Invalid count: {}", value))?;
                     in_vector = true;
                 }
                 "seed" => {
-                    current.seed = hex::decode(value)
-                        .map_err(|e| format!("Invalid seed hex: {}", e))?;
+                    current.seed =
+                        hex::decode(value).map_err(|e| format!("Invalid seed hex: {}", e))?;
                 }
                 "pk" => {
-                    current.pk = hex::decode(value)
-                        .map_err(|e| format!("Invalid pk hex: {}", e))?;
+                    current.pk =
+                        hex::decode(value).map_err(|e| format!("Invalid pk hex: {}", e))?;
                 }
                 "sk" => {
-                    current.sk = hex::decode(value)
-                        .map_err(|e| format!("Invalid sk hex: {}", e))?;
+                    current.sk =
+                        hex::decode(value).map_err(|e| format!("Invalid sk hex: {}", e))?;
                 }
                 "ct" => {
-                    current.ct = hex::decode(value)
-                        .map_err(|e| format!("Invalid ct hex: {}", e))?;
+                    current.ct =
+                        hex::decode(value).map_err(|e| format!("Invalid ct hex: {}", e))?;
                 }
                 "ss" => {
-                    current.ss = hex::decode(value)
-                        .map_err(|e| format!("Invalid ss hex: {}", e))?;
+                    current.ss =
+                        hex::decode(value).map_err(|e| format!("Invalid ss hex: {}", e))?;
                 }
                 _ => {
                     // Unknown key, skip
@@ -96,12 +97,12 @@ pub fn parse_fips203_kat_file(contents: &str) -> Result<Vec<Fips203KatVector>, S
             }
         }
     }
-    
+
     // Save last vector
     if in_vector {
         vectors.push(current);
     }
-    
+
     Ok(vectors)
 }
 
@@ -109,46 +110,46 @@ pub fn parse_fips203_kat_file(contents: &str) -> Result<Vec<Fips203KatVector>, S
 pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
     use pqcrypto_mlkem::mlkem768::*;
     use pqcrypto_traits::kem::{Ciphertext, PublicKey, SecretKey, SharedSecret};
-    
+
     // Load public key from bytes
-    let pk = PublicKey::from_bytes(&vector.pk)
-        .map_err(|e| format!("Invalid public key: {:?}", e))?;
-    
+    let pk =
+        PublicKey::from_bytes(&vector.pk).map_err(|e| format!("Invalid public key: {:?}", e))?;
+
     // Load secret key from bytes
-    let sk = SecretKey::from_bytes(&vector.sk)
-        .map_err(|e| format!("Invalid secret key: {:?}", e))?;
-    
+    let sk =
+        SecretKey::from_bytes(&vector.sk).map_err(|e| format!("Invalid secret key: {:?}", e))?;
+
     // Test encapsulation
     let (ss_encaps, ct) = encapsulate(&pk);
-    
+
     // Verify ciphertext matches (if deterministic)
     // Note: ML-KEM encapsulation is randomized, so we verify decapsulation instead
-    
+
     // Test decapsulation
     let ss_decaps = decapsulate(&ct, &sk);
-    
+
     // Verify shared secrets match
     if ss_encaps.as_bytes() != ss_decaps.as_bytes() {
         return Err("Encaps/decaps shared secrets don't match".to_string());
     }
-    
+
     // Verify decapsulation with provided ciphertext
-    let ct_provided = Ciphertext::from_bytes(&vector.ct)
-        .map_err(|e| format!("Invalid ciphertext: {:?}", e))?;
+    let ct_provided =
+        Ciphertext::from_bytes(&vector.ct).map_err(|e| format!("Invalid ciphertext: {:?}", e))?;
     let ss_provided = decapsulate(&ct_provided, &sk);
-    
+
     // Verify shared secret matches expected
     if ss_provided.as_bytes() != vector.ss {
         return Err("Decapsulation doesn't match expected shared secret".to_string());
     }
-    
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_kat_parser_structure() {
         // Test parser with minimal valid input
@@ -160,10 +161,9 @@ sk = 000102030405060708090A0B0C0D0E0F
 ct = 000102030405060708090A0B0C0D0E0F
 ss = 000102030405060708090A0B0C0D0E0F
 "#;
-        
+
         let vectors = parse_fips203_kat_file(test_input).unwrap();
         assert_eq!(vectors.len(), 1);
         assert_eq!(vectors[0].count, 0);
     }
 }
-

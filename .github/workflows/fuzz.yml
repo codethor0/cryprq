@@ -31,7 +31,7 @@ jobs:
       - name: Build fuzz targets
         run: |
           cd fuzz
-          cargo fuzz build --all-targets
+          cargo fuzz build
       
       - name: Run fuzz tests (short run)
         timeout-minutes: 10

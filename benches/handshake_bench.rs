@@ -18,7 +18,7 @@ fn bench_handshake_creation(c: &mut Criterion) {
 
 fn bench_keypair_generation(c: &mut Criterion) {
     use pqcrypto_mlkem::mlkem768::keypair;
-    
+
     c.bench_function("kyber768_keypair", |b| {
         b.iter(|| {
             black_box(keypair());
@@ -27,16 +27,16 @@ fn bench_keypair_generation(c: &mut Criterion) {
 }
 
 fn bench_encaps_decaps(c: &mut Criterion) {
-    use pqcrypto_mlkem::mlkem768::{keypair, encapsulate, decapsulate};
-    
+    use pqcrypto_mlkem::mlkem768::{decapsulate, encapsulate, keypair};
+
     let (pk, sk) = keypair();
-    
+
     c.bench_function("kyber768_encaps", |b| {
         b.iter(|| {
             black_box(encapsulate(&pk));
         });
     });
-    
+
     let (_, ct) = encapsulate(&pk);
     c.bench_function("kyber768_decaps", |b| {
         b.iter(|| {
@@ -45,6 +45,10 @@ fn bench_encaps_decaps(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_handshake_creation, bench_keypair_generation, bench_encaps_decaps);
+criterion_group!(
+    benches,
+    bench_handshake_creation,
+    bench_keypair_generation,
+    bench_encaps_decaps
+);
 criterion_main!(benches);
-

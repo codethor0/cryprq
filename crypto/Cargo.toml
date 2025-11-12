@@ -25,4 +25,5 @@ hex = "0.4"
 
 [features]
 std = []
+kat = ["hex"]
 
