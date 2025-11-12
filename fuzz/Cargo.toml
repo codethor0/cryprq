@@ -7,6 +7,7 @@
 name = "cryprq-fuzz"
 version = "0.0.0"
 edition = "2021"
+license = "MIT"
 
 [package.metadata]
 cargo-fuzz = true
@@ -15,6 +16,8 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 cryprq-crypto = { path = "../crypto" }
 p2p = { path = "../p2p" }
+pqcrypto-mlkem = "0.1.1"
+pqcrypto-traits = "0.3"
 
 [[bin]]
 name = "fuzz_target_1"

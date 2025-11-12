@@ -17,21 +17,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust nightly toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: nightly
           components: rustfmt, clippy
-          override: true
+        env:
+          RUSTUP_TOOLCHAIN: nightly
+      
+      - name: Set nightly as default
+        run: rustup default nightly
       
       - name: Install cargo-fuzz
         run: |
           cargo install cargo-fuzz --force
       
       - name: Build fuzz targets
+        env:
+          RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
         run: |
           cd fuzz
-          cargo fuzz build --all-targets
+          rustup override set nightly
+          cargo fuzz build --release
       
       - name: Run fuzz tests (short run)
         timeout-minutes: 10
