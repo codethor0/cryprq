@@ -75,7 +75,7 @@ impl PQCSuite {
     }
     
     /// Get algorithm names for display
-    pub fn algorithm_names(&self) -> (String, String) {
+    pub fn algorithm_names(&self) -> (&'static str, &'static str) {
         let kex_name = match self.kex {
             PQCKeyExchange::MLKEM768 => "ML-KEM 768",
             PQCKeyExchange::MLKEM1024 => "ML-KEM 1024",
@@ -88,7 +88,7 @@ impl PQCSuite {
             PQCSignature::SPHINCSPlus => "SPHINCS+",
         };
         
-        (kex_name.to_string(), sig_name.to_string())
+        (kex_name, sig_name)
     }
 }
 
