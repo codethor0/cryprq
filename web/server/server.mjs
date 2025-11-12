@@ -5,6 +5,7 @@ import { exec } from 'node:child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,13 +18,13 @@ app.use(express.json());
 // Serve static files from the web dist directory (built files)
 // If dist doesn't exist, serve from parent directory (for development)
 const distPath = join(__dirname, '..', 'dist');
-const staticPath = require('fs').existsSync(distPath) ? distPath : join(__dirname, '..');
+const staticPath = existsSync(distPath) ? distPath : join(__dirname, '..');
 app.use(express.static(staticPath));
 
 // Fallback to index.html for SPA routing
 app.get('*', (req, res) => {
     const indexPath = join(staticPath, 'index.html');
-    if (require('fs').existsSync(indexPath)) {
+    if (existsSync(indexPath)) {
         res.sendFile(indexPath);
     } else {
         res.status(404).send('Web UI not found. Run: cd web && npm run build');
