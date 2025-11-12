@@ -1,0 +1,99 @@
+# Fastfile for CrypRQ Mobile
+
+default_platform(:android)
+
+platform :android do
+  desc "Build Android AAB"
+  lane :build do
+    gradle(
+      task: "bundleRelease",
+      project_dir: "android",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"] || "",
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"] || "",
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"] || "",
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"] || "",
+      }
+    )
+    
+    # Upload ProGuard mapping if available
+    mapping_file = "android/app/build/outputs/mapping/release/mapping.txt"
+    if File.exist?(mapping_file) && ENV["PLAY_JSON_KEY"]
+      upload_symbols_to_play_store(
+        package_name: "com.cryprq.mobile",
+        mapping_file: mapping_file,
+        json_key: ENV["PLAY_JSON_KEY"]
+      )
+    else
+      UI.important("Skipping mapping upload: file not found or PLAY_JSON_KEY not set")
+    end
+  end
+
+  desc "Build Android APK for beta/internal testing"
+  lane :beta do
+    gradle(
+      task: "assembleRelease",
+      project_dir: "android",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"] || "",
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"] || "",
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"] || "",
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"] || "",
+      }
+    )
+    
+    # Upload to Play Store (gated by secrets)
+    if ENV["PLAY_JSON_KEY"]
+      upload_to_play_store(
+        track: "internal",
+        package_name: "com.cryprq.mobile",
+        json_key: ENV["PLAY_JSON_KEY"],
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true
+      )
+    else
+      UI.important("Skipping Play Store upload: PLAY_JSON_KEY not set")
+    end
+  end
+end
+
+platform :ios do
+  desc "Build iOS archive"
+  lane :build do
+    build_app(
+      workspace: "ios/CrypRQ.xcworkspace",
+      scheme: "CrypRQ",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        signingStyle: "automatic",
+        uploadSymbols: true,
+        uploadBitcode: false
+      }
+    )
+  end
+
+  desc "Build for TestFlight"
+  lane :beta do
+    build_app(
+      workspace: "ios/CrypRQ.xcworkspace",
+      scheme: "CrypRQ",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        signingStyle: "automatic",
+      }
+    )
+    
+    # Upload to TestFlight (gated by secrets)
+    if ENV["APP_STORE_CONNECT_API_KEY"] && ENV["APP_STORE_CONNECT_API_ISSUER"]
+      upload_to_testflight(
+        api_key_path: ENV["APP_STORE_CONNECT_API_KEY"],
+        skip_waiting_for_build_processing: true,
+      )
+    else
+      UI.important("Skipping TestFlight upload: APP_STORE_CONNECT_API_KEY not set")
+    end
+  end
+end

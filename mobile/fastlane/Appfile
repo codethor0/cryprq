@@ -1,0 +1,8 @@
+# Appfile for iOS
+app_identifier("io.cryprq.mobile")
+apple_id("your-apple-id@example.com")
+team_id("YOUR_TEAM_ID")
+
+# Appfile for Android
+package_name("io.cryprq.mobile")
+

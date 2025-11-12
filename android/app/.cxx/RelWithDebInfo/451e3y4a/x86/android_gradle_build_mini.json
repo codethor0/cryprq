@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "/Users/thor/Projects/CrypRQ/android/app/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/opt/homebrew/share/android-commandlinetools/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/thor/Projects/CrypRQ/android/app/.cxx/RelWithDebInfo/451e3y4a/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/opt/homebrew/share/android-commandlinetools/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/thor/Projects/CrypRQ/android/app/.cxx/RelWithDebInfo/451e3y4a/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "cryprq_android::@6890427a1f51a3e7e1df": {
+      "artifactName": "cryprq_android",
+      "abi": "x86",
+      "output": "/Users/thor/Projects/CrypRQ/android/app/build/intermediates/cxx/RelWithDebInfo/451e3y4a/obj/x86/libcryprq_android.so",
+      "runtimeFiles": []
+    }
+  }
+}

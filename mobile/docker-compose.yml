@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  fake-cryprq:
+    image: cryprq/fake-backend:latest
+    ports:
+      - "9464:9464"
+    environment:
+      - METRICS_PORT=9464
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9464/metrics"]
+      interval: 5s
+      timeout: 3s
+      retries: 3

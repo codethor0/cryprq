@@ -1,0 +1,120 @@
+{
+  "name": "cryprq-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CrypRQ Mobile - React Native controller app",
+  "main": "index.js",
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "android:build": "cd android && ./gradlew assembleDebug",
+    "android:build:release": "cd android && ./gradlew assembleRelease",
+    "android:bundle": "cd android && ./gradlew bundleRelease",
+    "ios:build": "cd ios && xcodebuild -workspace CrypRQ.xcworkspace -scheme CrypRQ -configuration Debug -sdk iphonesimulator -derivedDataPath build",
+    "ios:build:release": "cd ios && xcodebuild -workspace CrypRQ.xcworkspace -scheme CrypRQ -configuration Release -sdk iphoneos archive -archivePath build/CrypRQ.xcarchive",
+    "e2e:android": "detox test -c android.emu.debug",
+    "e2e:android:ci": "detox test -c android.emu.debug --headless --record-logs all",
+    "e2e:ios": "detox test -c ios.sim.debug",
+    "e2e:ios:ci": "detox test -c ios.sim.debug --headless --record-logs all",
+    "postinstall": "cd ios && pod install || true"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.73.0",
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/native-stack": "^6.9.17",
+    "@react-navigation/bottom-tabs": "^6.5.11",
+    "react-native-gesture-handler": "^2.14.0",
+    "react-native-reanimated": "^3.6.0",
+    "react-native-safe-area-context": "^4.8.2",
+    "react-native-screens": "^3.29.0",
+    "zustand": "^4.4.7",
+    "react-native-mmkv": "^2.10.2",
+    "axios": "^1.6.2",
+    "eventemitter3": "^5.0.1",
+    "react-native-svg": "^14.1.0",
+    "victory-native": "^36.9.2",
+    "react-native-background-fetch": "^4.1.8",
+    "@notifee/react-native": "^7.8.2",
+    "@react-native-picker/picker": "^2.6.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@babel/preset-typescript": "^7.23.5",
+    "@babel/runtime": "^7.23.5",
+    "@react-native/babel-preset": "^0.73.18",
+    "@react-native/eslint-config": "^0.73.1",
+    "@react-native/metro-config": "^0.73.2",
+    "@react-native/typescript-config": "^0.73.1",
+    "@testing-library/react-native": "^12.4.2",
+    "@testing-library/jest-native": "^5.4.3",
+    "@types/jest": "^29.5.11",
+    "@types/react": "^18.2.45",
+    "@types/react-test-renderer": "^18.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "detox": "^20.14.5",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "metro-react-native-babel-preset": "^0.77.0",
+    "react-test-renderer": "18.2.0",
+    "typescript": "^5.3.3"
+  },
+  "detox": {
+    "testRunner": "jest",
+    "configs": {
+      "android.emu.debug": {
+        "type": "android.emulator",
+        "device": {
+          "avdName": "Pixel_6_API_33"
+        },
+        "app": "android/app/build/outputs/apk/debug/app-debug.apk"
+      },
+      "ios.sim.debug": {
+        "type": "ios.simulator",
+        "device": {
+          "type": "iPhone 15"
+        },
+        "app": "ios/build/Build/Products/Debug-iphonesimulator/CrypRQ.app"
+      }
+    }
+  },
+  "jest": {
+    "preset": "react-native",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.ts"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(react-native|@react-native|victory-native|@react-navigation|react-native-svg|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-background-fetch|@notifee)/)"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.(ts|tsx|js)",
+      "**/*.(test|spec).(ts|tsx|js)"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/**/*.stories.{ts,tsx}",
+      "!src/**/__tests__/**"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+

@@ -1,0 +1,15 @@
+# Android Release Signing Configuration
+# Copy to android/key.properties and fill in values
+# OR use environment variables (recommended for CI)
+
+storeFile=../release.keystore
+storePassword=your-store-password
+keyAlias=cryprq
+keyPassword=your-key-password
+
+# For CI, use environment variables:
+# ANDROID_KEYSTORE_PATH
+# ANDROID_KEYSTORE_PASSWORD
+# ANDROID_KEY_ALIAS
+# ANDROID_KEY_PASSWORD
+

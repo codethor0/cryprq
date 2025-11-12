@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: gui/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: gui
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: gui
+        run: npm test
+      
+      - name: Build application
+        working-directory: gui
+        run: npm run build
+      
+      - name: Build artifacts
+        working-directory: gui
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            npm run build:linux
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            npm run build:mac
+            # Staple notarization if credentials present
+            if [[ -n "$APPLE_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" ]]; then
+              chmod +x scripts/staple.sh
+              ./scripts/staple.sh dist-package/*.dmg || echo "⚠️  Stapling skipped or failed"
+            fi
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            if [[ -n "$CSC_LINK" && -n "$CSC_KEY_PASSWORD" ]]; then
+              npm run build:win
+            else
+              npm run build:win-unsigned
+            fi
+          fi
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ matrix.os }}
+          path: |
+            gui/dist-package/*
+            gui/CHANGELOG.md
+          if-no-files-found: warn
+          retention-days: 30
+      
+      - name: Upload cheat sheet
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-cheat-sheet
+          path: |
+            OPERATOR_CHEAT_SHEET.txt
+          if-no-files-found: warn
+          retention-days: 30
+  
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get version from tag
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Extract CHANGELOG
+        run: |
+          VERSION="${{ steps.tag.outputs.VERSION }}"
+          VERSION_NUM="${VERSION#v}"
+          # Extract changelog section for this version
+          awk "/^## \[${VERSION_NUM}\]/,/^## \[/" gui/CHANGELOG.md | sed '/^## \[/d' > release-notes.md || \
+          awk "/^## \[${VERSION_NUM}\]/,/^## /" gui/CHANGELOG.md | sed '/^## /d' > release-notes.md || \
+          echo "Release ${VERSION}" > release-notes.md
+          
+          # Add SHA and signing status to release notes
+          echo "" >> release-notes.md
+          echo "**Commit:** \`${GITHUB_SHA}\`" >> release-notes.md
+          echo "" >> release-notes.md
+          if [[ -z "${{ secrets.APPLE_ID }}" ]] || [[ -z "${{ secrets.CSC_LINK }}" ]]; then
+            echo "⚠️ **Note:** This release contains unsigned/unsigned artifacts (dev build)." >> release-notes.md
+          else
+            echo "✅ **Signed & Notarized:** macOS DMG and Windows EXE are code-signed." >> release-notes.md
+          fi
+      
+      - name: Download cheat sheet artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: operator-cheat-sheet
+          path: artifacts
+          if-no-files-found: ignore
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.VERSION }}
+          name: Release ${{ steps.tag.outputs.VERSION }}
+          body_path: release-notes.md
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Output release info
+        run: |
+          echo "✅ Release ${{ steps.tag.outputs.VERSION }} created!"
+          echo "Artifacts uploaded to GitHub Release"
+          echo ""
+          echo "Next: Run smoke tests on each platform:"
+          echo "  ./scripts/smoke-tests.sh"
+

@@ -1,0 +1,123 @@
+name: GUI CI/CD
+
+on:
+  pull_request:
+    paths:
+      - 'gui/**'
+      - '.github/workflows/gui-ci.yml'
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'gui/**'
+      - '.github/workflows/gui-ci.yml'
+
+jobs:
+  tests_linux:
+    name: Tests (Linux)
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run tests
+        working-directory: gui
+        run: |
+          docker compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: gui/playwright-report
+          retention-days: 7
+
+  build_linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Linux artifacts
+        working-directory: gui
+        run: |
+          docker build -t cryprq-linux-builder -f .docker/Dockerfile.builder .
+          docker run --rm -v ${{ github.workspace }}/gui/dist:/app/dist cryprq-linux-builder
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cryprq-linux-${{ github.sha }}
+          path: gui/dist/*.{AppImage,deb}
+          retention-days: 30
+
+  build_windows_unsigned:
+    name: Build Windows (Unsigned)
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Windows artifacts
+        working-directory: gui
+        run: |
+          docker build -t cryprq-win-builder -f .docker/Dockerfile.win .
+          docker run --rm -v ${{ github.workspace }}/gui/dist:/app/dist cryprq-win-builder
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cryprq-windows-${{ github.sha }}
+          path: gui/dist/*.exe
+          retention-days: 30
+
+  build_macos:
+    name: Build macOS
+    runs-on: macos-14
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: gui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: gui
+        run: npm ci
+
+      - name: Build macOS artifacts
+        working-directory: gui
+        run: npm run build -- --mac
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cryprq-macos-${{ github.sha }}
+          path: gui/dist-package/*.dmg
+          retention-days: 30
+
+      # Note: Code signing and notarization would go here
+      # Requires macOS Developer ID certificate and App Store Connect API key
+

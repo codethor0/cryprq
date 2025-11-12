@@ -1,0 +1,3 @@
+# ninja log v5
+1	453	1762826128417425711	CMakeFiles/cryprq_android.dir/CrypRqNative.cpp.o	d3e857332dd89bb9
+454	495	1762826128460719582	/Users/thor/Projects/CrypRQ/android/app/build/intermediates/cxx/RelWithDebInfo/451e3y4a/obj/arm64-v8a/libcryprq_android.so	46e81dcb907e4e6a

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-electron/
+dist-package/
+*.log
+.DS_Store
+.env
+.env.local
+playwright-report/
+test-results/
+.vscode-test/
+

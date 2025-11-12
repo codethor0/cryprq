@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     kotlin("android")
@@ -5,15 +8,15 @@ plugins {
 
 android {
     namespace = "dev.cryprq.app"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = "26.1.10909125"
 
     defaultConfig {
-        applicationId = "dev.cryprq.tunnel"
-        minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0-alpha1"
+        applicationId = "io.cryprq.app"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -25,6 +28,30 @@ android {
         }
     }
 
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+    }
+
+    signingConfigs {
+        create("release").apply {
+            val storePath = keystoreProperties.getProperty("CRYPRQ_STORE_FILE")
+            val storePassword = keystoreProperties.getProperty("CRYPRQ_STORE_PASSWORD")
+            val keyAliasValue = keystoreProperties.getProperty("CRYPRQ_KEY_ALIAS")
+            val keyPasswordValue = keystoreProperties.getProperty("CRYPRQ_KEY_PASSWORD")
+
+            if (storePath.isNullOrBlank() || storePassword.isNullOrBlank() || keyAliasValue.isNullOrBlank() || keyPasswordValue.isNullOrBlank()) {
+                throw IllegalStateException("Missing Android release signing configuration. Populate android/keystore.properties.")
+            }
+
+            storeFile = file(storePath)
+            this.storePassword = storePassword
+            keyAlias = keyAliasValue
+            keyPassword = keyPasswordValue
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -32,6 +59,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             applicationIdSuffix = ".debug"

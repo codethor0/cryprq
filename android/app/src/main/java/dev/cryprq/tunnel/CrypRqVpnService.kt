@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import dev.cryprq.app.R
+import dev.cryprq.logging.CrypRqLogger
 import dev.cryprq.tunnel.jni.CrypRqNative
 import dev.cryprq.tunnel.notifications.ForegroundNotification
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +24,12 @@ class CrypRqVpnService : VpnService() {
     private var tunFd: ParcelFileDescriptor? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        CrypRqLogger.init(applicationContext)
+        if (intent?.action == ACTION_STOP) {
+            stopTunnel("User requested stop")
+            return START_NOT_STICKY
+        }
+        CrypRqLogger.log("CrypRqVpnService started")
         scope.launch { TunnelStatusBus.publish(TunnelStatus.Connecting) }
         startForeground(NOTIFICATION_ID, ForegroundNotification.build(this))
 
@@ -63,6 +70,7 @@ class CrypRqVpnService : VpnService() {
         tunFd = builder.establish()
         if (tunFd == null) {
             Log.e(TAG, "Failed to establish TUN interface")
+            CrypRqLogger.log("Failed to establish TUN interface")
             stopSelf()
         }
     }
@@ -70,6 +78,7 @@ class CrypRqVpnService : VpnService() {
     private fun connectNative() {
         if (!CrypRqNative.libraryLoaded) {
             Log.w(TAG, "Native library not available; running in dry-run mode")
+            CrypRqLogger.log("Native library unavailable; running in dry-run mode")
             scope.launch { TunnelStatusBus.publish(TunnelStatus.Connected) }
             return
         }
@@ -89,14 +98,17 @@ class CrypRqVpnService : VpnService() {
         )
         if (code == 0) {
             scope.launch { TunnelStatusBus.publish(TunnelStatus.Connected) }
+            CrypRqLogger.log("cryprq_connect succeeded")
         } else {
             Log.e(TAG, "cryprq_connect returned $code")
+            CrypRqLogger.log("cryprq_connect failed with code $code")
             stopTunnel("connect failed ($code)")
         }
     }
 
     private fun stopTunnel(reason: String) {
         Log.i(TAG, "Stopping tunnel: $reason")
+        CrypRqLogger.log("Stopping tunnel: $reason")
         tunFd?.close()
         tunFd = null
 
@@ -106,6 +118,7 @@ class CrypRqVpnService : VpnService() {
         }
         scope.launch { TunnelStatusBus.publish(TunnelStatus.Disconnected) }
         stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -122,6 +135,7 @@ class CrypRqVpnService : VpnService() {
         private const val NOTIFICATION_ID = 42
         private const val DEFAULT_MTU = 1400
         private const val DEFAULT_MULTIADDR = "/ip4/0.0.0.0/udp/9999/quic-v1"
+        const val ACTION_STOP = "dev.cryprq.tunnel.action.STOP"
     }
 }
 

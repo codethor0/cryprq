@@ -5,6 +5,7 @@
 <img width="512" height="512" alt="CrypRQ_icon_512" src="docs/_assets/CrypRQ_icon_512.png" />
 
 [![CI](https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/ci.yml)
+[![Local Validate Mirror](https://github.com/codethor0/cryprq/actions/workflows/local-validate-mirror.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/local-validate-mirror.yml)
 [![Security Audit](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/security-audit.yml)
 [![CodeQL](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml/badge.svg)](https://github.com/codethor0/cryprq/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

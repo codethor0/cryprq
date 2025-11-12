@@ -1,0 +1,29 @@
+CrypRQ is a post-quantum VPN client that provides secure, zero-trust peer-to-peer connections with automatic key rotation every 5 minutes.
+
+Features:
+• Post-quantum cryptography (ML-KEM/Kyber768 + X25519 hybrid)
+• Zero-trust architecture with explicit peer allowlisting
+• Automatic ephemeral key rotation (5-minute intervals)
+• Real-time connection status and metrics
+• Peer management with reachability testing
+• Background notifications for connection events
+• Controller mode: Connect to CrypRQ nodes on your network or remote servers
+
+Security:
+• All secrets redacted from logs
+• HTTPS enforcement for remote endpoints
+• Encrypted local storage
+• Privacy-first design (telemetry opt-in)
+
+Use Cases:
+• Secure remote access to private networks
+• Zero-trust network segmentation
+• Post-quantum secure communications
+• Peer-to-peer VPN connections
+
+Privacy:
+• No data collection by default
+• Telemetry opt-in only
+• All logs redacted of sensitive information
+• Open source and auditable
+

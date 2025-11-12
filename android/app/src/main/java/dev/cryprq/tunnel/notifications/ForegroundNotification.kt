@@ -10,17 +10,29 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import dev.cryprq.app.MainActivity
 import dev.cryprq.app.R
+import dev.cryprq.tunnel.CrypRqVpnService
 
 object ForegroundNotification {
     private const val CHANNEL_ID = "cryprq_tunnel"
 
     fun build(context: Context): Notification {
         ensureChannel(context)
-        val intent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
+        val launchIntent = Intent(context, MainActivity::class.java)
+        val contentIntent = PendingIntent.getActivity(
             context,
             0,
-            intent,
+            launchIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val stopIntent = Intent(context, CrypRqVpnService::class.java).apply {
+            action = CrypRqVpnService.ACTION_STOP
+        }
+
+        val stopPendingIntent = PendingIntent.getService(
+            context,
+            1,
+            stopIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -28,8 +40,19 @@ object ForegroundNotification {
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(context.getString(R.string.notification_content))
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(contentIntent)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .addAction(
+                R.drawable.ic_stop,
+                context.getString(R.string.notification_action_stop),
+                stopPendingIntent
+            )
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(context.getString(R.string.notification_content))
+            )
             .build()
     }
 
