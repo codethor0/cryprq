@@ -1,0 +1,19 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "cryprq-benches"
+version = "0.1.0"
+edition = "2021"
+
+[[bench]]
+name = "handshake_bench"
+harness = false
+
+[dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+cryprq-crypto = { path = "../crypto" }
+pqcrypto-mlkem = "0.1.1"
+

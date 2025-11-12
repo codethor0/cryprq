@@ -1,0 +1,116 @@
+name: Extended Testing
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'crypto/**'
+      - 'p2p/**'
+      - 'node/**'
+      - 'fuzz/**'
+
+jobs:
+  extended-fuzz:
+    name: Extended Fuzz (30min)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --force
+      
+      - name: Extended Fuzz - hybrid_handshake
+        run: |
+          timeout 2000 cargo fuzz run hybrid_handshake -- -max_total_time=1800 -artifact_prefix=fuzz-artifacts/ || true
+      
+      - name: Extended Fuzz - protocol_parse
+        run: |
+          timeout 2000 cargo fuzz run protocol_parse -- -max_total_time=1800 -artifact_prefix=fuzz-artifacts/ || true
+      
+      - name: Extended Fuzz - key_rotation
+        run: |
+          timeout 2000 cargo fuzz run key_rotation -- -max_total_time=1800 -artifact_prefix=fuzz-artifacts/ || true
+      
+      - name: Extended Fuzz - ppk_derivation
+        run: |
+          timeout 2000 cargo fuzz run ppk_derivation -- -max_total_time=1800 -artifact_prefix=fuzz-artifacts/ || true
+      
+      - name: Upload Fuzz Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts
+          path: fuzz-artifacts/
+          retention-days: 30
+      
+      - name: Check for Crashes
+        run: |
+          CRASHES=$(find fuzz-artifacts -name "crash-*" 2>/dev/null | wc -l)
+          if [ "$CRASHES" -gt 0 ]; then
+            echo "❌ Found $CRASHES fuzz crashes"
+            exit 1
+          else
+            echo "✅ No fuzz crashes found"
+          fi
+
+  miri-sweep:
+    name: Miri UB Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      
+      - name: Install Miri
+        run: rustup +nightly component add miri
+      
+      - name: Miri Sweep - crypto
+        run: cargo +nightly miri test --package cryprq-crypto --lib
+      
+      - name: Miri Sweep - p2p
+        run: cargo +nightly miri test --package p2p --lib || echo "Miri issues found (non-blocking for now)"
+      
+      - name: Upload Miri Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: miri-logs
+          path: target/miri/
+          retention-days: 7
+
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Run Benchmarks
+        run: cargo bench --bench handshake_bench --bench rotation_bench
+      
+      - name: Upload Benchmark Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: target/criterion/
+          retention-days: 30

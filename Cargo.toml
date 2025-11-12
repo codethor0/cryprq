@@ -11,6 +11,7 @@ members = [
         "cli",
     "core",
     "fuzz",
+    "benches",
     ]
 resolver = "2"
 
