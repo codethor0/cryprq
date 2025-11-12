@@ -42,14 +42,8 @@ runs:
         echo "=== Docker Usage ==="
         docker system df 2>/dev/null || echo "Docker not available"
     
-    - name: Run aggressive cleanup script
-      shell: bash
-      run: |
-        if [ -f "${{ github.workspace }}/scripts/ci-cleanup.sh" ]; then
-          bash "${{ github.workspace }}/scripts/ci-cleanup.sh"
-        else
-          echo "ci-cleanup.sh not found, using fallback cleanup"
-        fi
+    # Note: Aggressive cleanup script (ci-cleanup.sh) runs after checkout in workflows
+    # This action handles system-level cleanup before checkout
 
     - name: Clean Docker images and build cache
       if: inputs.docker_prune == 'true'

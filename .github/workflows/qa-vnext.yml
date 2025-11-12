@@ -39,17 +39,17 @@ jobs:
       group: qa-vnext-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - name: Cleanup storage
+      - name: Cleanup storage (system-level)
         uses: ./.github/actions/cleanup-storage
         with:
           max_cache_age_days: 7
           docker_prune: true
           workspace_clean: true
       
+      - uses: actions/checkout@v4
+      
       - name: Aggressive cleanup (10GB cap)
         run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
-      
-      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
