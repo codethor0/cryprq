@@ -1,0 +1,130 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+name: Metrics Collection
+
+on:
+  schedule:
+    # Run daily at 4 AM UTC (after cleanup at 3 AM)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI", "QA vNext - Extreme Validation"]
+    types:
+      - completed
+
+jobs:
+  collect-metrics:
+    name: Collect CI Metrics
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc
+
+      - name: Collect workflow metrics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "# CI Metrics Report - $(date +%Y-%m-%d)" > metrics-report.md
+          echo "" >> metrics-report.md
+          echo "## Performance Metrics" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # Get workflow runs from last 7 days
+          WORKFLOWS=("ci.yml" "qa-vnext.yml" "security-checks.yml" "docs-ci.yml")
+          
+          for workflow in "${WORKFLOWS[@]}"; do
+            echo "### $(basename $workflow .yml)" >> metrics-report.md
+            echo "" >> metrics-report.md
+            
+            # Get runs from last 7 days
+            RUNS=$(gh api repos/${{ github.repository }}/actions/workflows/$workflow/runs \
+              --jq '.workflow_runs[] | select(.created_at > (now - 604800 | todateiso8601))' \
+              --paginate 2>/dev/null || echo "[]")
+            
+            if [ "$RUNS" != "[]" ] && [ -n "$RUNS" ]; then
+              # Calculate median and p95 durations
+              DURATIONS=$(echo "$RUNS" | jq -r '.conclusion as $c | if $c == "success" then .run_duration_ms else empty end' | sort -n)
+              
+              if [ -n "$DURATIONS" ]; then
+                COUNT=$(echo "$DURATIONS" | wc -l)
+                MEDIAN=$(echo "$DURATIONS" | awk "NR==$(($COUNT+1)/2)")
+                P95=$(echo "$DURATIONS" | awk "NR==$(($COUNT*95/100))")
+                
+                echo "- **Total Runs**: $COUNT" >> metrics-report.md
+                echo "- **Median Duration**: $(($MEDIAN/1000))s ($(($MEDIAN/60000))m)" >> metrics-report.md
+                echo "- **P95 Duration**: $(($P95/1000))s ($(($P95/60000))m)" >> metrics-report.md
+              fi
+              
+              # Calculate success rate
+              SUCCESS=$(echo "$RUNS" | jq -r '[.conclusion == "success"] | length')
+              TOTAL=$(echo "$RUNS" | jq -r 'length')
+              SUCCESS_RATE=$(echo "scale=2; $SUCCESS * 100 / $TOTAL" | bc)
+              
+              echo "- **Success Rate**: ${SUCCESS_RATE}%" >> metrics-report.md
+              echo "" >> metrics-report.md
+            else
+              echo "- No runs in last 7 days" >> metrics-report.md
+              echo "" >> metrics-report.md
+            fi
+          done
+
+      - name: Collect storage metrics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Storage Metrics" >> metrics-report.md
+          echo "" >> metrics-report.md
+          
+          # Count artifacts
+          ARTIFACT_COUNT=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts | length' 2>/dev/null || echo "0")
+          echo "- **Total Artifacts**: $ARTIFACT_COUNT" >> metrics-report.md
+          
+          # Count caches
+          CACHE_COUNT=$(gh cache list --limit 1000 2>/dev/null | wc -l || echo "0")
+          echo "- **Total Caches**: $CACHE_COUNT" >> metrics-report.md
+          
+          # Estimate storage (rough calculation)
+          echo "- **Storage Cap**: 10GB" >> metrics-report.md
+          echo "" >> metrics-report.md
+
+      - name: Collect cache metrics
+        run: |
+          echo "## Cache Metrics" >> metrics-report.md
+          echo "" >> metrics-report.md
+          echo "- **Cache Hit Rate**: Tracked per workflow run" >> metrics-report.md
+          echo "- **Cache Keys**: OS + runtime + lockfile hash" >> metrics-report.md
+          echo "" >> metrics-report.md
+
+      - name: Generate improvement targets
+        run: |
+          echo "## 7-Day Improvement Targets" >> metrics-report.md
+          echo "" >> metrics-report.md
+          echo "- **Median Pipeline Time**: < 5 minutes (target)" >> metrics-report.md
+          echo "- **P95 Pipeline Time**: < 8 minutes (target)" >> metrics-report.md
+          echo "- **Cache Hit Rate**: > 70% (target)" >> metrics-report.md
+          echo "- **Storage Usage**: < 5GB (target)" >> metrics-report.md
+          echo "- **Flake Rate**: < 2% (target)" >> metrics-report.md
+          echo "" >> metrics-report.md
+
+      - name: Display metrics report
+        run: |
+          cat metrics-report.md
+
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-report-$(date +%Y-%m-%d)
+          path: metrics-report.md
+          retention-days: 30
+
