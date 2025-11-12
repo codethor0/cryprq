@@ -1,44 +1,113 @@
 # Security Policy
 
 ## Supported Versions
-- `main`: actively maintained.
-- Future tagged releases: latest patch only.
 
-No other branches receive security fixes.
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.0.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
-- Email: `codethor@gmail.com`
-- Optional PGP encryption (replace with production key before publishing):
-  ```
-  -----BEGIN PGP PUBLIC KEY BLOCK-----
-  Version: GnuPG v2
 
-  mQENBFbj0hABCAC5Pqg0l4COREPLACEWITHREALKEYEXAMPLE==
-  -----END PGP PUBLIC KEY BLOCK-----
-  ```
+We take security vulnerabilities seriously. If you discover a security vulnerability, please follow these steps:
 
-### Disclosure Process
-1. Acknowledge receipt within **72 hours**.
-2. Provide triage status and remediation plan within **7 days**.
-3. Coordinate fix release and public advisory with the reporter.
+### 1. **Do NOT** open a public issue
+Security vulnerabilities should be reported privately to prevent exploitation.
 
-### Safe Harbor
-We welcome good-faith research. Activities that follow this policy and avoid user data exfiltration or service disruption will not trigger legal action.
+### 2. Email Security Team
+Send an email to: **codethor@gmail.com**
 
-## Security Practices
-- CI enforces `cargo fmt`, `cargo clippy`, `cargo test`, `cargo audit`, `cargo deny`, and CodeQL.
-- Vendored `third_party/if-watch` reduces supply-chain drift.
-- Release packaging (`finish_qa_and_package.sh`) emits SPDX SBOMs via Syft and runs Grype vulnerability scans for `ghcr.io/codethor0/cryprq` images.
-- Reproducible build instructions are documented in `REPRODUCIBLE.md`.
+Include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
 
-## Contact Preferences
-- Language: English.
-- Include affected commit/tag, reproduction steps, and impact assessment.
-- Encrypt sensitive details with the PGP key above when possible.
+### 3. Response Timeline
+- **Initial Response**: Within 48 hours
+- **Status Update**: Within 7 days
+- **Fix Timeline**: Depends on severity (see below)
+
+### 4. Severity Levels
+
+#### Critical
+- Remote code execution
+- Authentication bypass
+- Cryptographic weaknesses
+- **Response**: Immediate (24-48 hours)
+
+#### High
+- Information disclosure
+- Denial of service
+- Privilege escalation
+- **Response**: Within 7 days
+
+#### Medium
+- Local information disclosure
+- Limited DoS
+- **Response**: Within 30 days
+
+#### Low
+- Minor information leaks
+- Best practice violations
+- **Response**: Next release cycle
+
+## Security Best Practices
+
+### For Users
+- ✅ Keep CrypRQ updated to the latest version
+- ✅ Enable post-quantum encryption (default)
+- ✅ Use explicit peer allowlists
+- ✅ Review logs regularly
+- ✅ Report suspicious activity
+
+### For Developers
+- ✅ Follow secure coding practices
+- ✅ Use `cargo audit` and `cargo deny`
+- ✅ Run fuzz tests before commits
+- ✅ Review cryptographic implementations carefully
+- ✅ Never commit secrets or keys
+
+## Bug Bounty Program
+
+**Status**: Coming Soon
+
+We plan to launch a bug bounty program in the future. Check back for updates.
+
+### Scope (Planned)
+- Core cryptographic implementations
+- Network protocol handling
+- Authentication and authorization
+- Key management and rotation
+
+### Out of Scope (Planned)
+- Social engineering attacks
+- Physical access attacks
+- Denial of service (unless critical)
+- Issues in dependencies (report upstream)
+
+## Security Updates
+
+Security updates are released as soon as possible after a vulnerability is confirmed and fixed. Critical vulnerabilities may result in immediate releases.
+
+## Disclosure Policy
+
+We follow responsible disclosure:
+1. Vulnerability reported privately
+2. Issue confirmed and fix developed
+3. Fix tested and deployed
+4. Public disclosure (with credit to reporter)
+
+## Contact
+
+- **Security Email**: codethor@gmail.com
+- **PGP Key**: [Coming Soon]
+- **Security Advisories**: [GitHub Security Advisories](https://github.com/codethor0/cryprq/security/advisories)
+
+## Acknowledgments
+
+We thank security researchers who responsibly disclose vulnerabilities. Contributors will be credited (with permission) in security advisories.
 
 ---
 
-**Checklist**
-- [ ] Report sent to `codethor@gmail.com`.
-- [ ] (Optional) Payload encrypted with PGP.
-- [ ] Disclosure timeline agreed with maintainers.
+**Last Updated**: 2025-11-11
