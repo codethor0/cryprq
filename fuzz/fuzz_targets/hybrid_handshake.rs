@@ -7,6 +7,7 @@
 
 use cryprq_crypto::{kyber_keypair, HybridHandshake};
 use libfuzzer_sys::fuzz_target;
+use pqcrypto_traits::kem::{PublicKey, SecretKey};
 
 fuzz_target!(|data: &[u8]| {
     // Fuzz test hybrid handshake creation
