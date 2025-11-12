@@ -3,51 +3,129 @@
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # SPDX-License-Identifier: MIT
 
-# Docker Compose file for testing
-# Usage: docker compose -f docker-compose.test.yml up
+# Docker Compose test harness for CrypRQ QA pipeline
+version: '3.8'
 
 services:
-  # Main CrypRQ listener node
-  cryprq-listener:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: cryprq-node:latest
-    container_name: cryprq-listener
-    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
-    ports:
-      - "9999:9999/udp"
-    environment:
-      - RUST_LOG=info
-    networks:
-      - cryprq-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "cryprq"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # Test runner service (uses Rust image for testing)
-  cryprq-test-runner:
-    image: rust:1.83
-    container_name: cryprq-test-runner
-    depends_on:
-      cryprq-listener:
-        condition: service_healthy
-    environment:
-      - RUST_LOG=info
-    networks:
-      - cryprq-network
+  # Base image with Rust toolchain
+  rust-base:
+    image: rust:1.83.0-slim
     volumes:
       - .:/workspace
+      - cargo-cache:/usr/local/cargo/registry
     working_dir: /workspace
-    command: ["sleep", "infinity"]
-    profiles:
-      - test
-    entrypoint: ["/bin/bash"]
+    environment:
+      - RUSTFLAGS=-C lto=thin -C opt-level=3 -C codegen-units=1
 
-networks:
-  cryprq-network:
-    driver: bridge
+  # Unit tests
+  unit:
+    extends: rust-base
+    command: cargo test --all --lib --no-fail-fast
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/unit:/workspace/artifacts
 
+  # KAT tests
+  kat:
+    extends: rust-base
+    command: bash scripts/run-kat-tests.sh
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/kat:/workspace/artifacts
+
+  # Property tests
+  prop:
+    extends: rust-base
+    command: cargo test --package cryprq-crypto property_tests property_expanded
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/prop:/workspace/artifacts
+
+  # Fuzz targets
+  fuzz-handshake:
+    extends: rust-base
+    command: bash scripts/run-extended-fuzz.sh hybrid_handshake 1800
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/fuzz:/workspace/artifacts
+    environment:
+      - ARTIFACT_DIR=/workspace/artifacts
+
+  fuzz-protocol:
+    extends: rust-base
+    command: bash scripts/run-extended-fuzz.sh protocol_parse 1800
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/fuzz:/workspace/artifacts
+    environment:
+      - ARTIFACT_DIR=/workspace/artifacts
+
+  fuzz-rotation:
+    extends: rust-base
+    command: bash scripts/run-extended-fuzz.sh key_rotation 1800
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/fuzz:/workspace/artifacts
+    environment:
+      - ARTIFACT_DIR=/workspace/artifacts
+
+  fuzz-ppk:
+    extends: rust-base
+    command: bash scripts/run-extended-fuzz.sh ppk_derivation 1800
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/fuzz:/workspace/artifacts
+    environment:
+      - ARTIFACT_DIR=/workspace/artifacts
+
+  # Miri sweep
+  miri:
+    extends: rust-base
+    image: rustlang/rust:nightly-slim
+    command: bash scripts/run-miri-sweep.sh
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/miri:/workspace/artifacts
+
+  # Sanitizers
+  san-asan:
+    extends: rust-base
+    image: rustlang/rust:nightly-slim
+    command: bash -c "export RUSTFLAGS='-Zsanitizer=address' && cargo +nightly test --all --lib"
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/sanitizers:/workspace/artifacts
+
+  san-ubsan:
+    extends: rust-base
+    image: rustlang/rust:nightly-slim
+    command: bash -c "export RUSTFLAGS='-Zsanitizer=undefined' && cargo +nightly test --all --lib"
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/sanitizers:/workspace/artifacts
+
+  # Interop tests
+  interop-listener:
+    extends: rust-base
+    command: bash scripts/interop-listener.sh
+    network_mode: bridge
+    ports:
+      - "9000:9000/udp"
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/interop:/workspace/artifacts
+
+  interop-dialer:
+    extends: rust-base
+    command: bash scripts/interop-dialer.sh
+    network_mode: bridge
+    depends_on:
+      - interop-listener
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/interop:/workspace/artifacts
+
+  # Benchmarks
+  bench:
+    extends: rust-base
+    command: cargo bench --bench handshake_bench --bench rotation_bench
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/bench:/workspace/artifacts
+
+  # Coverage
+  coverage:
+    extends: rust-base
+    command: bash scripts/run-coverage.sh
+    volumes:
+      - ./release-${DATE:-$(date +%Y%m%d)}/qa/coverage:/workspace/artifacts
+
+volumes:
+  cargo-cache:
