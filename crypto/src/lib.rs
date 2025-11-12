@@ -20,6 +20,12 @@ mod kat_tests;
 #[cfg(test)]
 mod property_tests;
 
+#[cfg(test)]
+mod property_expanded;
+
+#[cfg(feature = "kat")]
+pub mod kat_loader;
+
 // Publicly export items needed by other crates
 pub use crate::hybrid::{HybridHandshake, SharedSecret32};
 pub use crate::ppk::{PPKStore, PostQuantumPSK};

@@ -1,43 +1,67 @@
-# CrypRQ Extreme Verify → Optimize → Lock - Status Update
+# CrypRQ Extreme Validation & Optimization - Status
 
-**Date**: 2025-11-12  
-**Last Update**: $(date)
+**Date**: $(date +%Y-%m-%d)  
+**Branch**: qa/vnext-$(date +%Y%m%d)  
+**Status**: 🚧 In Progress
 
-## Phase 1: Known Issues ✅ COMPLETE
+## Completed ✅
 
-All known issues from previous run have been fixed:
-1. ✅ KAT API order corrected
-2. ✅ Property tests restored with full assertions
-3. ✅ Vec import fixed for no_std
-4. ✅ KAT loader infrastructure added
+1. **Environment Setup**
+   - ✅ QA environment setup script
+   - ✅ Multi-toolchain support (1.83.0, stable, beta, nightly)
+   - ✅ Hardened RUSTFLAGS configuration
 
-## Current Status
+2. **KAT Infrastructure**
+   - ✅ FIPS 203 ML-KEM loader structure
+   - ✅ RFC 8439 ChaCha20-Poly1305 test structure
+   - ✅ RFC 7748 X25519 test structure
+   - ✅ KAT test runner script
 
-### Tests: ✅ ALL PASSING
-- Crypto tests: 15 passing
-- Unit tests: 31 passing
-- Format: Clean
-- Clippy: Clean
-- Build: Success
+3. **Property Tests**
+   - ✅ Expanded property test suite
+   - ✅ Handshake symmetry/idempotence tests
+   - ✅ Key size invariant tests
+   - ✅ Malformed input rejection tests
 
-### Infrastructure: ✅ READY
-- Fuzz: 4 targets ready (workspace config fixed)
-- Miri: Quick test infrastructure ready
-- Docker: Ready
-- SBOM/Grype: Complete
+4. **Testing Infrastructure**
+   - ✅ Sanitizer runner (ASan/UBSan)
+   - ✅ Coverage runner (cargo-llvm-cov)
+   - ✅ Supply chain checker (audit, deny, vet, geiger, SBOM, Grype)
+   - ✅ QA orchestration script
 
-### Known Issues
-- Fuzz workspace: Fixed (added to workspace.members)
-- Miri: Some tests may need adjustment for Miri compatibility
+## In Progress 🚧
+
+1. **KAT Vector Loading**
+   - 🚧 FIPS 203 vector parser implementation
+   - 🚧 RFC 8439/7748 vector integration
+
+2. **Docker Harness**
+   - 🚧 docker-compose.test.yml creation
+   - 🚧 Interop test implementation
+
+3. **CI Integration**
+   - 🚧 CI gate updates
+   - 🚧 Required check configuration
+
+## Pending ⏳
+
+1. **Reproducible Builds**
+   - ⏳ diffoscope integration
+   - ⏳ Deterministic build verification
+
+2. **Interop Tests**
+   - ⏳ Docker-based interop execution
+   - ⏳ libp2p compatibility tests
+
+3. **Performance Benchmarks**
+   - ⏳ Regression detection
+   - ⏳ Baseline recording
 
 ## Next Steps
 
-1. Run extended fuzz (30+ min) in CI
-2. Complete full Miri sweep
-3. Implement QUIC/libp2p interop
-4. Add Criterion benchmarks
-5. Integrate CI gates
+1. Complete KAT vector loading implementation
+2. Create Docker harness for interop tests
+3. Update CI workflows with all gates
+4. Implement reproducible build verification
+5. Add performance regression detection
 
----
-
-**Status**: ✅ Phase 1 Complete | Phase 2 In Progress
