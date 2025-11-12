@@ -275,7 +275,7 @@ impl TunInterface {
                     let dev = device_read.clone();
                     let mut buf_clone = buf.clone();
                     move || {
-                        let mut dev_guard = dev.lock().unwrap();
+                        let mut dev_guard = dev.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Mutex lock failed: {}", e)))?;
                         dev_guard.read(&mut buf_clone)
                     }
                 })

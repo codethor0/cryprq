@@ -114,26 +114,26 @@ async fn main() -> Result<()> {
             p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
-                
+
                 tokio::spawn(async move {
                     log::info!("✅ Connection established with {peer_id} - Starting VPN packet forwarding");
                     log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
-                    
+
                     // Get TUN interface from shared state
                     let mut tun_guard = tun_shared_clone.lock().await;
                     if let Some(mut tun) = tun_guard.take() {
                         // Create packet forwarder
                         let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
-                        
+
                         // Store recv_tx for forwarding incoming packets from swarm events
                         // The swarm event handler will use this to forward packets to TUN
                         let forwarder_recv_tx = forwarder.recv_tx();
-                        
+
                         // Register recv_tx channel so swarm event handler can forward packets
                         register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
-                        
+
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
-                        
+
                         // Start packet forwarding loop
                         log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
@@ -163,23 +163,23 @@ async fn main() -> Result<()> {
             p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
-                
+
                 tokio::spawn(async move {
                     log::info!("✅ Connected to {peer_id} - Starting VPN packet forwarding");
                     log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
-                    
+
                     // Get TUN interface from shared state
                     let mut tun_guard = tun_shared_clone.lock().await;
                     if let Some(mut tun) = tun_guard.take() {
                         // Create packet forwarder
                         let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
                         let forwarder_recv_tx = forwarder.recv_tx();
-                        
+
                         // Register recv_tx channel so swarm event handler can forward packets
                         register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
-                        
+
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
-                        
+
                         // Start packet forwarding loop
                         log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
