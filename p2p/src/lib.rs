@@ -37,10 +37,11 @@ mod metrics;
 pub use metrics::start_metrics_server;
 
 // Callback for when connection is established (for VPN packet forwarding)
-pub type ConnectionCallback = Arc<dyn Fn(PeerId) + Send + Sync>;
+pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<Mutex<Swarm<MyBehaviour>>>) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));
 
 /// Set callback to be called when connection is established
+/// The callback receives the peer_id and the swarm instance for packet forwarding
 pub async fn set_connection_callback(callback: ConnectionCallback) {
     *CONNECTION_CALLBACK.write().await = Some(callback);
 }
@@ -266,9 +267,14 @@ pub async fn start_listener(addr: &str) -> Result<()> {
     swarm.listen_on(listen_addr)?;
     metrics::mark_swarm_initialized();
 
+    let swarm_arc = Arc::new(Mutex::new(swarm));
+
     use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+    let mut swarm_guard = swarm_for_loop.lock().await;
+    
     loop {
-        match swarm.select_next_some().await {
+        match swarm_guard.select_next_some().await {
             SwarmEvent::NewListenAddr { address, .. } => {
                 println!("Listening on {address}");
             }
@@ -281,7 +287,8 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                         "event=peer_denied peer_id={} reason=not_allowlisted",
                         peer_id
                     );
-                    let _ = swarm.disconnect_peer_id(peer_id);
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(peer_id);
                 } else {
                     metrics::record_handshake_success();
                     metrics::inc_active_peers();
@@ -290,7 +297,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                     
                     // Call connection callback if set (for VPN packet forwarding)
                     if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
-                        callback(peer_id);
+                        callback(peer_id, swarm_for_loop.clone());
                     }
                 }
             }
@@ -356,9 +363,14 @@ pub async fn dial_peer(addr: String) -> Result<()> {
 
     metrics::mark_swarm_initialized();
 
+    let swarm_arc = Arc::new(Mutex::new(swarm));
+
     use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+    let mut swarm_guard = swarm_for_loop.lock().await;
+    
     loop {
-        match swarm.select_next_some().await {
+        match swarm_guard.select_next_some().await {
             SwarmEvent::ConnectionEstablished {
                 peer_id: remote,
                 endpoint,
@@ -370,7 +382,8 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                         "event=peer_denied peer_id={} reason=not_allowlisted",
                         remote
                     );
-                    let _ = swarm.disconnect_peer_id(remote);
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(remote);
                 } else {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
@@ -378,7 +391,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                     
                     // Call connection callback if set (for VPN packet forwarding)
                     if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
-                        callback(remote);
+                        callback(remote, swarm_for_loop.clone());
                     }
                     
                     // Keep connection alive - continue processing events
