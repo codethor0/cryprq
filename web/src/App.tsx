@@ -47,8 +47,10 @@ export default function App(){
         }
         
         // Extract connected peer (dialer connects to peer, listener receives connection)
-        if (text.includes('Connected to') || text.includes('connected to') || text.match(/Connected to/i)) {
-          const match = text.match(/[Cc]onnected to (\S+)/);
+        // Match "Connected to <peer-id> via Dialer" or similar patterns
+        if (text.includes('Connected to') || text.includes('connected to')) {
+          // Try to match peer ID (starts with 12D3KooW followed by alphanumeric)
+          const match = text.match(/[Cc]onnected to (12D3KooW\w+)/);
           if (match) {
             setStatus(prev => ({ 
               ...prev, 
@@ -56,6 +58,15 @@ export default function App(){
               connectedPeer: match[1],
               mode: mode
             }));
+          } else {
+            // Fallback: if we see "Connected to" but can't extract peer, still mark as connected
+            if (text.includes('Connected to') || text.includes('connected to')) {
+              setStatus(prev => ({ 
+                ...prev, 
+                connected: true,
+                mode: mode
+              }));
+            }
           }
         }
         
