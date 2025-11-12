@@ -107,41 +107,43 @@ jobs:
         run: bash scripts/performance-benchmark.sh || echo "Performance benchmarks skipped if script not found"
         continue-on-error: true
 
-  ffi-check:
-    name: FFI cross-target build
-    # This job is optional and won't fail the workflow
-    if: always()
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            target: aarch64-apple-ios
-          - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: ubuntu-latest
-            target: aarch64-linux-android
-          - os: ubuntu-latest
-            target: x86_64-linux-android
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.83.0
-
-      - name: Add target
-        run: rustup target add ${{ matrix.target }}
-        continue-on-error: true
-
-      - name: Cargo check (FFI)
-        run: cargo check -p cryp-rq-core --target ${{ matrix.target }} || echo "FFI build skipped (toolchain not available)"
-        continue-on-error: true
+  # FFI builds are disabled - they require platform-specific toolchains
+  # that aren't available in CI. Enable when needed for platform releases.
+  # ffi-check:
+  #   name: FFI cross-target build
+  #   needs: test
+  #   if: always() && github.event_name != 'pull_request'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - os: macos-latest
+  #           target: aarch64-apple-ios
+  #         - os: macos-latest
+  #           target: x86_64-apple-darwin
+  #         - os: macos-latest
+  #           target: aarch64-apple-darwin
+  #         - os: ubuntu-latest
+  #           target: aarch64-linux-android
+  #         - os: ubuntu-latest
+  #           target: x86_64-linux-android
+  #         - os: windows-latest
+  #           target: x86_64-pc-windows-msvc
+  #   runs-on: ${{ matrix.os }}
+  #   continue-on-error: true
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: 1.83.0
+  #
+  #     - name: Add target
+  #       run: rustup target add ${{ matrix.target }}
+  #       continue-on-error: true
+  #
+  #     - name: Cargo check (FFI)
+  #       run: cargo check -p cryp-rq-core --target ${{ matrix.target }} || echo "FFI build skipped (toolchain not available)"
+  #       continue-on-error: true
