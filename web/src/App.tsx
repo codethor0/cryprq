@@ -48,7 +48,7 @@ export default function App(){
         
         // Extract connected peer (dialer connects to peer, listener receives connection)
         // Match "Connected to <peer-id> via Dialer" or similar patterns
-        if (text.includes('Connected to') || text.includes('connected to')) {
+        if (text.includes('Connected to') || text.includes('connected to') || text.includes('Connection established')) {
           // Try to match peer ID (starts with 12D3KooW followed by alphanumeric)
           const match = text.match(/[Cc]onnected to (12D3KooW\w+)/);
           if (match) {
@@ -68,6 +68,15 @@ export default function App(){
           }
         }
         
+        // Also check for "Inbound connection established" messages
+        if (text.includes('Inbound connection established') || text.includes('connection established')) {
+          setStatus(prev => ({ 
+            ...prev, 
+            connected: true,
+            mode: mode
+          }));
+        }
+        
         // Listener is listening - mark as ready (will be connected when peer dials)
         if (text.includes('Listening on') || text.includes('listening on')) {
           setStatus(prev => ({ 
@@ -78,8 +87,7 @@ export default function App(){
         }
         
         // Listener receives connection (check for incoming connection events)
-        if (text.includes('New connection') || text.includes('Connection established') || 
-            text.includes('connection established') || text.includes('peer connected') ||
+        if (text.includes('New connection') || text.includes('connection established') || text.includes('peer connected') ||
             text.includes('Incoming connection')) {
           setStatus(prev => ({ 
             ...prev, 
