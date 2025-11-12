@@ -226,7 +226,7 @@ export default function App(){
         const vpnMsg = vpnMode ? ' (VPN mode: system-wide routing)' : '';
         setEvents(prev=>[...prev, {t:`Connect initiated: ${mode} on port ${port}${vpnMsg}`, level:'status'}]);
         if (data.dockerMode) {
-          setEvents(prev=>[...prev, {t:`🐳 Docker mode: Container ${data.containerName || 'cryprq-listener'}`, level:'status'}]);
+          setEvents(prev=>[...prev, {t:`🐳 Docker mode: Container ${data.containerName || 'cryprq-vpn'}`, level:'status'}]);
           if (data.containerIP) {
             setEvents(prev=>[...prev, {t:`Container IP: ${data.containerIP}`, level:'status'}]);
           }
