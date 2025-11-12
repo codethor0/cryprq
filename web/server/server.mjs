@@ -33,7 +33,7 @@ app.get('*', (req, res) => {
 
 // Check if Docker mode is enabled
 const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
-const CONTAINER_NAME = process.env.CRYPRQ_CONTAINER || 'cryprq-listener';
+const CONTAINER_NAME = process.env.CRYPRQ_CONTAINER || 'cryprq-vpn';
 
 // Helper to get container IP
 async function getContainerIP() {
@@ -54,8 +54,11 @@ async function isContainerRunning() {
             `docker ps --filter "name=${CONTAINER_NAME}" --format "{{.Names}}"`
         );
         const result = stdout.trim();
+        console.log(`[DEBUG] Container check: looking for "${CONTAINER_NAME}", got: "${result}"`);
         // Check if container name matches (handle both exact match and partial match)
-        return result === CONTAINER_NAME || result.includes(CONTAINER_NAME);
+        const isRunning = result === CONTAINER_NAME || result.includes(CONTAINER_NAME);
+        console.log(`[DEBUG] Container running: ${isRunning}`);
+        return isRunning;
     } catch (err) {
         console.error('Container check error:', err.message);
         return false;
