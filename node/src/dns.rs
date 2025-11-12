@@ -112,7 +112,7 @@ async fn resolve_dot(hostname: &str, _config: &DnsConfig) -> Result<IpAddr, DnsE
 async fn resolve_system(hostname: &str) -> Result<IpAddr, DnsError> {
     use tokio::net::lookup_host;
     
-    let addrs = lookup_host(hostname)
+    let mut addrs = lookup_host(hostname)
         .await
         .map_err(|e| DnsError::NetworkError(e.to_string()))?;
     
