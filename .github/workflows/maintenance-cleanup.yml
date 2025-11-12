@@ -126,6 +126,7 @@ jobs:
                 echo "Deleting cache: $CACHE_ID (Age: $CACHE_AGE_DAYS days, Size: $CACHE_SIZE)"
                 echo "- **$CACHE_ID** (Age: $CACHE_AGE_DAYS days, Size: $CACHE_SIZE)" >> cleanup-report.md
                 gh cache delete "$CACHE_ID" 2>/dev/null && DELETED=$((DELETED + 1)) || true
+                sleep 0.2  # Rate limit protection
               fi
             fi
           done
