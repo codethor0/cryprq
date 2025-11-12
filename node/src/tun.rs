@@ -162,7 +162,7 @@ impl TunInterface {
         // Use ifconfig to configure the interface
         // This requires root/admin privileges
         let output = Command::new("sudo")
-            .args(&[
+            .args([
                 "ifconfig",
                 name,
                 addr,
