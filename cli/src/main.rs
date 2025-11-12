@@ -5,7 +5,7 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server, Libp2pPacketForwarder};
+use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server, Libp2pPacketForwarder, register_packet_recv_tx};
 use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use node::{TunConfig, TunInterface};
 
@@ -115,14 +115,8 @@ async fn main() -> Result<()> {
                         // The swarm event handler will use this to forward packets to TUN
                         let forwarder_recv_tx = forwarder.recv_tx();
                         
-                        // Spawn task to forward incoming packets from swarm to TUN
-                        let recv_tx_for_swarm = recv_tx.clone();
-                        tokio::spawn(async move {
-                            loop {
-                                // This will be populated by swarm event handler
-                                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                            }
-                        });
+                        // Register recv_tx channel so swarm event handler can forward packets
+                        register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
                         
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
                         
@@ -165,8 +159,8 @@ async fn main() -> Result<()> {
                         let (forwarder, _send_tx, _recv_rx) = Libp2pPacketForwarder::new(swarm.clone(), peer_id);
                         let forwarder_recv_tx = forwarder.recv_tx();
                         
-                        // Store recv_tx for swarm event handler to forward incoming packets
-                        // For now, we'll handle this in the swarm event loop
+                        // Register recv_tx channel so swarm event handler can forward packets
+                        register_packet_recv_tx(peer_id, forwarder_recv_tx.clone()).await;
                         
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
                         
