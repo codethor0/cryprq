@@ -10,11 +10,7 @@
 
 use anyhow::{Context, Result};
 use futures::{AsyncRead, AsyncWrite};
-use libp2p::{
-    request_response::{Codec},
-    swarm::Swarm,
-    PeerId, StreamProtocol,
-};
+use libp2p::{request_response::Codec, swarm::Swarm, PeerId, StreamProtocol};
 use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
