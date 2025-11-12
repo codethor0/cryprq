@@ -8,6 +8,8 @@ name: Icon Enforcement
 on:
   push:
     branches: [ main ]
+    branches-ignore:
+      - 'qa/**'
     paths:
       - 'store-assets/icon_master_1024.png'
       - 'scripts/generate-icons.sh'
@@ -19,6 +21,8 @@ on:
       - 'Dockerfile'
   pull_request:
     branches: [ main ]
+    branches-ignore:
+      - 'qa/**'
     paths:
       - 'store-assets/icon_master_1024.png'
       - 'scripts/generate-icons.sh'

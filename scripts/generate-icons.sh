@@ -413,6 +413,7 @@ echo ""
 echo "[7/7] Docker Image Logo"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 # Copy icon for Docker README reference
+mkdir -p branding
 cp "$MASTER_ICON" branding/docker-logo.png
 echo "  ✅ Docker logo prepared: branding/docker-logo.png"
 {
