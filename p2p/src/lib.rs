@@ -204,6 +204,7 @@ pub async fn derive_and_store_ppk(
         peer_id_bytes,
         &salt,
         rotation_interval_secs * 2, // Expire after 2 rotation intervals
+        now,
     );
 
     let mut store = PPK_STORE.write().await;
