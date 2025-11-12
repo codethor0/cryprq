@@ -316,7 +316,7 @@ impl TunInterface {
         let tun_write_task = tokio::spawn(async move {
             loop {
                 let packet = {
-                    let fwd = forwarder_write.lock().await;
+                    let mut fwd = forwarder_write.lock().await;
                     match fwd.recv_packet().await {
                         Ok(p) => p,
                         Err(e) => {
