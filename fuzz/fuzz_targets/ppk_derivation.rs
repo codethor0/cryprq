@@ -16,7 +16,7 @@ fuzz_target!(|data: &[u8]| {
         let peer_id: [u8; 32] = data[32..64].try_into().expect("Invalid slice length");
         let salt: [u8; 16] = data[64..80].try_into().expect("Invalid slice length");
         let rotation_bytes: [u8; 8] = data[80..88].try_into().expect("Invalid slice length");
-        let rotation_interval = u64::from_le_bytes(rotation_bytes).max(1).min(3600);
+        let rotation_interval = u64::from_le_bytes(rotation_bytes).clamp(1, 3600);
 
         let now = 1000u64; // Test timestamp
         let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, rotation_interval, now);
