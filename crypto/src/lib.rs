@@ -23,6 +23,9 @@ mod property_tests;
 #[cfg(test)]
 mod property_expanded;
 
+#[cfg(test)]
+mod zeroization_tests;
+
 #[cfg(feature = "kat")]
 pub mod kat_loader;
 
