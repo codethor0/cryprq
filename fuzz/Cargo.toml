@@ -14,7 +14,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 cryprq-crypto = { path = "../crypto" }
-cryprq-p2p = { path = "../p2p" }
+p2p = { path = "../p2p" }
 
 [[bin]]
 name = "fuzz_target_1"
