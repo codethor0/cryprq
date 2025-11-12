@@ -39,12 +39,13 @@ impl Libp2pPacketForwarder {
         let (_recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
         
         let send_tx_arc = Arc::new(send_tx.clone());
+        let recv_rx_arc = Arc::new(Mutex::new(recv_rx));
         
         let forwarder = Self {
             swarm: swarm.clone(),
             peer_id,
             send_tx: send_tx_arc.clone(),
-            recv_rx: Arc::new(Mutex::new(recv_rx)),
+            recv_rx: recv_rx_arc.clone(),
         };
         
         // Spawn task to handle sending packets via libp2p
@@ -64,7 +65,7 @@ impl Libp2pPacketForwarder {
             }
         });
         
-        (forwarder, send_tx_arc, Arc::new(Mutex::new(recv_rx)))
+        (forwarder, send_tx_arc, recv_rx_arc)
     }
 }
 
