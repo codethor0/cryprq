@@ -16,6 +16,7 @@ use libp2p::{
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use futures::{AsyncRead, AsyncWrite};
 
 use crate::MyBehaviour;
 
@@ -33,7 +34,7 @@ impl Codec for PacketCodec {
 
     async fn read_request<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
     where
-        T: futures::AsyncRead + Unpin + Send,
+        T: AsyncRead + Unpin + Send,
     {
         use futures::AsyncReadExt;
         let mut len_bytes = [0u8; 4];
@@ -49,7 +50,7 @@ impl Codec for PacketCodec {
 
     async fn read_response<T>(&mut self, _: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
     where
-        T: futures::AsyncRead + Unpin + Send,
+        T: AsyncRead + Unpin + Send,
     {
         use futures::AsyncReadExt;
         let mut len_bytes = [0u8; 4];
@@ -65,7 +66,7 @@ impl Codec for PacketCodec {
 
     async fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> std::io::Result<()>
     where
-        T: futures::AsyncWrite + Unpin + Send,
+        T: AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = req.len() as u32;
@@ -77,7 +78,7 @@ impl Codec for PacketCodec {
 
     async fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> std::io::Result<()>
     where
-        T: futures::AsyncWrite + Unpin + Send,
+        T: AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = res.len() as u32;
@@ -127,14 +128,8 @@ impl Libp2pPacketForwarder {
                     let mut swarm_guard = swarm_clone.lock().await;
                     
                     // Send request (packet) to peer using request-response behaviour
-                    match swarm_guard.behaviour_mut().request_response.send_request(&peer_id_clone, packet.clone()) {
-                        Ok(request_id) => {
-                            log::debug!("🔐 ENCRYPT: Sent {} bytes packet to {} (request_id: {:?})", packet.len(), peer_id_clone, request_id);
-                        }
-                        Err(e) => {
-                            log::warn!("Failed to send packet to {}: {}", peer_id_clone, e);
-                        }
-                    }
+                    let request_id = swarm_guard.behaviour_mut().request_response.send_request(&peer_id_clone, packet.clone());
+                    log::debug!("🔐 ENCRYPT: Sent {} bytes packet to {} (request_id: {:?})", packet.len(), peer_id_clone, request_id);
                 }
             }
         });
