@@ -302,7 +302,7 @@ impl TunInterface {
                     log::debug!("🔐 Read {} bytes from TUN, encrypting and forwarding", n);
 
                     // Send via forwarder
-                    let mut fwd = forwarder_read.lock().await;
+                    let fwd = forwarder_read.lock().await;
                     if let Err(e) = fwd.send_packet(&packet).await {
                         log::error!("Failed to forward packet: {}", e);
                     }
@@ -316,7 +316,7 @@ impl TunInterface {
         let tun_write_task = tokio::spawn(async move {
             loop {
                 let packet = {
-                    let mut fwd = forwarder_write.lock().await;
+                    let fwd = forwarder_write.lock().await;
                     match fwd.recv_packet().await {
                         Ok(p) => p,
                         Err(e) => {
