@@ -78,7 +78,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Step 5: Property Tests"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if cargo test --package cryprq-crypto property_tests 2>&1 | tee "$ARTIFACT_DIR/property-tests.log"; then
+if bash scripts/run-property-tests.sh 2>&1 | tee "$ARTIFACT_DIR/property-summary.log"; then
     echo "✅ Property tests passed"
 else
     echo "❌ Property tests failed"
@@ -86,15 +86,15 @@ else
 fi
 echo ""
 
-# 6. Fuzz smoke tests
+# 6. Extended fuzz (30+ min per target)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 6: Fuzz Smoke Tests"
+echo "Step 6: Extended Fuzz (30+ min per target)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if bash scripts/run-extended-fuzz.sh hybrid_handshake 60 2>&1 | tee "$ARTIFACT_DIR/fuzz-smoke.log"; then
-    echo "✅ Fuzz smoke tests passed"
+if bash scripts/run-extended-fuzz.sh all 1800 2>&1 | tee "$ARTIFACT_DIR/fuzz-extended.log"; then
+    echo "✅ Extended fuzz tests passed"
 else
-    echo "❌ Fuzz smoke tests failed"
-    FAILED_STEPS+=("fuzz-smoke")
+    echo "❌ Extended fuzz tests failed"
+    FAILED_STEPS+=("fuzz-extended")
 fi
 echo ""
 
@@ -122,9 +122,39 @@ else
 fi
 echo ""
 
-# 9. Coverage
+# 9. Interop (QUIC + libp2p)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 9: Coverage Analysis"
+echo "Step 9: Interop (QUIC + libp2p)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-quic-interop.sh 2>&1 | tee "$ARTIFACT_DIR/quic-interop.log"; then
+    echo "✅ QUIC interop passed"
+else
+    echo "❌ QUIC interop failed"
+    FAILED_STEPS+=("quic-interop")
+fi
+if bash scripts/run-libp2p-interop.sh 2>&1 | tee "$ARTIFACT_DIR/libp2p-interop.log"; then
+    echo "✅ libp2p interop passed"
+else
+    echo "❌ libp2p interop failed"
+    FAILED_STEPS+=("libp2p-interop")
+fi
+echo ""
+
+# 10. Benchmarks
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 10: Performance Benchmarks"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-benchmarks.sh 2>&1 | tee "$ARTIFACT_DIR/bench-summary.log"; then
+    echo "✅ Benchmarks passed"
+else
+    echo "❌ Benchmarks failed"
+    FAILED_STEPS+=("bench")
+fi
+echo ""
+
+# 11. Coverage
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 11: Coverage Analysis"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-coverage.sh 2>&1 | tee "$ARTIFACT_DIR/coverage-summary.log"; then
     echo "✅ Coverage analysis complete"
@@ -134,9 +164,9 @@ else
 fi
 echo ""
 
-# 10. Supply chain
+# 12. Supply chain
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 10: Supply Chain Security"
+echo "Step 12: Supply Chain Security"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-supply-chain.sh 2>&1 | tee "$ARTIFACT_DIR/supply-chain-summary.log"; then
     echo "✅ Supply chain checks passed"
@@ -146,9 +176,21 @@ else
 fi
 echo ""
 
-# 11. Reproducible builds
+# 13. SBOM & Grype
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 11: Reproducible Builds"
+echo "Step 13: SBOM & Grype Scan"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-sbom-and-grype.sh 2>&1 | tee "$ARTIFACT_DIR/sbom-summary.log"; then
+    echo "✅ SBOM & Grype scan passed"
+else
+    echo "❌ SBOM & Grype scan failed"
+    FAILED_STEPS+=("sbom")
+fi
+echo ""
+
+# 14. Reproducible builds
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 14: Reproducible Builds"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-reproducible-build.sh 2>&1 | tee "$ARTIFACT_DIR/reproducible-summary.log"; then
     echo "✅ Reproducible build verification passed"
@@ -158,15 +200,14 @@ else
 fi
 echo ""
 
-# 12. Performance benchmarks
+# 15. Provenance & Signing
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 12: Performance Benchmarks"
+echo "Step 15: Provenance & Signing"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if bash scripts/run-performance-regression.sh 2>&1 | tee "$ARTIFACT_DIR/bench-summary.log"; then
-    echo "✅ Performance benchmarks passed"
+if bash scripts/sign-and-prove.sh 2>&1 | tee "$ARTIFACT_DIR/provenance-summary.log"; then
+    echo "✅ Provenance & signing complete"
 else
-    echo "❌ Performance benchmarks failed"
-    FAILED_STEPS+=("bench")
+    echo "⚠️ Provenance & signing skipped (non-blocking)"
 fi
 echo ""
 
@@ -176,14 +217,27 @@ echo "Pipeline Summary"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# Generate report
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Generating QA Report"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+bash scripts/qa-all-report.sh
+
 if [ ${#FAILED_STEPS[@]} -eq 0 ]; then
+    echo ""
     echo "✅ All QA steps passed!"
     echo ""
     echo "Artifacts: $ARTIFACT_DIR"
+    echo "Reports: $ARTIFACT_DIR/REPORT.md, $ARTIFACT_DIR/SUMMARY.md"
     exit 0
 else
+    echo ""
     echo "❌ Failed steps: ${FAILED_STEPS[*]}"
     echo ""
+    echo "Collecting artifacts and opening issue..."
+    bash scripts/qa-collect-and-open-issue.sh "${FAILED_STEPS[0]}"
+    echo ""
     echo "Check logs in: $ARTIFACT_DIR"
+    echo "Issue template: $ARTIFACT_DIR/issue.md"
     exit 1
 fi
