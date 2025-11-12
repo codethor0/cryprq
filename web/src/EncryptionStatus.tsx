@@ -79,9 +79,9 @@ export function EncryptionStatus({ status }: { status: Status }) {
         color: '#888',
         lineHeight: '1.5'
       }}>
-        <strong style={{ color: '#fff' }}>Note:</strong> CrypRQ establishes encrypted peer-to-peer connections using post-quantum cryptography. 
-        This creates an encrypted tunnel between peers, but does not route system/browser traffic yet. 
-        The data-plane (packet forwarding) is experimental.
+        <strong style={{ color: '#fff' }}>Current Status:</strong> CrypRQ establishes encrypted peer-to-peer connections using post-quantum cryptography (ML-KEM + X25519 hybrid). 
+        The encrypted tunnel between peers is working. System-wide VPN routing (routing all system/browser traffic through the tunnel) is being implemented. 
+        See <code style={{color:'#59f'}}>docs/SYSTEM_VPN_IMPLEMENTATION.md</code> for details.
       </div>
     </div>
   );
