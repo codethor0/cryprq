@@ -34,28 +34,4 @@ RUN apt-get update \
         procps \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /build/target/release/cryprq /usr/local/bin/cryprq
-
-# For test runner: install Rust toolchain
-FROM rust:1.83 AS test-runner
-WORKDIR /workspace
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        bash \
-        curl \
-        procps \
-        git \
-    && rm -rf /var/lib/apt/lists/*
-# Copy source code will be done via volume mount
-# This image provides the Rust toolchain for testing
-
-# ---- runtime ----
-FROM debian:bookworm-slim
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        bash \
-        curl \
-        procps \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /build/target/release/cryprq /usr/local/bin/cryprq
 ENTRYPOINT ["/usr/local/bin/cryprq"]

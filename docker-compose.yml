@@ -45,11 +45,10 @@ services:
       - test
 
   # Test runner service (for interactive testing)
+  # Uses Rust image directly for testing (has cargo, rustc, etc.)
   cryprq-test-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: cryprq-node:latest
+    image: rust:1.83
+    container_name: cryprq-test-runner
     depends_on:
       cryprq-listener:
         condition: service_healthy
@@ -61,6 +60,7 @@ services:
       - .:/workspace
     working_dir: /workspace
     command: ["sleep", "infinity"]
+    entrypoint: ["/bin/bash"]
     profiles:
       - test
 

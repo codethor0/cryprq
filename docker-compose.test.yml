@@ -30,11 +30,8 @@ services:
 
   # Test runner service (uses Rust image for testing)
   cryprq-test-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder  # Use builder stage which has Rust toolchain
-    image: cryprq-test-runner:latest
+    image: rust:1.83
+    container_name: cryprq-test-runner
     depends_on:
       cryprq-listener:
         condition: service_healthy
@@ -48,6 +45,7 @@ services:
     command: ["sleep", "infinity"]
     profiles:
       - test
+    entrypoint: ["/bin/bash"]
 
 networks:
   cryprq-network:
