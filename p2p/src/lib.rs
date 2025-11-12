@@ -383,12 +383,11 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                                 
                                 // Forward packet to TUN interface via recv_tx channel
                                 if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
-                                    if let Ok(recv_tx_guard) = recv_tx_arc.lock().await {
-                                        if let Err(e) = recv_tx_guard.send(request.clone()) {
-                                            log::warn!("Failed to forward packet to TUN: {}", e);
-                                        } else {
-                                            log::debug!("✅ Forwarded {} bytes packet to TUN", request.len());
-                                        }
+                                    let recv_tx_guard = recv_tx_arc.lock().await;
+                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                    } else {
+                                        log::debug!("✅ Forwarded {} bytes packet to TUN", request.len());
                                     }
                                 } else {
                                     log::debug!("No recv_tx channel registered for peer {}", peer);
