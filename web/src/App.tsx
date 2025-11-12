@@ -176,7 +176,18 @@ export default function App(){
 
   return (
     <div style={{paddingBottom:270,padding:16}}>
-      <h1>CrypRQ Web Tester</h1>
+      <h1 style={{display:'flex', alignItems:'center', gap:'12px'}}>
+        <img 
+          src="/icon_master_1024.png" 
+          alt="CrypRQ Icon" 
+          style={{width:'32px', height:'32px', borderRadius:'4px'}}
+          onError={(e) => {
+            // Fallback if icon not found
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+        CrypRQ Web Tester
+      </h1>
       <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
         <label>Mode:
           <select value={mode} onChange={e=>setMode(e.target.value as Mode)}>

@@ -389,6 +389,10 @@ impl Tunnel {
         let ciphertext = cipher
             .encrypt(&nonce, Payload { msg: pkt, aad: b"" })
             .map_err(|_| TunnelError::EncryptionFailed)?;
+        
+        // Log encryption event for debugging
+        log::debug!("🔐 ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})", 
+                   pkt.len(), ciphertext.len(), nonce_value);
 
         let peer_addr = {
             *self
@@ -507,6 +511,10 @@ impl Tunnel {
                 },
             )
             .map_err(|_| TunnelError::DecryptionFailed)?;
+        
+        // Log decryption event for debugging
+        log::debug!("🔓 DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})", 
+                   ciphertext.len(), plaintext.len(), nonce_value);
 
         // Return buffer to pool for reuse
         self.buffer_pool.put(buf);

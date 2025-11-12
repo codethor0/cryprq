@@ -19,15 +19,18 @@ app.post('/connect', (req,res)=>{
     proc = null;
   }
   
-  // Kill any cryprq processes and clear port 9999
+  // Kill any cryprq processes and clear port
   const { execSync } = require('child_process');
   try {
+    // More aggressive cleanup
     execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
-    execSync(`pkill -9 -f "cryprq.*${port}" 2>/dev/null || true`, {stdio: 'ignore'});
+    execSync(`pkill -9 -f "cryprq" 2>/dev/null || true`, {stdio: 'ignore'});
+    execSync(`pkill -9 -f "quic-v1.*${port}" 2>/dev/null || true`, {stdio: 'ignore'});
+    // Wait for cleanup
+    execSync('sleep 0.5', {stdio: 'ignore'});
   } catch(e) {}
   
-  // Wait a moment for ports to be released
-  setTimeout(() => {}, 1000);
+  push('status', `🧹 Cleaned up port ${port} - ready for new connection`);
   let args = [];
   if(mode==='listener') args = ['--listen', `/ip4/0.0.0.0/udp/${port}/quic-v1`];
   else if(mode==='dialer') args = ['--peer', peer || `/ip4/127.0.0.1/udp/${port}/quic-v1`];
@@ -53,7 +56,9 @@ app.post('/connect', (req,res)=>{
     const s=d.toString();
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
       let level='info';
-      if(/rotate|rotation/i.test(line)) level='rotation';
+      if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation'; // Encryption events
+      else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation'; // Decryption events
+      else if(/rotate|rotation/i.test(line)) level='rotation';
       else if(/peer|connect|handshake|ping|connected/i.test(line)) level='peer';
       else if(/vpn|tun|interface/i.test(line)) level='status';
       else if(/error|failed|panic/i.test(line)) level='error';
@@ -68,9 +73,11 @@ app.post('/connect', (req,res)=>{
       let level='error';
       if(/INFO|DEBUG|TRACE/i.test(line)) {
         level='info';
-        if(/rotate|rotation/i.test(line)) level='rotation';
-        if(/peer|connect|handshake|ping|connected|listening/i.test(line)) level='peer';
-        if(/listening on/i.test(line)) level='peer'; // Listening is a peer event
+        if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation'; // Encryption events
+        else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation'; // Decryption events
+        else if(/rotate|rotation/i.test(line)) level='rotation';
+        else if(/peer|connect|handshake|ping|connected|listening/i.test(line)) level='peer';
+        else if(/listening on/i.test(line)) level='peer'; // Listening is a peer event
       } else if(/listening on/i.test(line)) {
         level='peer'; // Listening messages are peer events
       } else if(/Address already in use/i.test(line)) {
