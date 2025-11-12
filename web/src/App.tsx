@@ -34,8 +34,9 @@ export default function App(){
       setEvents(prev => [...prev, {t: '✅ Event stream connected', level: 'status'}]);
     };
     es.onerror = (err) => {
-      // Don't spam errors - EventSource will auto-reconnect
-      console.error('EventSource error:', err);
+      // EventSource errors are normal during reconnection - don't spam UI
+      // Only log to console for debugging
+      console.error('EventSource error (will auto-reconnect):', err);
     };
     es.onmessage = (m)=> {
       try {
