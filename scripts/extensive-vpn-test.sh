@@ -138,9 +138,9 @@ echo ""
 # Step 11: Check encryption events
 echo "Step 11: Checking Encryption Events"
 echo "------------------------------------"
-ENCRYPT=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "ENCRYPT" || echo "0")
-DECRYPT=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "DECRYPT" || echo "0")
-FORWARDED=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "Forwarded.*packet" || echo "0")
+ENCRYPT=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "ENCRYPT" 2>/dev/null || echo "0")
+DECRYPT=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "DECRYPT" 2>/dev/null || echo "0")
+FORWARDED=$(docker logs ${CONTAINER_NAME} 2>&1 | grep -c "Forwarded.*packet" 2>/dev/null || echo "0")
 echo "Encryption events: ${ENCRYPT}"
 echo "Decryption events: ${DECRYPT}"
 echo "Forwarded packets: ${FORWARDED}"
