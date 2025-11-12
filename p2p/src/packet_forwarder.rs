@@ -11,7 +11,7 @@
 use anyhow::{Context, Result};
 use futures::{AsyncRead, AsyncWrite};
 use libp2p::{
-    request_response::{self, Codec, ProtocolSupport},
+    request_response::{Codec},
     swarm::Swarm,
     PeerId, StreamProtocol,
 };
@@ -113,7 +113,9 @@ impl Codec for PacketCodec {
 
 /// Packet forwarder using libp2p request-response protocol
 pub struct Libp2pPacketForwarder {
+    #[allow(dead_code)]
     swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
+    #[allow(dead_code)]
     peer_id: PeerId,
     send_tx: Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>,
     recv_rx: Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>,
