@@ -8,7 +8,6 @@
 //! This module provides TLS 1.3 support for control plane communications,
 //! ensuring encrypted and authenticated control channel.
 
-use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 
@@ -41,6 +40,7 @@ impl Default for TlsConfig {
 
 /// TLS 1.3 server for control plane
 pub struct TlsServer {
+    #[allow(dead_code)]
     config: TlsConfig,
     listener: Option<TcpListener>,
 }

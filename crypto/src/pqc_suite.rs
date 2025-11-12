@@ -97,7 +97,10 @@ impl PQCSuite {
 
 impl Default for PQCSuite {
     fn default() -> Self {
-        Self::default()
+        Self {
+            kex: PQCKeyExchange::MLKEM768,
+            sig: PQCSignature::Ed25519,
+        }
     }
 }
 

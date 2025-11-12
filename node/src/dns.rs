@@ -84,6 +84,7 @@ async fn resolve_doh(hostname: &str, config: &DnsConfig) -> Result<IpAddr, DnsEr
         .map_err(|e| DnsError::NetworkError(e.to_string()))?;
 
     // Parse JSON response (simplified - real implementation would parse DNS wire format)
+    #[allow(clippy::let_and_return)]
     let json: serde_json::Value = response
         .json()
         .await
