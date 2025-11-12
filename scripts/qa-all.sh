@@ -146,6 +146,30 @@ else
 fi
 echo ""
 
+# 11. Reproducible builds
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 11: Reproducible Builds"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-reproducible-build.sh 2>&1 | tee "$ARTIFACT_DIR/reproducible-summary.log"; then
+    echo "✅ Reproducible build verification passed"
+else
+    echo "❌ Reproducible build verification failed"
+    FAILED_STEPS+=("reproducible")
+fi
+echo ""
+
+# 12. Performance benchmarks
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 12: Performance Benchmarks"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-performance-regression.sh 2>&1 | tee "$ARTIFACT_DIR/bench-summary.log"; then
+    echo "✅ Performance benchmarks passed"
+else
+    echo "❌ Performance benchmarks failed"
+    FAILED_STEPS+=("bench")
+fi
+echo ""
+
 # Final summary
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Pipeline Summary"
