@@ -2296,6 +2296,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "cryprq-crypto",
+ "futures",
  "hyper 0.14.32",
  "libp2p",
  "log",
