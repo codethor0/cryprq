@@ -8,6 +8,9 @@ name = "cryprq-benches"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
 [[bench]]
 name = "handshake_bench"
 harness = false
