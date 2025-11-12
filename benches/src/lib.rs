@@ -5,4 +5,3 @@
 
 // Dummy lib.rs for benchmark crate
 // Benchmarks are in benches/*.rs
-
