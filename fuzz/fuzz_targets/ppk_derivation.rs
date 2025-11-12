@@ -12,10 +12,10 @@ fuzz_target!(|data: &[u8]| {
     // Fuzz test PPK derivation
     // Input: 32 bytes kyber_shared + 32 bytes peer_id + 16 bytes salt + 8 bytes rotation_interval
     if data.len() >= 88 {
-        let kyber_shared: [u8; 32] = data[0..32].try_into().unwrap();
-        let peer_id: [u8; 32] = data[32..64].try_into().unwrap();
-        let salt: [u8; 16] = data[64..80].try_into().unwrap();
-        let rotation_bytes: [u8; 8] = data[80..88].try_into().unwrap();
+        let kyber_shared: [u8; 32] = data[0..32].try_into().expect("Invalid slice length");
+        let peer_id: [u8; 32] = data[32..64].try_into().expect("Invalid slice length");
+        let salt: [u8; 16] = data[64..80].try_into().expect("Invalid slice length");
+        let rotation_bytes: [u8; 8] = data[80..88].try_into().expect("Invalid slice length");
         let rotation_interval = u64::from_le_bytes(rotation_bytes).max(1).min(3600);
 
         let now = 1000u64; // Test timestamp

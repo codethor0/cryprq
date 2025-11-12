@@ -714,6 +714,8 @@ dependencies = [
  "cryprq-crypto",
  "libfuzzer-sys",
  "p2p",
+ "pqcrypto-mlkem",
+ "pqcrypto-traits",
 ]
 
 [[package]]
