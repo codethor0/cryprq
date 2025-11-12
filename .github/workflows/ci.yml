@@ -19,15 +19,15 @@ jobs:
       group: ci-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
       - name: Cleanup storage (system-level)
         uses: ./.github/actions/cleanup-storage
         with:
           max_cache_age_days: 7
           docker_prune: true
           workspace_clean: true
-      
-      - name: Checkout
-        uses: actions/checkout@v4
       
       - name: Aggressive cleanup (10GB cap)
         run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
