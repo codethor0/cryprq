@@ -76,15 +76,10 @@ app.post('/connect', (req,res)=>{
   const env = { ...process.env, RUST_LOG: 'debug' };
   
   // Spawn process with proper stdio handling
-  // Use 'inherit' for stdin to prevent process from exiting due to closed stdin
   proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, { 
     stdio: ['ignore','pipe','pipe'], // stdin: ignore, stdout/stderr: pipe for logging
-    env: env,
-    detached: false // Keep attached so we can track it
+    env: env
   });
-  
-  // Ensure process doesn't exit when parent closes
-  proc.unref(); // Allow parent to exit independently, but keep process alive
   currentMode = mode;
   currentPort = port;
   push('status', `spawn ${args.join(' ')}`);
