@@ -118,7 +118,8 @@ app.post('/connect', async (req, res) => {
                 vpn: !!vpn,
                 containerIP,
                 containerName: CONTAINER_NAME,
-                mode: 'listener'
+                mode: 'listener',
+                dockerMode: true
             });
         }
         
