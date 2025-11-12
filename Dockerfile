@@ -36,6 +36,8 @@ RUN apt-get update \
         bash \
         curl \
         procps \
+        iproute2 \
+        iptables \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /build/target/release/cryprq /usr/local/bin/cryprq
 ENTRYPOINT ["/usr/local/bin/cryprq"]
