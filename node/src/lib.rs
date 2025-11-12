@@ -65,7 +65,7 @@ mod error;
 mod padding;
 mod tls;
 mod traffic_shaping;
-mod tun;
+pub mod tun;
 
 pub use dns::{resolve_hostname, DnsConfig, DnsError};
 pub use error::TunnelError;
