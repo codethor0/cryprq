@@ -64,7 +64,7 @@ echo ""
 
 # 2. Unit tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3: Unit Tests"
+echo "Step 2: Unit Tests"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if cargo test --all --lib 2>&1 | tee "$ARTIFACT_DIR/unit-tests.log"; then
     echo "✅ Unit tests passed"
@@ -76,7 +76,7 @@ echo ""
 
 # 3. KAT tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3: KAT (Known Answer Tests)"
+echo "Step 3: KAT (Known Answer Tests) - FIPS 203, RFC 8439, RFC 7748"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-kat-tests.sh 2>&1 | tee "$ARTIFACT_DIR/kat-summary.log"; then
     echo "✅ KAT tests passed"
