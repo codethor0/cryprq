@@ -81,10 +81,13 @@ timeout 30 bash -c 'until docker logs cryprq-listener 2>&1 | grep -q "Listening 
     docker compose logs cryprq-listener
 }
 
-# Create test runner container
+# Create test runner container (use test profile)
 echo "Creating test runner container..."
-docker compose run -d --name cryprq-test-runner cryprq-test-runner sleep 3600 || {
-    echo -e "${YELLOW}⚠️  Test runner container creation failed, using existing${NC}"
+docker compose --profile test run -d --name cryprq-test-runner cryprq-test-runner sleep 3600 || {
+    # Try with test compose file
+    docker compose -f docker-compose.test.yml --profile test run -d --name cryprq-test-runner cryprq-test-runner sleep 3600 || {
+        echo -e "${YELLOW}⚠️  Test runner container creation failed, using existing${NC}"
+    }
 }
 
 echo -e "${GREEN}✅ Containers started${NC}"

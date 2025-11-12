@@ -3,7 +3,8 @@
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # SPDX-License-Identifier: MIT
 
-version: '3.8'
+# Docker Compose file for testing
+# Usage: docker compose -f docker-compose.test.yml up
 
 services:
   # Main CrypRQ listener node
@@ -27,29 +28,13 @@ services:
       timeout: 5s
       retries: 3
 
-  # CrypRQ dialer node (for testing)
-  cryprq-dialer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: cryprq-node:latest
-    container_name: cryprq-dialer
-    depends_on:
-      - cryprq-listener
-    command: ["--peer", "/ip4/cryprq-listener/udp/9999/quic-v1"]
-    environment:
-      - RUST_LOG=info
-    networks:
-      - cryprq-network
-    profiles:
-      - test
-
-  # Test runner service (for interactive testing)
+  # Test runner service (uses Rust image for testing)
   cryprq-test-runner:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cryprq-node:latest
+      target: builder  # Use builder stage which has Rust toolchain
+    image: cryprq-test-runner:latest
     depends_on:
       cryprq-listener:
         condition: service_healthy
