@@ -51,7 +51,7 @@ fi
 
 # Step 2: Start/check container
 log "🐳 Checking Docker container..."
-CONTAINER_NAME="cryprq-listener"
+CONTAINER_NAME="cryprq-vpn"
 if ! docker ps | grep -q "$CONTAINER_NAME"; then
     log "Starting container..."
     ./scripts/docker-vpn-start.sh
@@ -62,7 +62,13 @@ fi
 
 CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME" 2>/dev/null || echo "")
 if [ -z "$CONTAINER_IP" ]; then
+    # Try alternative method
+    CONTAINER_IP=$(docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -i '"IPAddress"' | head -1 | cut -d'"' -f4 || echo "")
+fi
+if [ -z "$CONTAINER_IP" ]; then
     log "${RED}❌ Could not get container IP${NC}"
+    log "Container status:"
+    docker ps | grep cryprq || true
     exit 1
 fi
 
@@ -110,16 +116,16 @@ open "http://localhost:8787" 2>/dev/null || xdg-open "http://localhost:8787" 2>/
 # Step 6: Run Playwright tests
 log "🧪 Running automated browser tests..."
 
-# Install Playwright if needed
-if ! command -v playwright > /dev/null 2>&1; then
+# Install Playwright if needed (local install)
+if [ ! -d "node_modules/@playwright" ]; then
     log "Installing Playwright..."
-    npm install -g playwright
-    playwright install chromium
+    npm install @playwright/test
+    npx playwright install chromium
 fi
 
 # Create test file
 cat > /tmp/cryprq-browser-test.js << 'EOF'
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -170,7 +176,7 @@ const { chromium } = require('playwright');
   // Check container logs
   console.log('Checking container logs...');
   const { execSync } = require('child_process');
-  const logs = execSync('docker logs --tail 5 cryprq-listener 2>&1', { encoding: 'utf8' });
+  const logs = execSync('docker logs --tail 5 cryprq-vpn 2>&1', { encoding: 'utf8' });
   if (logs.includes('Inbound connection established')) {
     console.log('✅ Container shows connection established!');
   } else {
@@ -184,6 +190,7 @@ const { chromium } = require('playwright');
 })();
 EOF
 
+cd "$(dirname "$0")/.."
 node /tmp/cryprq-browser-test.js
 
 log ""

@@ -10,9 +10,9 @@ test.describe('CrypRQ Docker VPN Browser Tests', () => {
   test.beforeAll(async () => {
     // Ensure Docker container is running
     try {
-      execSync('docker ps | grep -q cryprq-listener', { stdio: 'ignore' });
+      execSync('docker ps | grep -q cryprq-vpn', { stdio: 'ignore' });
     } catch {
-      throw new Error('Docker container cryprq-listener is not running. Run: ./scripts/docker-vpn-start.sh');
+      throw new Error('Docker container cryprq-vpn is not running. Run: ./scripts/docker-vpn-start.sh');
     }
   });
 
@@ -58,7 +58,7 @@ test.describe('CrypRQ Docker VPN Browser Tests', () => {
     expect(consoleText).toMatch(/Dialing|Connected|Inbound|Container/);
     
     // Check container logs for connection
-    const containerLogs = execSync('docker logs --tail 10 cryprq-listener 2>&1', { encoding: 'utf8' });
+    const containerLogs = execSync('docker logs --tail 10 cryprq-vpn 2>&1', { encoding: 'utf8' });
     expect(containerLogs).toMatch(/Inbound connection established|Incoming connection/);
   });
 

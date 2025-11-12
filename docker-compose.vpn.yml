@@ -19,7 +19,7 @@ services:
     # Expose ports for p2p communication
     ports:
       - "9999:9999/udp"  # QUIC listener port
-      - "8787:8787"      # Web bridge server (if needed)
+      # Note: Web server (8787) runs on host, not in container
     # Privileged mode required for TUN interface creation
     privileged: true
     # Capabilities needed for TUN and network manipulation
