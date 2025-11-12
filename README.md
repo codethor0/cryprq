@@ -223,6 +223,8 @@ bash scripts/qa-all.sh
 ```
 
 See [scripts/qa-all.sh](scripts/qa-all.sh) for the complete QA pipeline.
+
+All tests and benchmarks are integrated into CI:
 - Exploratory tests (14 categories completed)
 - Performance benchmarks
 - Security audits
