@@ -87,20 +87,19 @@ echo "Creating test runner container..."
 docker rm -f cryprq-test-runner 2>/dev/null || true
 
 # Create new test runner container
-docker compose --profile test run -d --name cryprq-test-runner cryprq-test-runner bash -c "sleep infinity" || {
-    # Try with test compose file
-    docker compose -f docker-compose.test.yml --profile test run -d --name cryprq-test-runner cryprq-test-runner bash -c "sleep infinity" || {
-        echo -e "${YELLOW}⚠️  Test runner container creation failed, trying alternative method${NC}"
-        # Fallback: use docker run directly
-        docker run -d --name cryprq-test-runner \
-            --network cryprq_cryprq-network \
-            -v "$(pwd):/workspace" \
-            -w /workspace \
-            rust:1.83 \
-            bash -c "sleep infinity" || {
-            echo -e "${RED}❌ Failed to create test runner container${NC}"
-            exit 1
-        }
+# Use docker run directly for better reliability
+NETWORK_NAME=$(docker compose ps --format json 2>/dev/null | grep -o '"NetworkMode":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "cryprq_cryprq-network")
+
+docker run -d --name cryprq-test-runner \
+    --network "${NETWORK_NAME:-cryprq_cryprq-network}" \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    rust:1.83 \
+    bash -c "tail -f /dev/null" || {
+    echo -e "${YELLOW}⚠️  Direct docker run failed, trying docker compose${NC}"
+    docker compose --profile test run -d --name cryprq-test-runner cryprq-test-runner bash -c "tail -f /dev/null" || {
+        echo -e "${RED}❌ Failed to create test runner container${NC}"
+        exit 1
     }
 }
 
