@@ -21,7 +21,8 @@ libp2p = { version = "0.56", features = [
     "macros",
     "mdns",
     "ping",
-    "kad"
+    "kad",
+    "request-response"
 ] }
 cryprq-crypto = { path = "../crypto" }
 zeroize = "1.8"
