@@ -202,14 +202,14 @@ mod tests {
         let now = 1000u64;
         let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300, now);
         store.store(ppk);
-        
+
         // Should retrieve the PPK
         assert!(store.get(&peer_id, now).is_some());
-        
+
         // Different peer ID should return None
         let other_peer = [4u8; 32];
         assert!(store.get(&other_peer, now).is_none());
-        
+
         // Remove peer
         store.remove_peer(&peer_id);
         assert!(store.get(&peer_id, now).is_none());
