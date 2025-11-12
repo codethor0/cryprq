@@ -83,12 +83,36 @@ timeout 30 bash -c 'until docker logs cryprq-listener 2>&1 | grep -q "Listening 
 
 # Create test runner container (use test profile)
 echo "Creating test runner container..."
-docker compose --profile test run -d --name cryprq-test-runner cryprq-test-runner sleep 3600 || {
+# Remove existing container if present
+docker rm -f cryprq-test-runner 2>/dev/null || true
+
+# Create new test runner container
+docker compose --profile test run -d --name cryprq-test-runner cryprq-test-runner bash -c "sleep infinity" || {
     # Try with test compose file
-    docker compose -f docker-compose.test.yml --profile test run -d --name cryprq-test-runner cryprq-test-runner sleep 3600 || {
-        echo -e "${YELLOW}⚠️  Test runner container creation failed, using existing${NC}"
+    docker compose -f docker-compose.test.yml --profile test run -d --name cryprq-test-runner cryprq-test-runner bash -c "sleep infinity" || {
+        echo -e "${YELLOW}⚠️  Test runner container creation failed, trying alternative method${NC}"
+        # Fallback: use docker run directly
+        docker run -d --name cryprq-test-runner \
+            --network cryprq_cryprq-network \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            rust:1.83 \
+            bash -c "sleep infinity" || {
+            echo -e "${RED}❌ Failed to create test runner container${NC}"
+            exit 1
+        }
     }
 }
+
+# Wait for container to be ready
+sleep 3
+
+# Verify container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^cryprq-test-runner$"; then
+    echo -e "${RED}❌ Test runner container is not running${NC}"
+    docker ps -a --filter "name=cryprq-test-runner"
+    exit 1
+fi
 
 echo -e "${GREEN}✅ Containers started${NC}"
 echo ""
