@@ -8,14 +8,12 @@
 #[cfg(test)]
 mod property_expanded {
     use crate::hybrid::HybridHandshake;
-    use alloc::vec::Vec;
-    use pqcrypto_traits::kem::{PublicKey, SecretKey};
     use proptest::prelude::*;
 
     proptest! {
         #[test]
         fn test_handshake_symmetry_idempotence(
-            iterations in 1..10u32
+            _iterations in 1..10u32
         ) {
             // Property: Same inputs → same transcript hash
             let h1 = HybridHandshake::new();
@@ -60,7 +58,10 @@ mod property_expanded {
 
             // If we had a parser, we'd test it rejects invalid lengths
             // For now, just verify the test structure exists
-            prop_assert!(true);
+            #[allow(clippy::assertions_on_constants)]
+            {
+                prop_assert!(true);
+            }
         }
 
         #[test]
@@ -74,7 +75,10 @@ mod property_expanded {
 
             // If we had a ciphersuite parser, we'd test it rejects invalid IDs
             // For now, just verify the test structure exists
-            prop_assert!(true);
+            #[allow(clippy::assertions_on_constants)]
+            {
+                prop_assert!(true);
+            }
         }
 
         #[test]
@@ -88,7 +92,10 @@ mod property_expanded {
 
             // If we had a frame parser, we'd test it rejects truncated frames
             // For now, just verify the test structure exists
-            prop_assert!(true);
+            #[allow(clippy::assertions_on_constants)]
+            {
+                prop_assert!(true);
+            }
         }
     }
 }

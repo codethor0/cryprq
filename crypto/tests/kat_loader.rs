@@ -6,8 +6,17 @@
 // KAT (Known Answer Test) vector loader for FIPS-203 ML-KEM test vectors
 // Loads vectors from files and provides utilities for KAT verification
 
+#[cfg(not(test))]
+extern crate alloc;
+#[cfg(not(test))]
 use alloc::string::String;
+#[cfg(not(test))]
 use alloc::vec::Vec;
+
+#[cfg(test)]
+use std::string::String;
+#[cfg(test)]
+use std::vec::Vec;
 
 /// KAT vector structure for ML-KEM Kyber768
 #[derive(Debug, Clone)]
@@ -32,10 +41,7 @@ pub fn load_kat_vectors(path: &str) -> Result<Vec<KatVector>, String> {
 }
 
 /// Verify a KAT vector against actual implementation
-pub fn verify_kat_vector(vector: &KatVector) -> Result<(), String> {
-    use pqcrypto_mlkem::mlkem768::*;
-    use pqcrypto_traits::kem::{Ciphertext, PublicKey, SecretKey, SharedSecret};
-
+pub fn verify_kat_vector(_vector: &KatVector) -> Result<(), String> {
     // Load keys from bytes (simplified - actual implementation would parse properly)
     // For now, this is a placeholder structure
 

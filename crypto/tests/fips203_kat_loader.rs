@@ -6,6 +6,8 @@
 // FIPS 203 ML-KEM (Kyber768) KAT vector loader and parser
 
 #[cfg(not(test))]
+extern crate alloc;
+#[cfg(not(test))]
 use alloc::string::String;
 #[cfg(not(test))]
 use alloc::vec::Vec;
@@ -108,8 +110,8 @@ pub fn parse_fips203_kat_file(contents: &str) -> Result<Vec<Fips203KatVector>, S
 
 /// Verify a FIPS 203 KAT vector
 pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
-    use pqcrypto_mlkem::mlkem768::*;
-    use pqcrypto_traits::kem::{Ciphertext, PublicKey, SecretKey, SharedSecret};
+    use pqcrypto_mlkem::mlkem768::{decapsulate, encapsulate};
+    use pqcrypto_traits::kem::{PublicKey, SecretKey};
 
     // Load public key from bytes
     let pk =
@@ -134,6 +136,7 @@ pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
     }
 
     // Verify decapsulation with provided ciphertext
+    use pqcrypto_traits::kem::Ciphertext;
     let ct_provided =
         Ciphertext::from_bytes(&vector.ct).map_err(|e| format!("Invalid ciphertext: {:?}", e))?;
     let ss_provided = decapsulate(&ct_provided, &sk);
