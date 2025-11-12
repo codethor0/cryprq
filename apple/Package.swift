@@ -14,6 +14,7 @@ let package = Package(
             targets: ["CrypRQTunnelKit"]
         ),
     ],
+    dependencies: [],
     targets: [
         .target(
             name: "CrypRQTunnelKit",
