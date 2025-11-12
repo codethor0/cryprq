@@ -35,7 +35,17 @@ jobs:
   build:
     name: Build (1.83.0)
     runs-on: ubuntu-latest
+    concurrency:
+      group: qa-vnext-${{ github.ref }}
+      cancel-in-progress: true
     steps:
+      - name: Cleanup storage
+        uses: ./.github/actions/cleanup-storage
+        with:
+          max_cache_age_days: 7
+          docker_prune: true
+          workspace_clean: true
+      
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:

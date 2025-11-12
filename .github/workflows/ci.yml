@@ -35,6 +35,8 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
+          # Limit cache size to prevent exceeding 10GB
+          # GitHub Actions cache limit is 10GB per repository
       
       - name: Cache cargo bin
         uses: actions/cache@v4

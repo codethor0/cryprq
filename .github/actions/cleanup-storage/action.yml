@@ -1,0 +1,103 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+name: 'Cleanup Storage'
+description: 'Clean up old caches, Docker images, and build artifacts to stay under storage limits'
+
+inputs:
+  max_cache_age_days:
+    description: 'Delete caches older than this many days'
+    required: false
+    default: '7'
+  docker_prune:
+    description: 'Prune Docker images and build cache'
+    required: false
+    default: 'true'
+  cargo_clean:
+    description: 'Clean cargo target directories'
+    required: false
+    default: 'false'
+  workspace_clean:
+    description: 'Clean workspace build directories'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Print disk usage before cleanup
+      shell: bash
+      run: |
+        echo "=== Disk Usage Before Cleanup ==="
+        df -h
+        echo ""
+        echo "=== Workspace Usage ==="
+        du -sh ${{ github.workspace }}/* 2>/dev/null | sort -h | tail -10 || true
+        echo ""
+        echo "=== Cargo Cache Usage ==="
+        du -sh ~/.cargo/* 2>/dev/null | sort -h || true
+        echo ""
+        echo "=== Docker Usage ==="
+        docker system df 2>/dev/null || echo "Docker not available"
+
+    - name: Clean Docker images and build cache
+      if: inputs.docker_prune == 'true'
+      shell: bash
+      run: |
+        if command -v docker &> /dev/null; then
+          echo "Pruning Docker images and build cache..."
+          docker system prune -af --volumes --filter "until=${{ inputs.max_cache_age_days }}h" || true
+          docker builder prune -af --filter "until=${{ inputs.max_cache_age_days }}h" || true
+          echo "Docker cleanup complete"
+        else
+          echo "Docker not available, skipping"
+        fi
+
+    - name: Clean cargo target directories
+      if: inputs.cargo_clean == 'true'
+      shell: bash
+      run: |
+        if [ -d "${{ github.workspace }}/target" ]; then
+          echo "Cleaning cargo target directories..."
+          # Keep incremental build cache but remove old artifacts
+          find "${{ github.workspace }}/target" -name "*.rlib" -mtime +${{ inputs.max_cache_age_days }} -delete 2>/dev/null || true
+          find "${{ github.workspace }}/target" -name "*.rmeta" -mtime +${{ inputs.max_cache_age_days }} -delete 2>/dev/null || true
+          echo "Cargo cleanup complete"
+        fi
+
+    - name: Clean workspace build directories
+      if: inputs.workspace_clean == 'true'
+      shell: bash
+      run: |
+        echo "Cleaning workspace build directories..."
+        # Remove old build artifacts
+        find "${{ github.workspace }}" -type d -name "node_modules" -prune -o -type d -name "target" -prune -o -type d -name ".next" -prune -o -type d -name "dist" -prune -o -type d -name "build" -prune -o -type f -name "*.log" -mtime +${{ inputs.max_cache_age_days }} -delete 2>/dev/null || true
+        echo "Workspace cleanup complete"
+
+    - name: Clean pip cache (if Python used)
+      shell: bash
+      run: |
+        if command -v pip &> /dev/null; then
+          echo "Cleaning pip cache..."
+          pip cache purge 2>/dev/null || true
+        fi
+
+    - name: Clean npm cache (if Node used)
+      shell: bash
+      run: |
+        if command -v npm &> /dev/null; then
+          echo "Cleaning npm cache..."
+          npm cache verify 2>/dev/null || true
+        fi
+
+    - name: Print disk usage after cleanup
+      shell: bash
+      run: |
+        echo "=== Disk Usage After Cleanup ==="
+        df -h
+        echo ""
+        echo "=== Workspace Usage ==="
+        du -sh ${{ github.workspace }}/* 2>/dev/null | sort -h | tail -10 || true
+
