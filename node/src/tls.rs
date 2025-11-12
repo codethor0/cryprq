@@ -80,6 +80,7 @@ impl TlsServer {
 
 /// TLS 1.3 client connection
 pub struct TlsClient {
+    #[allow(dead_code)]
     config: TlsConfig,
 }
 
