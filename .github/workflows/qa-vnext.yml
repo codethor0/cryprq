@@ -8,8 +8,20 @@ name: QA vNext - Extreme Validation
 on:
   push:
     branches: [ main, qa/vnext-* ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'gui/**'
+      - 'mobile/**'
+      - 'web/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'gui/**'
+      - 'mobile/**'
+      - 'web/**'
   schedule:
     - cron: '0 2 * * *'  # Daily at 2 AM UTC
   workflow_dispatch:
