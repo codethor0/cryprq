@@ -23,7 +23,7 @@ use std::{
     convert::Infallible,
     env,
     str::FromStr,
-    sync::Mutex,
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 use thiserror::Error;
@@ -35,6 +35,15 @@ use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, Pos
 
 mod metrics;
 pub use metrics::start_metrics_server;
+
+// Callback for when connection is established (for VPN packet forwarding)
+pub type ConnectionCallback = Arc<dyn Fn(PeerId) + Send + Sync>;
+static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));
+
+/// Set callback to be called when connection is established
+pub async fn set_connection_callback(callback: ConnectionCallback) {
+    *CONNECTION_CALLBACK.write().await = Some(callback);
+}
 
 // Define the error type correctly
 #[derive(Debug, Error)]
@@ -103,8 +112,8 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
 pub async fn set_allowed_peers(peers: &[String]) -> anyhow::Result<()> {
     let mut set = HashSet::with_capacity(peers.len());
     for entry in peers {
-        let peer_id =
-            PeerId::from_str(entry).with_context(|| format!("invalid peer id '{}'", entry))?;
+        let peer_id = PeerId::from_str(entry)
+            .context(format!("Invalid peer ID: {}", entry))?;
         set.insert(peer_id);
     }
     let mut guard = ALLOWED_PEERS.write().await;
@@ -190,13 +199,12 @@ pub async fn derive_and_store_ppk(
         .unwrap_or_default()
         .as_secs();
 
-    let ppk = PostQuantumPSK::derive(
-        kyber_shared,
-        peer_id_bytes,
-        &salt,
-        rotation_interval_secs,
-        now,
-    );
+    let ppk = PostQuantumPSK {
+        shared_secret: *kyber_shared,
+        peer_id: *peer_id_bytes,
+        salt,
+        expires_at: now + rotation_interval_secs * 2, // Expire after 2 rotation intervals
+    };
 
     let mut store = PPK_STORE.write().await;
     store.store(ppk);
@@ -278,6 +286,11 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                     metrics::inc_active_peers();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Inbound connection established with {peer_id} via {endpoint:?}");
+                    
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        callback(peer_id);
+                    }
                 }
             }
             SwarmEvent::IncomingConnection { send_back_addr, .. } => {
@@ -361,6 +374,12 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
                     println!("Connected to {remote} via {endpoint:?}");
+                    
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        callback(remote);
+                    }
+                    
                     // Keep connection alive - continue processing events
                     // Don't break - the connection needs to stay active for VPN mode
                 }
