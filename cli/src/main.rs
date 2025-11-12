@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server};
 use std::{env, net::SocketAddr, process, time::Duration};
+use node::{TunConfig, TunInterface};
 
 #[derive(Parser, Debug)]
 #[command(name = "cryprq", about = "Post-Quantum VPN")]
@@ -39,6 +40,27 @@ struct Args {
         action = clap::ArgAction::SetTrue
     )]
     no_post_quantum: bool,
+
+    #[arg(
+        long = "vpn",
+        help = "Enable system-wide VPN mode (routes all system traffic through tunnel). Requires root/admin privileges.",
+        action = clap::ArgAction::SetTrue
+    )]
+    vpn: bool,
+
+    #[arg(
+        long = "tun-name",
+        help = "TUN interface name (default: cryprq0)",
+        default_value = "cryprq0"
+    )]
+    tun_name: String,
+
+    #[arg(
+        long = "tun-address",
+        help = "TUN interface IP address (default: 10.0.0.1)",
+        default_value = "10.0.0.1"
+    )]
+    tun_address: String,
 }
 
 #[tokio::main]
@@ -114,6 +136,28 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         start_key_rotation(rotation_interval).await;
     });
+
+    // Handle VPN mode
+    if args.vpn {
+        log::info!("VPN mode enabled - will route all system traffic through tunnel");
+        log::warn!("VPN mode requires root/admin privileges and proper TUN interface setup");
+        
+        let tun_config = TunConfig {
+            name: args.tun_name.clone(),
+            address: args.tun_address.clone(),
+            netmask: "255.255.255.0".to_string(),
+            mtu: 1420,
+        };
+
+        let tun = TunInterface::create(tun_config).await
+            .context("Failed to create TUN interface")?;
+        
+        tun.configure_ip().await
+            .context("Failed to configure TUN interface IP")?;
+
+        log::info!("TUN interface {} configured with IP {}", tun.name(), args.tun_address);
+        log::warn!("Packet forwarding is not yet fully implemented - this is a proof-of-concept");
+    }
 
     if let Some(addr) = args.listen {
         println!("Starting listener on {}", addr);

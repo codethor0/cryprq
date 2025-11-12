@@ -1,4 +1,4 @@
-.PHONY: help icons icons-verify icons-verify-fast icons-validate-ios icons-validate-android icons-rebuild ops validate quick-smoke local-validate cleanup sanity observability one-shot ship github-sync
+.PHONY: help icons icons-verify icons-verify-fast icons-validate-ios icons-validate-android icons-rebuild docs-no-emoji docs-lint docs-links web-preview mac-app qa-web-mac ops validate quick-smoke local-validate cleanup sanity observability one-shot ship github-sync
 
 help:
 	@echo "CrypRQ Operations"
@@ -29,6 +29,16 @@ help:
 	@echo "  make icons-validate-ios - Validate iOS AppIcon Contents.json"
 	@echo "  make icons-validate-android - Validate Android mipmap densities"
 	@echo "  make icons-rebuild   - Generate -> verify -> rebuild"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  make docs-no-emoji   - Fail if any emoji/shortcodes remain"
+	@echo "  make docs-lint       - Markdownlint over repo"
+	@echo "  make docs-links      - Check links in all Markdown files"
+	@echo ""
+	@echo "Platform Builds:"
+	@echo "  make web-preview     - Run web cross-browser Playwright tests"
+	@echo "  make mac-app         - Package macOS .app bundle"
+	@echo "  make qa-web-mac      - Run web QA + macOS packaging (with quality gates)"
 	@echo ""
 	@echo "See OPERATOR_CHEAT_SHEET.txt for complete reference."
 
@@ -87,3 +97,22 @@ icons-validate-android: ## Validate Android mipmap densities
 
 icons-rebuild: ## Generate -> verify -> rebuild packages
 	bash scripts/rebuild-with-icons.sh
+
+docs-no-emoji: ## Fail if any emoji/shortcodes remain
+	bash scripts/no-emoji-gate.sh
+
+docs-lint: ## Markdownlint over repo
+	npx --yes markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**"
+
+docs-links: ## Check links in all Markdown files
+	bash scripts/check-doc-links.sh
+
+web-preview: ## Run web cross-browser Playwright tests
+	npm run --silent test:web:install
+	npm run --silent test:web
+
+mac-app: ## Package macOS .app bundle
+	bash scripts/package-mac-app.sh
+
+qa-web-mac: ## Run web QA + macOS packaging with quality gates
+	bash scripts/qa-web-and-mac.sh

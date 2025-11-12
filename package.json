@@ -1,0 +1,12 @@
+{
+  "name": "cryprq",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:web:install": "npx -y playwright install --with-deps",
+    "test:web": "playwright test --reporter=line --project=chromium --project=firefox --project=webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

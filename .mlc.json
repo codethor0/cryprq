@@ -1,0 +1,10 @@
+{
+  "retryOn429": true,
+  "retryCount": 2,
+  "fallbackRetryDelay": "2s",
+  "ignorePatterns": [
+    { "pattern": "^mailto:" },
+    { "pattern": "^#" }
+  ]
+}
+

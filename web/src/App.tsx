@@ -18,6 +18,7 @@ export default function App(){
   const [mode, setMode] = useState<Mode>('listener');
   const [port, setPort] = useState<number>(9999);
   const [peer, setPeer] = useState<string>('/ip4/127.0.0.1/udp/9999/quic-v1');
+  const [vpnMode, setVpnMode] = useState<boolean>(false);
   const [events, setEvents] = useState<{t:string,level:'status'|'rotation'|'peer'|'info'|'error'}[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [status, setStatus] = useState<Status>({
@@ -111,14 +112,15 @@ export default function App(){
       const res = await fetch('/connect', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ mode, port, peer })
+        body: JSON.stringify({ mode, port, peer, vpn: vpnMode })
       });
       if (!res.ok) {
         const err = await res.text();
         setEvents(prev=>[...prev, {t:`Connect failed: ${err}`, level:'error'}]);
       } else {
-        await res.json();
-        setEvents(prev=>[...prev, {t:`Connect initiated: ${mode} on port ${port}`, level:'status'}]);
+        const data = await res.json();
+        const vpnMsg = vpnMode ? ' (VPN mode: system-wide routing)' : '';
+        setEvents(prev=>[...prev, {t:`Connect initiated: ${mode} on port ${port}${vpnMsg}`, level:'status'}]);
         setStatus(prev => ({ ...prev, mode: mode, connected: false }));
       }
     } catch (err: any) {
@@ -140,6 +142,10 @@ export default function App(){
         </label>
         <label>Port: <input type="number" value={port} onChange={e=>setPort(parseInt(e.target.value||'0'))}/></label>
         <label>Peer: <input style={{width:420}} value={peer} onChange={e=>setPeer(e.target.value)}/></label>
+        <label style={{display:'flex', alignItems:'center', gap:'8px'}}>
+          <input type="checkbox" checked={vpnMode} onChange={e=>setVpnMode(e.target.checked)}/>
+          <span>VPN Mode (system-wide routing)</span>
+        </label>
         <button onClick={connect} disabled={connecting}>
           {connecting ? 'Connecting...' : 'Connect'}
         </button>

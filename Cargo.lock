@@ -561,6 +561,7 @@ dependencies = [
  "futures",
  "hex",
  "log",
+ "node",
  "p2p",
  "rand 0.8.5",
  "tokio",
@@ -2077,12 +2078,14 @@ dependencies = [
 name = "node"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64ct",
  "blake3",
  "bytes",
  "chacha20poly1305",
  "crossbeam",
  "ed25519-dalek",
+ "log",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "reqwest",

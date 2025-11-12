@@ -65,11 +65,13 @@ mod error;
 mod padding;
 mod tls;
 mod traffic_shaping;
+mod tun;
 
 pub use dns::{resolve_hostname, DnsConfig, DnsError};
 pub use error::TunnelError;
 pub use padding::{pad_packet, unpad_packet, PaddingConfig};
 pub use tls::{TlsClient, TlsConfig, TlsError, TlsServer, TlsStream};
+pub use tun::{TunConfig, TunInterface};
 pub use traffic_shaping::TrafficShaper;
 
 const MAX_NONCE_VALUE: u64 = u64::MAX - 1000; // Force rekey before overflow
