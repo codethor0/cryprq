@@ -2,6 +2,8 @@ name: Mobile CI
 
 on:
   pull_request:
+    branches:
+      - main
     paths:
       - 'mobile/**'
   push:
@@ -10,6 +12,8 @@ on:
       - master
     paths:
       - 'mobile/**'
+    branches-ignore:
+      - 'qa/**'
 
 jobs:
   tests_android:

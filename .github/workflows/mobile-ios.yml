@@ -11,6 +11,8 @@ on:
     paths:
       - 'mobile/**'
       - 'ios/**'
+    branches-ignore:
+      - 'qa/**'
   pull_request:
     branches: [ main ]
     paths:
