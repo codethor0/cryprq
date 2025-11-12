@@ -55,9 +55,12 @@ static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
     Lazy::new(|| RwLock::new(None));
 
 // Store recv_tx channels for each peer to forward incoming packets to TUN
-static PACKET_RECV_TX: Lazy<
-    RwLock<HashMap<PeerId, Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>>>,
-> = Lazy::new(|| RwLock::new(HashMap::new()));
+// Type alias to reduce complexity
+type PacketRecvTx = Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>;
+
+#[allow(clippy::type_complexity)]
+static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, PacketRecvTx>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 /// Register recv_tx channel for a peer (called from connection callback)
 pub async fn register_packet_recv_tx(
