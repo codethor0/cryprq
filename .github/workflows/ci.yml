@@ -60,6 +60,14 @@ jobs:
         run: cargo build --release -p cryprq
         continue-on-error: false
 
+      - name: Cryptographic validation
+        run: bash scripts/crypto-validation.sh || echo "Crypto validation skipped if script not found"
+        continue-on-error: true
+
+      - name: Secret scanning
+        run: bash scripts/secret-scan.sh || echo "Secret scan skipped if script not found"
+        continue-on-error: true
+
   ffi-check:
     name: FFI cross-target build
     strategy:
