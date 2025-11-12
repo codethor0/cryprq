@@ -6,6 +6,7 @@
 // Expanded property tests for comprehensive validation
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod property_expanded {
     use crate::hybrid::HybridHandshake;
     use pqcrypto_traits::kem::{PublicKey, SecretKey};
