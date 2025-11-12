@@ -7,7 +7,6 @@ name: docs-ci
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - "**/*.md"
       - "scripts/no-emoji-gate.sh"
@@ -27,20 +26,8 @@ jobs:
   docs:
     name: Documentation Quality Checks
     runs-on: ubuntu-latest
-    concurrency:
-      group: docs-${{ github.ref }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Cleanup storage (system-level)
-        uses: ./.github/actions/cleanup-storage
-        with:
-          max_cache_age_days: 7
-          workspace_clean: true
-      
-      - name: Aggressive cleanup (10GB cap)
-        run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
 
       - name: No-emoji gate
         run: bash scripts/no-emoji-gate.sh
@@ -54,10 +41,8 @@ jobs:
         run: npx --yes prettier -c "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**" || true
 
       - name: Markdownlint
-        run: npx --yes markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**" "!**/.github/**" "!**/release-*/**" "!**/docs/wiki/**" || echo "Markdownlint found issues but continuing"
-        continue-on-error: true
+        run: npx --yes markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/target/**" "!**/dist/**" "!**/build/**"
 
       - name: Link check
-        run: bash scripts/check-doc-links.sh || echo "Link check found issues (non-blocking)"
-        continue-on-error: true
+        run: bash scripts/check-doc-links.sh
 
