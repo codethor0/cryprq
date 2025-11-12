@@ -41,22 +41,17 @@ pub use metrics::start_metrics_server;
 pub mod packet_forwarder;
 pub use packet_forwarder::Libp2pPacketForwarder;
 
-// Callback for when connection is established (for VPN packet forwarding)
-// Now includes recv_tx for forwarding incoming packets to TUN
-pub type ConnectionCallback = Arc<
-    dyn Fn(
-            PeerId,
-            Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
-            Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>,
-        ) + Send
-        + Sync,
->;
-static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
-    Lazy::new(|| RwLock::new(None));
-
 // Store recv_tx channels for each peer to forward incoming packets to TUN
 // Type alias to reduce complexity
 pub type PacketRecvTx = Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>;
+
+// Callback for when connection is established (for VPN packet forwarding)
+// Now includes recv_tx for forwarding incoming packets to TUN
+pub type ConnectionCallback = Arc<
+    dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, PacketRecvTx) + Send + Sync,
+>;
+static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
+    Lazy::new(|| RwLock::new(None));
 
 #[allow(clippy::type_complexity)]
 static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, PacketRecvTx>>> =
