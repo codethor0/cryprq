@@ -324,7 +324,9 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                     
                     // Call connection callback if set (for VPN packet forwarding)
                     if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
-                        callback(peer_id, swarm_for_loop.clone());
+                        // Create a placeholder recv_tx - the actual one will come from PacketForwarder
+                        let (recv_tx, _) = tokio::sync::mpsc::unbounded_channel();
+                        callback(peer_id, swarm_for_loop.clone(), Arc::new(tokio::sync::Mutex::new(recv_tx)));
                     }
                 }
             }
