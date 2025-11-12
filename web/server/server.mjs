@@ -145,7 +145,7 @@ app.post('/connect', async (req,res)=>{
       
       proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, RUST_LOG: 'debug' },
+        env: { ...process.env, RUST_LOG: 'trace' },
         detached: false // Keep attached so we can capture output
       });
       
@@ -304,7 +304,7 @@ app.post('/connect', async (req,res)=>{
   }
 
   // Set maximum verbosity
-  const env = { ...process.env, RUST_LOG: 'debug' };
+  const env = { ...process.env, RUST_LOG: 'trace' };
   
   // Spawn process with proper stdio handling
   proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, { 
