@@ -322,17 +322,24 @@ jobs:
           key: ${{ runner.os }}-cargo-bin-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-bin-
-      - name: Install tools
+      - name: Install cargo-audit
         run: |
           if ! command -v cargo-audit &> /dev/null; then
-            cargo install cargo-audit --force || true
+            cargo install cargo-audit --locked || echo "cargo-audit install failed"
           fi
+        continue-on-error: true
+      - name: Install cargo-deny
+        run: |
           if ! command -v cargo-deny &> /dev/null; then
-            cargo install cargo-deny --force || true
+            cargo install cargo-deny --locked || echo "cargo-deny install failed"
           fi
+        continue-on-error: true
+      - name: Install cargo-geiger
+        run: |
           if ! command -v cargo-geiger &> /dev/null; then
-            cargo install cargo-geiger --force || true
+            cargo install cargo-geiger --locked || echo "cargo-geiger install failed"
           fi
+        continue-on-error: true
       - name: Run supply chain checks
         run: bash scripts/run-supply-chain.sh
       - name: Upload supply chain artifacts
