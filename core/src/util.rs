@@ -5,6 +5,12 @@ use crate::error::CrypRqErrorCode;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+/// Read an optional C string from a pointer.
+///
+/// # Safety
+///
+/// - If `ptr` is not null, it must point to a valid null-terminated C string
+/// - The string must remain valid for the duration of the call
 pub unsafe fn read_optional_cstr(ptr: *const c_char) -> Result<Option<String>, CrypRqErrorCode> {
     if ptr.is_null() {
         return Ok(None);
@@ -19,6 +25,13 @@ pub struct CrypRqStrView {
     pub len: usize,
 }
 
+/// Convert a `CrypRqStrView` to a Rust `String`.
+///
+/// # Safety
+///
+/// - `view.data` must be a valid pointer to a buffer of at least `view.len` bytes
+/// - The buffer must contain valid UTF-8 data
+/// - The buffer must remain valid for the duration of the call
 pub unsafe fn str_view_to_string(view: &CrypRqStrView) -> Result<String, CrypRqErrorCode> {
     if view.data.is_null() {
         return Err(CrypRqErrorCode::CRYPRQ_ERR_NULL);

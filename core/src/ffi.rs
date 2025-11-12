@@ -27,6 +27,15 @@ pub struct CrypRqPeerParams {
     pub multiaddr: *const c_char,
 }
 
+/// Initialize CrypRQ with the given configuration.
+///
+/// # Safety
+///
+/// - `config` must be a valid pointer to a `CrypRqConfig` or null
+/// - `out_handle` must be a valid pointer to a `*mut CrypRqHandle` or null
+/// - If `config` is not null, it must point to valid memory for the duration of the call
+/// - If `config.allow_peers` is not null, it must point to an array of `allow_peers_len` valid `CrypRqStrView` structs
+/// - If `config.multiaddr` is not null, it must point to a valid null-terminated C string
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_init(
     config: *const CrypRqConfig,
@@ -46,6 +55,13 @@ pub unsafe extern "C" fn cryprq_init(
     }
 }
 
+/// Inner initialization function.
+///
+/// # Safety
+///
+/// - `cfg` must be a valid reference to a `CrypRqConfig`
+/// - If `cfg.allow_peers` is not null, it must point to an array of `cfg.allow_peers_len` valid `CrypRqStrView` structs
+/// - If `cfg.multiaddr` is not null, it must point to a valid null-terminated C string
 unsafe fn init_inner(cfg: &CrypRqConfig) -> Result<CrypRqHandle, CrypRqErrorCode> {
     if cfg.allow_peers_len > 0 && cfg.allow_peers.is_null() {
         return Err(CrypRqErrorCode::CRYPRQ_ERR_NULL);
@@ -67,6 +83,14 @@ unsafe fn init_inner(cfg: &CrypRqConfig) -> Result<CrypRqHandle, CrypRqErrorCode
     CrypRqHandle::new(allow)
 }
 
+/// Connect to a peer using the given parameters.
+///
+/// # Safety
+///
+/// - `handle` must be a valid pointer to a `CrypRqHandle` created by `cryprq_init`
+/// - `params` must be a valid pointer to a `CrypRqPeerParams` or null
+/// - If `params` is not null, it must point to valid memory for the duration of the call
+/// - If `params.multiaddr` is not null, it must point to a valid null-terminated C string
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_connect(
     handle: *mut CrypRqHandle,
@@ -98,6 +122,14 @@ pub unsafe extern "C" fn cryprq_connect(
     }
 }
 
+/// Read a packet from the connection.
+///
+/// # Safety
+///
+/// - `handle` must be a valid pointer to a `CrypRqHandle`
+/// - `buffer` must be a valid pointer to a buffer of at least `len` bytes
+/// - `out_len` must be a valid pointer to a `usize` or null
+/// - The buffer must remain valid for the duration of the call
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_read_packet(
     _handle: *mut CrypRqHandle,
@@ -108,6 +140,13 @@ pub unsafe extern "C" fn cryprq_read_packet(
     CrypRqErrorCode::CRYPRQ_ERR_UNSUPPORTED
 }
 
+/// Write a packet to the connection.
+///
+/// # Safety
+///
+/// - `handle` must be a valid pointer to a `CrypRqHandle`
+/// - `buffer` must be a valid pointer to a buffer of at least `len` bytes
+/// - The buffer must remain valid for the duration of the call
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_write_packet(
     _handle: *mut CrypRqHandle,
@@ -117,11 +156,23 @@ pub unsafe extern "C" fn cryprq_write_packet(
     CrypRqErrorCode::CRYPRQ_ERR_UNSUPPORTED
 }
 
+/// Notify CrypRQ of a network change event.
+///
+/// # Safety
+///
+/// - `handle` must be a valid pointer to a `CrypRqHandle` created by `cryprq_init`
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_on_network_change(_handle: *mut CrypRqHandle) -> CrypRqErrorCode {
     CrypRqErrorCode::CRYPRQ_OK
 }
 
+/// Close and deallocate a CrypRQ handle.
+///
+/// # Safety
+///
+/// - `handle` must be a valid pointer to a `CrypRqHandle` created by `cryprq_init`
+/// - After this call, `handle` is invalid and must not be used
+/// - This function takes ownership of the handle and deallocates it
 #[no_mangle]
 pub unsafe extern "C" fn cryprq_close(handle: *mut CrypRqHandle) -> CrypRqErrorCode {
     if handle.is_null() {
