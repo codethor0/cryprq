@@ -4,6 +4,40 @@
 
 This guide covers performance optimization, benchmarking, and profiling for CrypRQ.
 
+## Quick Start
+
+### Run Performance Benchmarks
+
+```bash
+# Basic performance check
+bash scripts/performance-benchmark.sh
+
+# Detailed benchmarks (requires nightly)
+cargo +nightly bench
+
+# Performance optimization analysis
+bash scripts/optimize-performance.sh
+```
+
+### Build Optimizations
+
+The project is configured with optimized build settings:
+
+```toml
+[profile.release]
+opt-level = 3        # Maximum optimization
+lto = true          # Link-time optimization
+codegen-units = 1   # Single codegen unit (better optimization)
+strip = true        # Strip symbols for smaller binary
+```
+
+### Current Performance Metrics
+
+- **Binary Size**: ~11-13MB (optimized)
+- **Startup Time**: <500ms
+- **Build Time**: ~25-30s (release)
+- **Test Time**: <2s (unit tests)
+
 ## Benchmarking
 
 ### Running Benchmarks
