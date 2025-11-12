@@ -6,8 +6,9 @@
 #![no_main]
 
 use cryprq_crypto::HybridHandshake;
-use pqcrypto_mlkem::mlkem768::keypair;
 use libfuzzer_sys::fuzz_target;
+use pqcrypto_mlkem::mlkem768::keypair;
+use pqcrypto_traits::kem::{PublicKey, SecretKey};
 
 fuzz_target!(|data: &[u8]| {
     // Fuzz test hybrid handshake creation

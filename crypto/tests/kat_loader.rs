@@ -6,7 +6,12 @@
 // KAT (Known Answer Test) vector loader for FIPS-203 ML-KEM test vectors
 // Loads vectors from files and provides utilities for KAT verification
 
+#[cfg(test)]
+extern crate alloc;
+
+#[cfg(test)]
 use alloc::string::String;
+#[cfg(test)]
 use alloc::vec::Vec;
 
 /// KAT vector structure for ML-KEM Kyber768
