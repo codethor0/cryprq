@@ -44,7 +44,8 @@ services:
       start_period: 10s
     # Command to run listener in VPN mode
     # Note: VPN mode requires --vpn flag and TUN interface setup
-    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1", "--vpn"]
+    # For now, run without --vpn until TUN forwarding is fully integrated
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
     # Alternative: run as dialer connecting to remote peer
     # command: ["--peer", "/ip4/REMOTE_IP/udp/9999/quic-v1", "--vpn"]
     stdin_open: true

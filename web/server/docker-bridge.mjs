@@ -125,7 +125,8 @@ app.post('/connect', async (req, res) => {
         // For dialer mode, Mac connects to container
         if (mode === 'dialer') {
             const containerPeer = `/ip4/${containerIP}/udp/${port}/quic-v1`;
-            push('status', `Connecting Mac to container at ${containerPeer}`);
+            push('status', `🐳 Connecting Mac to container at ${containerPeer}`);
+            push('status', `✅ Docker VPN mode - container will handle encryption and routing`);
             
             // Run local cryprq binary to connect to container
             const { spawn } = require('child_process');
@@ -245,8 +246,11 @@ app.get('/status', async (req, res) => {
 });
 
 const PORT = process.env.BRIDGE_PORT || 8787;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Docker bridge server on ${PORT}`);
     console.log(`Container: ${CONTAINER_NAME}`);
 });
+
+// Export app for use in server.mjs
+export default app;
 
