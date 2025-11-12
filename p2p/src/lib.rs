@@ -497,24 +497,34 @@ pub async fn dial_peer(addr: String) -> Result<()> {
             }
             SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
                 match event {
-                    request_response::Event::Message { message, .. } => {
+                    request_response::Event::Message { message, peer, .. } => {
                         match message {
                             request_response::Message::Request { request, channel, .. } => {
-                                // Incoming packet from peer - send empty response and forward packet
+                                // Incoming packet from peer - send empty response and forward packet to TUN
                                 let mut s = swarm_for_loop.lock().await;
                                 let _ = s.behaviour_mut().request_response.send_response(channel, vec![]);
-                                log::debug!("🔓 Received {} bytes packet from peer", request.len());
-                                // TODO: Forward to TUN interface via callback
+                                log::debug!("🔓 DECRYPT: Received {} bytes packet from peer {}", request.len(), peer);
+                                
+                                // Forward packet to TUN interface via recv_tx channel
+                                if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                    let recv_tx_guard = recv_tx_arc.lock().await;
+                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                    } else {
+                                        log::debug!("✅ Forwarded {} bytes packet to TUN", request.len());
+                                    }
+                                } else {
+                                    log::debug!("No recv_tx channel registered for peer {}", peer);
+                                }
                             }
-                            request_response::Message::Response { response, .. } => {
-                                // Response to our request - this is the packet we sent
-                                log::debug!("✅ Received response for packet ({} bytes)", response.len());
-                                // TODO: Handle response if needed
+                            request_response::Message::Response { response, request_id, .. } => {
+                                // Response to our request - acknowledgment
+                                log::debug!("✅ Received response for request {:?} ({} bytes)", request_id, response.len());
                             }
                         }
                     }
-                    request_response::Event::OutboundFailure { error, .. } => {
-                        log::warn!("Request-response outbound failure: {:?}", error);
+                    request_response::Event::OutboundFailure { error, request_id, .. } => {
+                        log::warn!("Request-response outbound failure for {:?}: {:?}", request_id, error);
                     }
                     request_response::Event::InboundFailure { error, .. } => {
                         log::warn!("Request-response inbound failure: {:?}", error);
