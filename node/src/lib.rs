@@ -368,7 +368,7 @@ impl Tunnel {
         };
 
         // Increment nonce counter (fast, drop lock immediately)
-        let nonce = {
+        let (nonce, nonce_value) = {
             let mut counter = self
                 .nonce_counter
                 .write()
@@ -380,10 +380,11 @@ impl Tunnel {
             }
 
             *counter += 1;
+            let nonce_value = *counter;
             let nonce_bytes = counter.to_le_bytes();
             let mut nonce_arr = [0u8; 12];
             nonce_arr[..8].copy_from_slice(&nonce_bytes);
-            Nonce::from(nonce_arr)
+            (Nonce::from(nonce_arr), nonce_value)
         };
 
         let ciphertext = cipher
