@@ -5,7 +5,7 @@
 
 #![no_main]
 
-use cryprq_crypto::{kyber_keypair, PPKStore, PostQuantumPSK};
+use cryprq_crypto::{PPKStore, PostQuantumPSK};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

@@ -12,7 +12,7 @@ fuzz_target!(|data: &[u8]| {
     // This will test parsing of multiaddr, peer IDs, etc.
 
     // Basic bounds checking
-    if data.len() > 0 {
+    if !data.is_empty() {
         // Try to parse as string (for multiaddr/peer ID parsing)
         if let Ok(s) = std::str::from_utf8(data) {
             // Basic validation - should not panic on any input

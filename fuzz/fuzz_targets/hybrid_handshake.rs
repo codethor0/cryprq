@@ -5,7 +5,8 @@
 
 #![no_main]
 
-use cryprq_crypto::{kyber_keypair, HybridHandshake};
+use cryprq_crypto::HybridHandshake;
+use pqcrypto_mlkem::mlkem768::keypair;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
@@ -24,7 +25,7 @@ fuzz_target!(|data: &[u8]| {
 
     // Fuzz test keypair generation
     if data.len() >= 16 {
-        let (pk, sk) = kyber_keypair();
+        let (pk, sk) = keypair();
         assert!(pk.as_bytes().iter().any(|&b| b != 0));
         assert!(sk.as_bytes().iter().any(|&b| b != 0));
     }

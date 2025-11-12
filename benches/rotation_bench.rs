@@ -6,7 +6,6 @@
 // Criterion benchmarks for key rotation overhead
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use cryprq_crypto::PostQuantumPSK;
 
 fn bench_ppk_derivation(c: &mut Criterion) {
     use cryprq_crypto::PPKStore;

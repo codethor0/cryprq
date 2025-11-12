@@ -33,7 +33,10 @@ pub fn load_kat_vectors(path: &str) -> Result<Vec<KatVector>, String> {
 
 /// Verify a KAT vector against actual implementation
 pub fn verify_kat_vector(vector: &KatVector) -> Result<(), String> {
+    // Placeholder - actual implementation will use these imports
+    #[allow(unused_imports)]
     use pqcrypto_mlkem::mlkem768::*;
+    #[allow(unused_imports)]
     use pqcrypto_traits::kem::{Ciphertext, PublicKey, SecretKey, SharedSecret};
 
     // Load keys from bytes (simplified - actual implementation would parse properly)
