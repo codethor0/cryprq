@@ -72,26 +72,26 @@ impl Codec for PacketCodec {
         Ok(buf)
     }
 
-    fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: &Self::Request) -> std::io::Result<()>
+    fn write_request<T>(&mut self, _: &Self::Protocol, io: &mut T, req: Self::Request) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = req.len() as u32;
         futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
-        futures::executor::block_on(io.write_all(req))?;
+        futures::executor::block_on(io.write_all(&req))?;
         futures::executor::block_on(io.flush())?;
         Ok(())
     }
 
-    fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: &Self::Response) -> std::io::Result<()>
+    fn write_response<T>(&mut self, _: &Self::Protocol, io: &mut T, res: Self::Response) -> std::io::Result<()>
     where
         T: futures::AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
         let len = res.len() as u32;
         futures::executor::block_on(io.write_all(&len.to_be_bytes()))?;
-        futures::executor::block_on(io.write_all(res))?;
+        futures::executor::block_on(io.write_all(&res))?;
         futures::executor::block_on(io.flush())?;
         Ok(())
     }
