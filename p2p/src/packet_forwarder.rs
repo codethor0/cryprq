@@ -36,7 +36,7 @@ impl request_response::Protocol for PacketProtocol {
 }
 
 impl Codec for PacketCodec {
-    type Protocol = PacketProtocol;
+    type Protocol = StreamProtocol;
     type Request = Vec<u8>;
     type Response = Vec<u8>;
 
