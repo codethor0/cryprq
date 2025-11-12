@@ -111,7 +111,7 @@ pub fn parse_fips203_kat_file(contents: &str) -> Result<Vec<Fips203KatVector>, S
 /// Verify a FIPS 203 KAT vector
 pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
     use pqcrypto_mlkem::mlkem768::{decapsulate, encapsulate};
-    use pqcrypto_traits::kem::{PublicKey, SecretKey};
+    use pqcrypto_traits::kem::{Ciphertext, PublicKey, SecretKey};
 
     // Load public key from bytes
     let pk =
@@ -137,7 +137,6 @@ pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
     }
 
     // Verify decapsulation with provided ciphertext
-    use pqcrypto_traits::kem::Ciphertext;
     let ct_provided =
         Ciphertext::from_bytes(&vector.ct).map_err(|e| format!("Invalid ciphertext: {:?}", e))?;
     let ss_provided = decapsulate(&ct_provided, &sk);
@@ -166,7 +165,7 @@ ct = 000102030405060708090A0B0C0D0E0F
 ss = 000102030405060708090A0B0C0D0E0F
 "#;
 
-        let vectors = parse_fips203_kat_file(test_input).unwrap();
+        let vectors = parse_fips203_kat_file(test_input).expect("Failed to parse test KAT file");
         assert_eq!(vectors.len(), 1);
         assert_eq!(vectors[0].count, 0);
     }

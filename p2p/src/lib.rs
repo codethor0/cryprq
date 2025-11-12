@@ -33,7 +33,8 @@ use tokio::sync::RwLock;
 use tokio::time::MissedTickBehavior;
 
 // Import the *public* items from the crypto crate
-use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, PostQuantumPSK};
+use cryprq_crypto::{KyberPublicKey, KyberSecretKey, PPKStore, PostQuantumPSK};
+use pqcrypto_mlkem::mlkem768::keypair;
 
 mod metrics;
 pub use metrics::start_metrics_server;
@@ -188,7 +189,7 @@ pub async fn start_key_rotation(interval: Duration) {
 
 async fn rotate_once(interval: Duration) {
     let start = Instant::now();
-    let (pk, sk) = kyber_keypair();
+    let (pk, sk) = keypair();
 
     let mut guard = KEYS.write().await;
     guard.replace((pk, sk));

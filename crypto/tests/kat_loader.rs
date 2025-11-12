@@ -31,7 +31,7 @@ pub struct KatVector {
 
 /// Load KAT vectors from file
 /// Format: NIST PQC KAT format (count, seed, pk, sk, ct, ss)
-pub fn load_kat_vectors(path: &str) -> Result<Vec<KatVector>, String> {
+pub fn load_kat_vectors(_path: &str) -> Result<Vec<KatVector>, String> {
     // TODO: Implement actual file loading
     // For now, return empty vector - will be populated when official vectors are available
     // Official vectors can be downloaded from NIST CSRC:
@@ -55,7 +55,8 @@ mod tests {
     #[test]
     fn test_kat_loader_structure() {
         // Verify loader structure exists
-        let vectors = load_kat_vectors("crypto/tests/kat_vectors/PQCkemKAT_2400.rsp").unwrap();
+        let vectors = load_kat_vectors("crypto/tests/kat_vectors/PQCkemKAT_2400.rsp")
+            .expect("Failed to load KAT vectors");
         assert_eq!(
             vectors.len(),
             0,
