@@ -118,16 +118,19 @@ pub struct Libp2pPacketForwarder {
     recv_tx: Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>>,
 }
 
-impl Libp2pPacketForwarder {
-    // Type alias for return tuple to reduce complexity
-    type NewReturn = (
-        Self,
-        Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>,
-        Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>,
-    );
+// Type alias for new() return tuple to reduce complexity
+type NewReturn = (
+    Libp2pPacketForwarder,
+    Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>,
+    Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>,
+);
 
+impl Libp2pPacketForwarder {
     #[allow(clippy::type_complexity)]
-    pub fn new(swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, peer_id: PeerId) -> NewReturn {
+    pub fn new(
+        swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
+        peer_id: PeerId,
+    ) -> NewReturn {
         let (send_tx, mut send_rx) = tokio::sync::mpsc::unbounded_channel();
         let (recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
 
