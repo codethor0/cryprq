@@ -12,6 +12,10 @@ edition = "2021"
 name = "handshake_bench"
 harness = false
 
+[[bench]]
+name = "rotation_bench"
+harness = false
+
 [dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 cryprq-crypto = { path = "../crypto" }

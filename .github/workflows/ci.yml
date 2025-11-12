@@ -91,6 +91,22 @@ jobs:
         run: cargo build --release -p cryprq
         continue-on-error: false
 
+      - name: KAT Tests
+        run: cargo test --package cryprq-crypto kat_tests
+        continue-on-error: false
+
+      - name: Property Tests
+        run: cargo test --package cryprq-crypto property_tests
+        continue-on-error: false
+
+      - name: Security Audit
+        run: cargo audit
+        continue-on-error: false
+
+      - name: Cargo Deny
+        run: cargo deny check
+        continue-on-error: true
+
       - name: Cryptographic validation
         run: bash scripts/crypto-validation.sh || echo "Crypto validation skipped if script not found"
         continue-on-error: true
