@@ -15,7 +15,17 @@ jobs:
   test:
     name: Build and Test
     runs-on: ubuntu-latest
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
     steps:
+      - name: Cleanup storage
+        uses: ./.github/actions/cleanup-storage
+        with:
+          max_cache_age_days: 7
+          docker_prune: true
+          workspace_clean: true
+      
       - name: Checkout
         uses: actions/checkout@v4
 

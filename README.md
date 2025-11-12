@@ -193,12 +193,36 @@ docker ps --filter "name=cryprq"
 Recommended workflow set:
 
 - **`ci.yml`**: Build, lint, test (fmt → clippy → build → test → docker-qa)
+- **`qa-vnext.yml`**: Comprehensive QA pipeline (KATs, property tests, fuzzing, Miri, sanitizers, coverage)
 - **`docker-test.yml`**: Container QA for QUIC handshake and rotation
 - **`security-audit.yml`**: Secret scanning, cargo-audit, cargo-deny, SBOM/Grype
 - **`codeql.yml`**: CodeQL static analysis
+- **`maintenance-cleanup.yml`**: Daily storage cleanup to maintain <10GB usage
 - **`mobile-android.yml`** and **`mobile-ios.yml`**: Guarded mobile builds (stubs where signing is unavailable)
 
 These workflows are referenced in project docs and status guidance. All tests and benchmarks are integrated into CI:
+
+#### Reproducing CI Locally
+
+To reproduce CI checks locally:
+
+```bash
+# Install required tools
+rustup toolchain install 1.83.0
+rustup component add rustfmt clippy
+cargo install cargo-audit cargo-deny cargo-llvm-cov cargo-fuzz
+
+# Run the same checks as CI
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo build --release -p cryprq
+cargo test --all
+
+# Run QA pipeline (requires Docker)
+bash scripts/qa-all.sh
+```
+
+See [scripts/qa-all.sh](scripts/qa-all.sh) for the complete QA pipeline.
 - Exploratory tests (14 categories completed)
 - Performance benchmarks
 - Security audits

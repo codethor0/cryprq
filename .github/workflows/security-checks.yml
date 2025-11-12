@@ -18,7 +18,16 @@ jobs:
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
+    concurrency:
+      group: security-${{ github.ref }}
+      cancel-in-progress: true
     steps:
+      - name: Cleanup storage
+        uses: ./.github/actions/cleanup-storage
+        with:
+          max_cache_age_days: 7
+          workspace_clean: true
+      
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -29,7 +38,16 @@ jobs:
   dependency-scan:
     name: Dependency Scanning
     runs-on: ubuntu-latest
+    concurrency:
+      group: security-${{ github.ref }}
+      cancel-in-progress: true
     steps:
+      - name: Cleanup storage
+        uses: ./.github/actions/cleanup-storage
+        with:
+          max_cache_age_days: 7
+          workspace_clean: true
+      
       - name: Checkout
         uses: actions/checkout@v4
 
