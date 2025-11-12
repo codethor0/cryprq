@@ -18,13 +18,14 @@ echo "Generating QA Report"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Generate REPORT.md
+# Generate comprehensive REPORT.md with Verification Cards
 cat > "$REPORT_DIR/REPORT.md" << EOF
 # CrypRQ QA Report
 
-**Date**: $(date +%Y-%m-%d)  
-**Commit**: $(git rev-parse --short HEAD)  
-**Branch**: $(git rev-parse --abbrev-ref HEAD)
+**Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)  
+**Commit**: $(git rev-parse HEAD)  
+**Branch**: $(git rev-parse --abbrev-ref HEAD)  
+**Duration**: $(($(date +%s) - START_TIME))s
 
 ## Test Results
 

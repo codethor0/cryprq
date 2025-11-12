@@ -9,6 +9,7 @@ set -euo pipefail
 
 DATE=$(date +%Y%m%d)
 ARTIFACT_DIR="release-${DATE}/qa"
+START_TIME=$(date +%s)
 mkdir -p "$ARTIFACT_DIR"
 
 # Bootstrap if first run
@@ -16,6 +17,15 @@ if [ ! -f ".tools-lock.json" ]; then
     echo "Running bootstrap..."
     bash scripts/qa-bootstrap.sh
 fi
+
+# Check branch protection
+echo "Checking branch protection..."
+if bash scripts/qa-check-branch-protection.sh main 2>&1 | tee "$ARTIFACT_DIR/branch-protection.log"; then
+    echo "✅ Branch protection verified"
+else
+    echo "⚠️ Branch protection check failed (non-blocking for local runs)"
+fi
+echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "CRYPRQ EXTREME VALIDATION & OPTIMIZATION - Full Pipeline"
@@ -30,9 +40,16 @@ FAILED_STEPS=()
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Step 0: Bootstrap (Toolchain & Dependencies)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if bash scripts/qa-bootstrap.sh 2>&1 | tee "$ARTIFACT_DIR/bootstrap.log"; then
+STEP_START=$(date +%s)
+STEP_DIR="$ARTIFACT_DIR/bootstrap"
+mkdir -p "$STEP_DIR"
+if bash scripts/qa-bootstrap.sh 2>&1 | tee "$STEP_DIR/execution.log"; then
+    STEP_DURATION=$(($(date +%s) - STEP_START))
+    bash scripts/qa-verification-card.sh "bootstrap" 0 "$STEP_DURATION" "$STEP_DIR"
     echo "✅ Bootstrap complete"
 else
+    STEP_DURATION=$(($(date +%s) - STEP_START))
+    bash scripts/qa-verification-card.sh "bootstrap" 1 "$STEP_DURATION" "$STEP_DIR"
     echo "❌ Bootstrap failed"
     FAILED_STEPS+=("bootstrap")
 fi

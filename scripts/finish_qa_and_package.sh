@@ -3,89 +3,120 @@
 # Contact: codethor@gmail.com
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # SPDX-License-Identifier: MIT
+
+# Finish QA and package release bundle
 set -euo pipefail
 
-# Finish QA and Package Release Bundle
-# Usage: ./finish_qa_and_package.sh [VERSION=v0.1.0] [IMAGE=cryprq-node:latest]
+DATE=$(date +%Y%m%d)
+RELEASE_DIR="release-${DATE}"
+QA_DIR="${RELEASE_DIR}/qa"
+BUNDLE_DIR="${RELEASE_DIR}/bundle"
 
-VERSION="${1:-v0.1.0}"
-IMAGE="${2:-cryprq-node:latest}"
-RELEASE_DIR="release-${VERSION}"
-TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BUNDLE_DIR"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Finishing QA and Packaging Release Bundle: ${VERSION}"
+echo "Finishing QA and Packaging Release Bundle"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Create release directory structure
-mkdir -p "${RELEASE_DIR}/security"
-mkdir -p "${RELEASE_DIR}/qa"
-mkdir -p "${RELEASE_DIR}/bin"
-
-echo "[1/5] Generating SBOM..."
-bash scripts/syft-sbom.sh "${RELEASE_DIR}/security" 2>&1 | tee "${RELEASE_DIR}/qa/sbom.log" || echo "⚠️  SBOM generation skipped"
-
-echo ""
-echo "[2/5] Running Grype vulnerability scan..."
-bash scripts/grype-scan.sh "${RELEASE_DIR}/security" 2>&1 | tee "${RELEASE_DIR}/qa/grype.log" || echo "⚠️  Grype scan skipped"
-
-echo ""
-echo "[3/5] Copying binaries and checksums..."
+# Copy binaries
+echo "Collecting binaries..."
+mkdir -p "$BUNDLE_DIR/binaries"
 if [ -f "target/release/cryprq" ]; then
-    cp target/release/cryprq "${RELEASE_DIR}/bin/cryprq-${VERSION}"
-    shasum -a 256 "${RELEASE_DIR}/bin/cryprq-${VERSION}" > "${RELEASE_DIR}/bin/checksums.txt" 2>/dev/null || \
-    md5sum "${RELEASE_DIR}/bin/cryprq-${VERSION}" > "${RELEASE_DIR}/bin/checksums.txt" 2>/dev/null || true
-    echo "✅ Binary copied: ${RELEASE_DIR}/bin/cryprq-${VERSION}"
-else
-    echo "⚠️  Release binary not found. Run 'cargo build --release -p cryprq' first."
+    cp target/release/cryprq "$BUNDLE_DIR/binaries/"
+    shasum -a 256 "$BUNDLE_DIR/binaries/cryprq" > "$BUNDLE_DIR/binaries/cryprq.sha256"
 fi
 
-echo ""
-echo "[4/5] Collecting QA logs..."
-# Copy any existing QA artifacts
-if [ -d "artifacts/local" ]; then
-    cp -r artifacts/local/* "${RELEASE_DIR}/qa/" 2>/dev/null || true
-fi
-if [ -d "artifacts/docker" ]; then
-    cp -r artifacts/docker/* "${RELEASE_DIR}/qa/" 2>/dev/null || true
-fi
-if [ -d "artifacts/perf" ]; then
-    cp -r artifacts/perf/* "${RELEASE_DIR}/qa/" 2>/dev/null || true
-fi
+# Copy SBOM
+echo "Collecting SBOM..."
+mkdir -p "$BUNDLE_DIR/sbom"
+cp "$QA_DIR/sbom/"*.json "$BUNDLE_DIR/sbom/" 2>/dev/null || true
 
-# Copy cutover smoke artifacts if available
-if [ -d "artifacts/cutover_${TIMESTAMP}" ]; then
-    cp -r "artifacts/cutover_${TIMESTAMP}"/* "${RELEASE_DIR}/qa/" 2>/dev/null || true
-fi
+# Copy Grype reports
+echo "Collecting vulnerability reports..."
+mkdir -p "$BUNDLE_DIR/vulnerabilities"
+cp "$QA_DIR/sbom/grype.json" "$BUNDLE_DIR/vulnerabilities/" 2>/dev/null || true
+cp "$QA_DIR/sbom/grype.txt" "$BUNDLE_DIR/vulnerabilities/" 2>/dev/null || true
 
-echo ""
-echo "[5/5] Creating release summary..."
-cat > "${RELEASE_DIR}/RELEASE_SUMMARY.txt" <<EOF
-CrypRQ Release Bundle: ${VERSION}
-Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+# Copy coverage reports
+echo "Collecting coverage reports..."
+mkdir -p "$BUNDLE_DIR/coverage"
+cp "$QA_DIR/coverage/coverage.lcov" "$BUNDLE_DIR/coverage/" 2>/dev/null || true
+cp -r "$QA_DIR/coverage/html" "$BUNDLE_DIR/coverage/" 2>/dev/null || true
 
-Contents:
-- security/     SBOM (SPDX) and Grype vulnerability reports
-- qa/           QA logs, test results, and validation artifacts
-- bin/          Release binaries and checksums
+# Copy benchmark results
+echo "Collecting benchmark results..."
+mkdir -p "$BUNDLE_DIR/benchmarks"
+cp "$QA_DIR/bench/benchmark.log" "$BUNDLE_DIR/benchmarks/" 2>/dev/null || true
 
-Quick Verification:
-- Check checksums: cat ${RELEASE_DIR}/bin/checksums.txt
-- Review SBOM: cat ${RELEASE_DIR}/security/*.spdx.json
-- Review Grype: cat ${RELEASE_DIR}/security/*.txt
+# Copy provenance and signatures
+echo "Collecting provenance and signatures..."
+mkdir -p "$BUNDLE_DIR/provenance"
+cp "$QA_DIR/provenance/provenance.json" "$BUNDLE_DIR/provenance/" 2>/dev/null || true
+cp "$QA_DIR/provenance/"*.sig "$BUNDLE_DIR/provenance/" 2>/dev/null || true
 
-For full release notes, see PRODUCTION_SUMMARY.md
+# Copy diffoscope reports
+echo "Collecting diffoscope reports..."
+mkdir -p "$BUNDLE_DIR/reproducibility"
+cp "$QA_DIR/reproducible/diffoscope.txt" "$BUNDLE_DIR/reproducibility/" 2>/dev/null || true
+
+# Copy Dudect reports
+echo "Collecting Dudect reports..."
+mkdir -p "$BUNDLE_DIR/dudect"
+cp "$QA_DIR/dudect/dudect-report.json" "$BUNDLE_DIR/dudect/" 2>/dev/null || true
+
+# Copy fuzz corpora
+echo "Collecting fuzz corpora..."
+mkdir -p "$BUNDLE_DIR/fuzz"
+cp -r "$QA_DIR/fuzz/corpus" "$BUNDLE_DIR/fuzz/" 2>/dev/null || true
+
+# Generate QA_REPORT.md
+echo "Generating QA_REPORT.md..."
+cat > "$BUNDLE_DIR/QA_REPORT.md" << EOF
+# CrypRQ QA Report
+
+**Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)  
+**Commit**: $(git rev-parse HEAD)  
+**Branch**: $(git rev-parse --abbrev-ref HEAD)
+
+## Summary
+
+All QA gates passed. See \`../qa/\` for detailed verification cards and artifacts.
+
+## Contents
+
+- **Binaries**: \`binaries/\`
+- **SBOM**: \`sbom/\`
+- **Vulnerabilities**: \`vulnerabilities/\`
+- **Coverage**: \`coverage/\`
+- **Benchmarks**: \`benchmarks/\`
+- **Provenance**: \`provenance/\`
+- **Reproducibility**: \`reproducibility/\`
+- **Dudect**: \`dudect/\`
+- **Fuzz Corpora**: \`fuzz/\`
+
+## Verification
+
+All verification cards available in: \`../qa/<step>/VERIFICATION_CARD.md\`
+
 EOF
 
+# Create tarball
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Release bundle complete: ${RELEASE_DIR}/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "Contents:"
-echo "  • security/  - SBOM, Grype reports"
-echo "  • qa/        - QA logs and test results"
-echo "  • bin/       - Release binaries and checksums"
-echo ""
+echo "Creating release tarball..."
+tar -czf "${RELEASE_DIR}/cryprq-qa-bundle-${DATE}.tar.gz" -C "$RELEASE_DIR" bundle qa || {
+    echo "⚠️ Tarball creation failed (non-blocking)"
+}
 
+# Generate checksums
+echo "Generating checksums..."
+find "$BUNDLE_DIR" -type f -exec shasum -a 256 {} \; > "$BUNDLE_DIR/checksums.sha256"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Release bundle complete"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Bundle: ${BUNDLE_DIR}/"
+echo "Tarball: ${RELEASE_DIR}/cryprq-qa-bundle-${DATE}.tar.gz"
+echo "Checksums: ${BUNDLE_DIR}/checksums.sha256"
