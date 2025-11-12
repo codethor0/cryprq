@@ -5,9 +5,12 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use p2p::{dial_peer, start_key_rotation, start_listener, start_metrics_server, Libp2pPacketForwarder, register_packet_recv_tx};
-use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use node::{TunConfig, TunInterface};
+use p2p::{
+    dial_peer, register_packet_recv_tx, start_key_rotation, start_listener, start_metrics_server,
+    Libp2pPacketForwarder,
+};
+use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 
 #[derive(Parser, Debug)]
 #[command(name = "cryprq", about = "Post-Quantum VPN")]
@@ -58,12 +61,13 @@ async fn main() -> Result<()> {
     });
 
     // Handle VPN mode - store TUN interface in shared state for callback access
-    let tun_interface_shared: Arc<tokio::sync::Mutex<Option<TunInterface>>> = Arc::new(tokio::sync::Mutex::new(None));
-    
+    let tun_interface_shared: Arc<tokio::sync::Mutex<Option<TunInterface>>> =
+        Arc::new(tokio::sync::Mutex::new(None));
+
     if args.vpn {
         log::info!("🔒 VPN MODE ENABLED - System-wide routing mode");
         log::info!("Creating TUN interface for packet forwarding...");
-        
+
         let tun_config = TunConfig {
             name: args.tun_name.clone(),
             address: args.tun_address.clone(),
@@ -71,15 +75,23 @@ async fn main() -> Result<()> {
             mtu: 1420,
         };
 
-        let tun = TunInterface::create(tun_config).await
+        let tun = TunInterface::create(tun_config)
+            .await
             .context("Failed to create TUN interface")?;
-        
+
         // Try to configure IP (may fail without root/admin)
         if let Err(e) = tun.configure_ip().await {
-            log::warn!("Failed to configure TUN interface IP (may need root/admin): {}", e);
+            log::warn!(
+                "Failed to configure TUN interface IP (may need root/admin): {}",
+                e
+            );
             log::warn!("VPN mode: P2P tunnel encryption is active, but system routing requires Network Extension");
         } else {
-            log::info!("✅ TUN interface {} configured with IP {}", tun.name(), args.tun_address);
+            log::info!(
+                "✅ TUN interface {} configured with IP {}",
+                tun.name(),
+                args.tun_address
+            );
         }
 
         // Store TUN interface in shared state
@@ -91,12 +103,14 @@ async fn main() -> Result<()> {
         println!("Starting listener on {}", addr);
         if args.vpn {
             log::info!("VPN Mode: Listener will accept connections and route traffic through TUN interface");
-            log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
-            
+            log::warn!(
+                "Note: Full system-wide routing requires Network Extension framework on macOS"
+            );
+
             // Set up callback to start packet forwarding when connection is established
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
-            
+
             p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();
@@ -138,12 +152,14 @@ async fn main() -> Result<()> {
         println!("Dialing peer {}", peer_addr);
         if args.vpn {
             log::info!("VPN Mode: Dialer will establish encrypted tunnel and route traffic through TUN interface");
-            log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
-            
+            log::warn!(
+                "Note: Full system-wide routing requires Network Extension framework on macOS"
+            );
+
             // Set up callback to start packet forwarding when connection is established
             let tun_shared = tun_interface_shared.clone();
             let tun_name = args.tun_name.clone();
-            
+
             p2p::set_connection_callback(Arc::new(move |peer_id, swarm, _recv_tx| {
                 let tun_shared_clone = tun_shared.clone();
                 let tun_name_clone = tun_name.clone();

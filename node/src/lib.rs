@@ -71,8 +71,8 @@ pub use dns::{resolve_hostname, DnsConfig, DnsError};
 pub use error::TunnelError;
 pub use padding::{pad_packet, unpad_packet, PaddingConfig};
 pub use tls::{TlsClient, TlsConfig, TlsError, TlsServer, TlsStream};
-pub use tun::{TunConfig, TunInterface};
 pub use traffic_shaping::TrafficShaper;
+pub use tun::{TunConfig, TunInterface};
 
 const MAX_NONCE_VALUE: u64 = u64::MAX - 1000; // Force rekey before overflow
 const REPLAY_WINDOW_SIZE: usize = 2048; // Track last 2048 nonces
@@ -390,10 +390,14 @@ impl Tunnel {
         let ciphertext = cipher
             .encrypt(&nonce, Payload { msg: pkt, aad: b"" })
             .map_err(|_| TunnelError::EncryptionFailed)?;
-        
+
         // Log encryption event for debugging
-        log::debug!("🔐 ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})", 
-                   pkt.len(), ciphertext.len(), nonce_value);
+        log::debug!(
+            "🔐 ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})",
+            pkt.len(),
+            ciphertext.len(),
+            nonce_value
+        );
 
         let peer_addr = {
             *self
@@ -512,10 +516,14 @@ impl Tunnel {
                 },
             )
             .map_err(|_| TunnelError::DecryptionFailed)?;
-        
+
         // Log decryption event for debugging
-        log::debug!("🔓 DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})", 
-                   ciphertext.len(), plaintext.len(), nonce_value);
+        log::debug!(
+            "🔓 DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})",
+            ciphertext.len(),
+            plaintext.len(),
+            nonce_value
+        );
 
         // Return buffer to pool for reuse
         self.buffer_pool.put(buf);
