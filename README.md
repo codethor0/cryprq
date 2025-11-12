@@ -63,6 +63,7 @@
 - **Packet forwarding tests**: End-to-end packet flow verified
 - **Performance metrics**: Connection establishment ~53ms, packet rate ~820 packets/second
 - **Production ready**: All systems verified and operational
+- **CI/CD**: All workflows integrated and passing (status shown in badges above)
 
 ## Anti-features
 - No automatic peer discovery or centralized management plane.
