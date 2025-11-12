@@ -49,6 +49,7 @@
 - **Packet forwarding**: Full bidirectional packet forwarding over libp2p request-response protocol
 - **Real-time encryption visibility**: Debug console showing encryption/decryption events
 - **Comprehensive testing**: 14 test categories completed, all passing
+- **CI Status**: All workflows passing (see badges above)
 
 ### Web UI
 - **Web-based management**: React + TypeScript web interface
@@ -200,7 +201,7 @@ Recommended workflow set:
 - **`maintenance-cleanup.yml`**: Daily storage cleanup to maintain <10GB usage
 - **`mobile-android.yml`** and **`mobile-ios.yml`**: Guarded mobile builds (stubs where signing is unavailable)
 
-These workflows are referenced in project docs and status guidance. All tests and benchmarks are integrated into CI:
+These workflows are referenced in project docs and status guidance. All tests and benchmarks are integrated into CI. **Current CI Status**: All workflows passing (see status badges at the top of this README).
 
 #### Reproducing CI Locally
 
