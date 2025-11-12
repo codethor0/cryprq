@@ -131,6 +131,7 @@ pub fn verify_fips203_vector(vector: &Fips203KatVector) -> Result<(), String> {
     let ss_decaps = decapsulate(&ct, &sk);
 
     // Verify shared secrets match
+    use pqcrypto_traits::kem::SharedSecret;
     if ss_encaps.as_bytes() != ss_decaps.as_bytes() {
         return Err("Encaps/decaps shared secrets don't match".to_string());
     }
