@@ -127,10 +127,7 @@ type NewReturn = (
 
 impl Libp2pPacketForwarder {
     #[allow(clippy::type_complexity)]
-    pub fn new(
-        swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
-        peer_id: PeerId,
-    ) -> NewReturn {
+    pub fn new(swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, peer_id: PeerId) -> NewReturn {
         let (send_tx, mut send_rx) = tokio::sync::mpsc::unbounded_channel();
         let (recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
 
