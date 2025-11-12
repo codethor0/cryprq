@@ -35,13 +35,15 @@ impl Libp2pPacketForwarder {
         swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
         peer_id: PeerId,
     ) -> (Self, Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>, Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>) {
-        let (send_tx, send_rx) = tokio::sync::mpsc::unbounded_channel();
-        let (recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (send_tx, mut send_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (_recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
+        
+        let send_tx_arc = Arc::new(send_tx.clone());
         
         let forwarder = Self {
             swarm: swarm.clone(),
             peer_id,
-            send_tx: Arc::new(send_tx),
+            send_tx: send_tx_arc.clone(),
             recv_rx: Arc::new(Mutex::new(recv_rx)),
         };
         
@@ -49,8 +51,6 @@ impl Libp2pPacketForwarder {
         let swarm_clone = swarm.clone();
         let peer_id_clone = peer_id;
         tokio::spawn(async move {
-            let mut send_rx = send_rx;
-            
             loop {
                 if let Some(packet) = send_rx.recv().await {
                     // Log packet forwarding
@@ -64,7 +64,7 @@ impl Libp2pPacketForwarder {
             }
         });
         
-        (forwarder, Arc::new(send_tx), Arc::new(Mutex::new(recv_rx)))
+        (forwarder, send_tx_arc, Arc::new(Mutex::new(recv_rx)))
     }
 }
 
