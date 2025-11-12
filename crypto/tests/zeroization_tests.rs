@@ -7,8 +7,7 @@
 
 #[cfg(test)]
 mod zeroization_tests {
-    use pqcrypto_traits::kem::{PublicKey, SecretKey};
-    use zeroize::Zeroize;
+    use pqcrypto_traits::kem::SecretKey;
 
     #[test]
     fn test_secret_key_zeroization() {
