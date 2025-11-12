@@ -35,6 +35,7 @@ jobs:
       - name: Build fuzz targets
         run: |
           cd fuzz
+          rustup override set nightly
           cargo fuzz build
       
       - name: Run fuzz tests (short run)
