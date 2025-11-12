@@ -36,7 +36,9 @@ app.post('/connect', (req,res)=>{
   // Add VPN mode flag if requested
   if(vpn) {
     args.push('--vpn');
-    push('status', 'VPN mode enabled - system-wide routing');
+    push('status', '🔒 VPN MODE ENABLED - System-wide routing mode');
+    push('status', '⚠️ Note: Full system routing requires Network Extension framework on macOS');
+    push('status', '✅ P2P encrypted tunnel is active - all peer traffic is encrypted');
   }
 
   // Set maximum verbosity

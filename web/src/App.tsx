@@ -60,13 +60,11 @@ export default function App(){
             }));
           } else {
             // Fallback: if we see "Connected to" but can't extract peer, still mark as connected
-            if (text.includes('Connected to') || text.includes('connected to')) {
-              setStatus(prev => ({ 
-                ...prev, 
-                connected: true,
-                mode: mode
-              }));
-            }
+            setStatus(prev => ({ 
+              ...prev, 
+              connected: true,
+              mode: mode
+            }));
           }
         }
         

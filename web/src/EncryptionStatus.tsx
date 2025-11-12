@@ -82,8 +82,13 @@ export function EncryptionStatus({ status }: { status: Status }) {
         lineHeight: '1.5'
       }}>
         <strong style={{ color: '#fff' }}>Current Status:</strong> CrypRQ establishes encrypted peer-to-peer connections using post-quantum cryptography (ML-KEM + X25519 hybrid). 
-        The encrypted tunnel between peers is working. System-wide VPN routing (routing all system/browser traffic through the tunnel) is being implemented. 
-        See <code style={{color:'#59f'}}>docs/SYSTEM_VPN_IMPLEMENTATION.md</code> for details.
+        <br/><br/>
+        <strong style={{ color: '#59f' }}>P2P Tunnel:</strong> ✅ Working - All traffic between peers is encrypted.
+        <br/>
+        <strong style={{ color: '#ff8' }}>System-Wide VPN:</strong> ⚠️ Requires Network Extension framework on macOS. 
+        The encrypted tunnel between peers is active, but routing all system/browser traffic requires macOS Network Extension (NEPacketTunnelProvider).
+        <br/><br/>
+        See <code style={{color:'#59f'}}>docs/SYSTEM_VPN_IMPLEMENTATION.md</code> for implementation details.
       </div>
     </div>
   );
