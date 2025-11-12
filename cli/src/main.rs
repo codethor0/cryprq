@@ -173,8 +173,7 @@ async fn main() -> Result<()> {
             log::warn!("Note: Full system-wide routing requires Network Extension framework on macOS");
             
             // Set up callback to start packet forwarding when connection is established
-            if let Some(ref mut tun) = tun_interface {
-                let tun_clone = tun.clone();
+            if let Some(ref tun) = tun_interface {
                 let tun_name = tun.name().to_string();
                 p2p::set_connection_callback(Arc::new(move |peer_id| {
                     log::info!("✅ Connection established with {peer_id} - VPN packet forwarding ready");
