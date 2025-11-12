@@ -10,6 +10,7 @@ members = [
         "node",
         "cli",
     "core",
+    "fuzz",
     ]
 resolver = "2"
 
