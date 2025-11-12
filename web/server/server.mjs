@@ -351,13 +351,50 @@ app.post('/connect', async (req,res)=>{
   res.json({ok:true, vpn: !!vpn});
 });
 
-app.get('/events', (req,res)=>{
+app.get('/events', async (req,res)=>{
   res.setHeader('Content-Type','text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
+  
+  // Send existing events
   events.forEach(e=>res.write(`data: ${JSON.stringify(e)}\n\n`));
-  const iv=setInterval(()=>res.write(`data: ${JSON.stringify({level:'status', t:'tick'})}\n\n`),15000);
-  req.on('close',()=>clearInterval(iv));
+  
+  // If Docker mode, stream container logs periodically
+  if (USE_DOCKER) {
+    const logInterval = setInterval(async () => {
+      try {
+        const logs = await getContainerLogs(5);
+        logs.split('\n').filter(Boolean).forEach(line => {
+          let level = 'info';
+          if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+          else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+          else if (/rotate|rotation/i.test(line)) level = 'rotation';
+          else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+          else if (/vpn|tun|interface/i.test(line)) level = 'status';
+          else if (/error|failed|panic/i.test(line)) level = 'error';
+          
+          const e = { level, t: line };
+          events.push(e);
+          if (events.length > 500) events.shift();
+          res.write(`data: ${JSON.stringify(e)}\n\n`);
+        });
+      } catch (err) {
+        // Ignore errors, connection might be closed
+      }
+    }, 2000);
+    req.on('close', () => clearInterval(logInterval));
+  } else {
+    // Local mode - just send ticks
+    const iv=setInterval(()=>{
+      try {
+        res.write(`data: ${JSON.stringify({level:'status', t:'tick'})}\n\n`);
+      } catch (err) {
+        clearInterval(iv);
+      }
+    },15000);
+    req.on('close',()=>clearInterval(iv));
+  }
 });
 
 const PORT = process.env.BRIDGE_PORT || 8787;
