@@ -30,6 +30,13 @@ export default function App(){
   useEffect(()=>{
     if(esRef.current) esRef.current.close();
     const es = new EventSource('/events');
+    es.onopen = () => {
+      setEvents(prev => [...prev, {t: '✅ Event stream connected', level: 'status'}]);
+    };
+    es.onerror = (err) => {
+      // Don't spam errors - EventSource will auto-reconnect
+      console.error('EventSource error:', err);
+    };
     es.onmessage = (m)=> {
       try {
         const e = JSON.parse(m.data);
