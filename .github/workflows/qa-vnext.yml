@@ -41,6 +41,16 @@ jobs:
         with:
           toolchain: 1.83.0
           components: rustfmt, clippy
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Build release
         run: cargo build --release -p cryprq
       - name: Upload artifacts
@@ -48,7 +58,7 @@ jobs:
         with:
           name: binaries
           path: target/release/cryprq
-          retention-days: 30
+          retention-days: 7
 
   # Unit tests
   unit:
@@ -60,6 +70,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Run unit tests
         run: cargo test --all --lib --no-fail-fast
       - name: Upload logs
@@ -86,7 +106,7 @@ jobs:
         with:
           name: kat-logs
           path: release-*/qa/kat/
-          retention-days: 30
+          retention-days: 7
 
   # Property tests
   prop:
@@ -98,6 +118,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Run property tests
         run: cargo test --package cryprq-crypto property_tests property_expanded
       - name: Save failure seeds
@@ -106,7 +136,7 @@ jobs:
         with:
           name: prop-failures
           path: tests/prop-failures/
-          retention-days: 30
+          retention-days: 7
 
   # Fuzz smoke tests
   fuzz-smoke:
@@ -119,10 +149,27 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-nightly-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-nightly-
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --force
+        run: |
+          if ! command -v cargo-fuzz &> /dev/null; then
+            cargo install cargo-fuzz --force
+          fi
       - name: Fuzz smoke test
-        run: bash scripts/run-extended-fuzz.sh hybrid_handshake 60
+        run: |
+          cd fuzz
+          rustup override set nightly
+          bash ../scripts/run-extended-fuzz.sh hybrid_handshake 60
       - name: Check for crashes
         run: |
           CRASHES=$(find . -name "crash-*" 2>/dev/null | wc -l)
@@ -136,7 +183,7 @@ jobs:
         with:
           name: fuzz-smoke
           path: release-*/qa/fuzz/
-          retention-days: 30
+          retention-days: 7
 
   # Miri sweep
   miri:
@@ -148,6 +195,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-nightly-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-nightly-
       - name: Install Miri
         run: rustup component add miri
       - name: Miri sweep
@@ -170,6 +227,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-nightly-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-nightly-
       - name: Run sanitizers
         run: bash scripts/run-sanitizers.sh
       - name: Upload sanitizer logs
@@ -190,8 +257,22 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Install cargo-llvm-cov
-        run: cargo install cargo-llvm-cov --force
+        run: |
+          if ! command -v cargo-llvm-cov &> /dev/null; then
+            cargo install cargo-llvm-cov --force
+          fi
       - name: Run coverage
         run: bash scripts/run-coverage.sh
       - name: Check thresholds
@@ -206,7 +287,7 @@ jobs:
         with:
           name: coverage
           path: release-*/qa/coverage/
-          retention-days: 30
+          retention-days: 7
 
   # Supply chain
   supply-chain:
@@ -218,9 +299,27 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-bin-
       - name: Install tools
         run: |
-          cargo install cargo-audit cargo-deny cargo-geiger --force || true
+          if ! command -v cargo-audit &> /dev/null; then
+            cargo install cargo-audit --force || true
+          fi
+          if ! command -v cargo-deny &> /dev/null; then
+            cargo install cargo-deny --force || true
+          fi
+          if ! command -v cargo-geiger &> /dev/null; then
+            cargo install cargo-geiger --force || true
+          fi
       - name: Run supply chain checks
         run: bash scripts/run-supply-chain.sh
       - name: Upload supply chain artifacts
@@ -228,7 +327,7 @@ jobs:
         with:
           name: supply-chain
           path: release-*/qa/supply-chain/
-          retention-days: 30
+          retention-days: 7
 
   # Reproducible builds
   reproducible:
@@ -240,6 +339,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Install diffoscope
         run: pip install diffoscope
       - name: Run reproducible build check
@@ -250,7 +359,7 @@ jobs:
         with:
           name: reproducible
           path: release-*/qa/reproducible/
-          retention-days: 30
+          retention-days: 7
 
   # Performance benchmarks
   bench-regression:
@@ -262,6 +371,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Run benchmarks
         run: bash scripts/run-performance-regression.sh
       - name: Upload benchmark results
@@ -269,7 +388,7 @@ jobs:
         with:
           name: benchmarks
           path: release-*/qa/bench/
-          retention-days: 30
+          retention-days: 7
 
   # Summary
   summary:

@@ -141,5 +141,5 @@ See `scripts/release.sh` for the complete release pipeline.
 ## References
 
 - [Reproducible Builds Project](https://reproducible-builds.org/)
-- [Rust Reproducible Builds](https://rust-lang.github.io/rfcs/3328-reproducible-builds.html)
+- [Rust Reproducible Builds RFC](https://github.com/rust-lang/rfcs/blob/master/text/3328-reproducible-builds.md)
 - [Nix Manual](https://nixos.org/manual/nix/stable/)

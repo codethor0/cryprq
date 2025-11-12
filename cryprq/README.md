@@ -6,7 +6,7 @@ CrypRQ is a Rust-based, post-quantum VPN solution that implements ephemeral key 
 
 - © 2025 Thor Thor  
 - Contact: [codethor@gmail.com](mailto:codethor@gmail.com)  
-- LinkedIn: [https://www.linkedin.com/in/thor-thor0](https://www.linkedin.com/in/thor-thor0)  
+- LinkedIn: [Profile](https://www.linkedin.com/in/thor-thor0)  
 - SPDX-License-Identifier: MIT
 
 ## Project Structure

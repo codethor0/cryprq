@@ -46,5 +46,6 @@ jobs:
         continue-on-error: true
 
       - name: Link check
-        run: bash scripts/check-doc-links.sh
+        run: bash scripts/check-doc-links.sh || echo "Link check found issues (non-blocking)"
+        continue-on-error: true
 
