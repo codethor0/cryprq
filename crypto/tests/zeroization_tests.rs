@@ -11,7 +11,7 @@ mod zeroization_tests {
 
     #[test]
     fn test_secret_key_zeroization() {
-        use crate::hybrid::HybridHandshake;
+        use cryprq_crypto::HybridHandshake;
 
         let h = HybridHandshake::new();
         let secret_bytes = h.x25519_secret().as_bytes().to_vec();
@@ -39,7 +39,7 @@ mod zeroization_tests {
 
     #[test]
     fn test_kyber_secret_zeroization() {
-        use crate::hybrid::HybridHandshake;
+        use cryprq_crypto::HybridHandshake;
 
         let h = HybridHandshake::new();
         let sk_bytes = h.kyber_secret_key().as_bytes().to_vec();
