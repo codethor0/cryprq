@@ -68,6 +68,14 @@ jobs:
         run: bash scripts/secret-scan.sh || echo "Secret scan skipped if script not found"
         continue-on-error: true
 
+      - name: Exploratory testing
+        run: bash scripts/exploratory-testing.sh || echo "Exploratory tests skipped if script not found"
+        continue-on-error: true
+
+      - name: Performance benchmark
+        run: bash scripts/performance-benchmark.sh || echo "Performance benchmarks skipped if script not found"
+        continue-on-error: true
+
   ffi-check:
     name: FFI cross-target build
     strategy:
