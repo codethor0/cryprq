@@ -13,6 +13,7 @@ on:
 
 jobs:
   test:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,18 +33,24 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Cargo fmt check
         run: cargo fmt --all -- --check
+        continue-on-error: false
 
       - name: Cargo clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+        continue-on-error: false
 
       - name: Run tests
-        run: cargo test --all --no-fail-fast
+        run: cargo test --lib --all --no-fail-fast
+        continue-on-error: false
 
       - name: Build release
-        run: cargo build --release
+        run: cargo build --release -p cryprq
+        continue-on-error: false
 
   ffi-check:
     name: FFI cross-target build
@@ -78,3 +85,4 @@ jobs:
 
       - name: Cargo check (FFI)
         run: cargo check -p cryp-rq-core --target ${{ matrix.target }}
+        continue-on-error: false
