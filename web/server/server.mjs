@@ -20,14 +20,29 @@ app.post('/connect', (req,res)=>{
   }
   
   // Kill any cryprq processes and clear port
+  // BUT: Don't kill processes that are listening on the same port we're about to use
+  // This prevents killing the listener before dialer can connect
   const { execSync } = require('child_process');
   try {
-    // More aggressive cleanup
-    execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
-    execSync(`pkill -9 -f "cryprq" 2>/dev/null || true`, {stdio: 'ignore'});
-    execSync(`pkill -9 -f "quic-v1.*${port}" 2>/dev/null || true`, {stdio: 'ignore'});
-    // Wait for cleanup
-    execSync('sleep 0.5', {stdio: 'ignore'});
+    // Only kill processes using the port if we're switching modes
+    // If listener is already running and we're starting dialer, keep listener alive
+    if(proc) {
+      // We're switching connections, kill the old one
+      execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
+      execSync('sleep 0.3', {stdio: 'ignore'});
+    } else {
+      // New connection - only kill if port is in use AND it's not our own listener
+      // Check if there's a listener on this port
+      const portUsers = execSync(`lsof -ti:${port} 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
+      if(portUsers && mode === 'dialer') {
+        // Dialer mode - don't kill listener, it needs to stay alive
+        push('status', `ℹ️ Port ${port} in use - assuming listener is running`);
+      } else if(portUsers && mode === 'listener') {
+        // Listener mode - kill existing processes on this port
+        execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
+        execSync('sleep 0.3', {stdio: 'ignore'});
+      }
+    }
   } catch(e) {}
   
   push('status', `🧹 Cleaned up port ${port} - ready for new connection`);
