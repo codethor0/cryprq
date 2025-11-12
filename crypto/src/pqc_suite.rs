@@ -46,7 +46,7 @@ pub struct PQCSuite {
 
 impl PQCSuite {
     /// Default suite: ML-KEM768 + X25519 hybrid + Ed25519 signatures
-    pub fn default() -> Self {
+    pub fn standard() -> Self {
         Self {
             kex: PQCKeyExchange::MLKEM768,
             sig: PQCSignature::Ed25519,
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_default_suite() {
-        let suite = PQCSuite::default();
+        let suite = PQCSuite::standard();
         assert!(suite.is_post_quantum());
         assert_eq!(suite.kex, PQCKeyExchange::MLKEM768);
     }
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_algorithm_names() {
-        let suite = PQCSuite::default();
+        let suite = PQCSuite::standard();
         let (kex, sig) = suite.algorithm_names();
         assert_eq!(kex, "ML-KEM 768");
         assert_eq!(sig, "Ed25519");
