@@ -199,12 +199,12 @@ pub async fn derive_and_store_ppk(
         .unwrap_or_default()
         .as_secs();
 
-    let ppk = PostQuantumPSK {
-        shared_secret: *kyber_shared,
-        peer_id: *peer_id_bytes,
-        salt,
-        expires_at: now + rotation_interval_secs * 2, // Expire after 2 rotation intervals
-    };
+    let ppk = PostQuantumPSK::derive(
+        kyber_shared,
+        peer_id_bytes,
+        &salt,
+        rotation_interval_secs * 2, // Expire after 2 rotation intervals
+    );
 
     let mut store = PPK_STORE.write().await;
     store.store(ppk);
