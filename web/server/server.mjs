@@ -127,9 +127,11 @@ app.post('/connect', async (req,res)=>{
     
     // For dialer mode, Mac connects to container
     if (mode === 'dialer') {
+      // Use container IP instead of provided peer address
       const containerPeer = `/ip4/${containerIP}/udp/${port}/quic-v1`;
       push('status', `🐳 Connecting Mac to container at ${containerPeer}`);
       push('status', `✅ Docker VPN mode - container will handle encryption and routing`);
+      push('status', `Using container IP ${containerIP} instead of ${peer || 'default'}`);
       
       // Run local cryprq binary to connect to container
       const args = ['--peer', containerPeer];
