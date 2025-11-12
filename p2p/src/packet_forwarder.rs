@@ -8,7 +8,7 @@
 //! This module provides packet forwarding using libp2p's request-response protocol
 //! for bidirectional packet exchange over encrypted streams.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures::{AsyncRead, AsyncWrite};
 use libp2p::{request_response::Codec, swarm::Swarm, PeerId, StreamProtocol};
 use std::io;
