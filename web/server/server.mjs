@@ -53,8 +53,11 @@ async function isContainerRunning() {
         const { stdout } = await execAsync(
             `docker ps --filter "name=${CONTAINER_NAME}" --format "{{.Names}}"`
         );
-        return stdout.trim() === CONTAINER_NAME;
-    } catch {
+        const result = stdout.trim();
+        // Check if container name matches (handle both exact match and partial match)
+        return result === CONTAINER_NAME || result.includes(CONTAINER_NAME);
+    } catch (err) {
+        console.error('Container check error:', err.message);
         return false;
     }
 }

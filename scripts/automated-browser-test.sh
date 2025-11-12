@@ -123,8 +123,10 @@ if [ ! -d "node_modules/@playwright" ]; then
     npx playwright install chromium
 fi
 
-# Create test file
-cat > /tmp/cryprq-browser-test.js << 'EOF'
+# Create test file in project directory so it can access node_modules
+TEST_FILE="$PWD/tmp-browser-test.js"
+mkdir -p "$PWD/tmp" 2>/dev/null || true
+cat > "$TEST_FILE" << 'EOF'
 const { chromium } = require('@playwright/test');
 
 (async () => {
@@ -191,7 +193,8 @@ const { chromium } = require('@playwright/test');
 EOF
 
 cd "$(dirname "$0")/.."
-node /tmp/cryprq-browser-test.js
+node "$TEST_FILE"
+rm -f "$TEST_FILE"
 
 log ""
 log "${GREEN}=========================================="
