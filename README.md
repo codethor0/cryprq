@@ -338,11 +338,11 @@ See [REPRODUCIBLE.md](REPRODUCIBLE.md) for deterministic build steps and expecta
 
 ## Roadmap Highlights
 
-- ✅ Complete userspace WireGuard forwarding
-- ✅ Peer directory and policy enforcement
-- ✅ Metrics/health endpoints
-- ✅ PQ data-plane cipher exploration
-- ✅ Versioned crate releases
+- Complete userspace WireGuard forwarding
+- Peer directory and policy enforcement
+- Metrics/health endpoints
+- PQ data-plane cipher exploration
+- Versioned crate releases
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed roadmap and progress tracking.
 
