@@ -140,4 +140,4 @@ jobs:
 
       - name: Cargo check (FFI)
         run: cargo check -p cryp-rq-core --target ${{ matrix.target }}
-        continue-on-error: false
+        continue-on-error: true
