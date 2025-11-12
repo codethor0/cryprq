@@ -37,7 +37,7 @@ mod metrics;
 pub use metrics::start_metrics_server;
 
 // Callback for when connection is established (for VPN packet forwarding)
-pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<Mutex<Swarm<MyBehaviour>>>) + Send + Sync>;
+pub type ConnectionCallback = Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> = Lazy::new(|| RwLock::new(None));
 
 /// Set callback to be called when connection is established
@@ -267,14 +267,19 @@ pub async fn start_listener(addr: &str) -> Result<()> {
     swarm.listen_on(listen_addr)?;
     metrics::mark_swarm_initialized();
 
-    let swarm_arc = Arc::new(Mutex::new(swarm));
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
 
     use libp2p::futures::StreamExt;
     let swarm_for_loop = swarm_arc.clone();
-    let mut swarm_guard = swarm_for_loop.lock().await;
     
     loop {
-        match swarm_guard.select_next_some().await {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+        
+        match event {
             SwarmEvent::NewListenAddr { address, .. } => {
                 println!("Listening on {address}");
             }
@@ -363,14 +368,19 @@ pub async fn dial_peer(addr: String) -> Result<()> {
 
     metrics::mark_swarm_initialized();
 
-    let swarm_arc = Arc::new(Mutex::new(swarm));
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
 
     use libp2p::futures::StreamExt;
     let swarm_for_loop = swarm_arc.clone();
-    let mut swarm_guard = swarm_for_loop.lock().await;
     
     loop {
-        match swarm_guard.select_next_some().await {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+        
+        match event {
             SwarmEvent::ConnectionEstablished {
                 peer_id: remote,
                 endpoint,
