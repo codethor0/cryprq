@@ -6,6 +6,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Check if Docker mode is enabled
+const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
+const DOCKER_BRIDGE_PORT = process.env.DOCKER_BRIDGE_PORT || 8788;
+
+// If Docker mode is enabled, proxy to docker-bridge server
+if (USE_DOCKER) {
+    console.log('Docker mode enabled - using docker-bridge server');
+    // Import and use docker-bridge server
+    import('./docker-bridge.mjs').then(module => {
+        console.log('Docker bridge server loaded');
+    }).catch(err => {
+        console.error('Failed to load docker-bridge server:', err);
+        console.log('Falling back to local mode');
+    });
+}
+
 let proc = null;
 let currentMode = null;
 let currentPort = null;
