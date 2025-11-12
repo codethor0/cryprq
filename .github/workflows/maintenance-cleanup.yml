@@ -111,25 +111,55 @@ jobs:
           echo "" >> cleanup-report.md
           
           DELETED=0
+          TOTAL_SIZE_FREED=0
           
-          # Get caches older than MAX_AGE_DAYS
-          gh cache list --limit 1000 2>/dev/null | while read -r line; do
-            if [ -n "$line" ]; then
-              CACHE_ID=$(echo "$line" | awk '{print $1}')
-              CACHE_SIZE=$(echo "$line" | awk '{print $3}')
-              CACHE_CREATED=$(echo "$line" | awk '{print $4}')
-              
-              # Parse date and compare
-              CACHE_AGE_DAYS=$(($(($(date +%s) - $(date -d "$CACHE_CREATED" +%s 2>/dev/null || echo 0))) / 86400))
-              
-              if [ "$CACHE_AGE_DAYS" -gt "$MAX_AGE_DAYS" ] 2>/dev/null; then
-                echo "Deleting cache: $CACHE_ID (Age: $CACHE_AGE_DAYS days, Size: $CACHE_SIZE)"
-                echo "- **$CACHE_ID** (Age: $CACHE_AGE_DAYS days, Size: $CACHE_SIZE)" >> cleanup-report.md
-                gh cache delete "$CACHE_ID" 2>/dev/null && DELETED=$((DELETED + 1)) || true
-                sleep 0.2  # Rate limit protection
-              fi
-            fi
-          done
+          # Get current total cache size
+          CURRENT_TOTAL=$(gh cache list --limit 1000 --json sizeInBytes 2>/dev/null | jq '[.[] | .sizeInBytes] | add' || echo "0")
+          CURRENT_TOTAL_GB=$((CURRENT_TOTAL / 1024 / 1024 / 1024))
+          echo "Current total cache size: ${CURRENT_TOTAL_GB}GB" >> cleanup-report.md
+          
+          # Delete PR caches older than 1 day (more aggressive for PRs)
+          echo "Deleting PR caches older than 1 day..." >> cleanup-report.md
+          CUTOFF_DATE=$(date -u -d "1 day ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-1d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
+          
+          if [ -n "$CUTOFF_DATE" ]; then
+            gh cache list --limit 1000 --json id,key,sizeInBytes,createdAt,ref 2>/dev/null | \
+              jq -r ".[] | select(.ref | startswith(\"refs/pull/\")) | select(.createdAt < \"$CUTOFF_DATE\") | \"\(.id)|\(.sizeInBytes)|\(.createdAt)|\(.ref)\"" | \
+              while IFS='|' read -r cache_id size_bytes created_at ref; do
+                if [ -n "$cache_id" ] && [ "$cache_id" != "null" ]; then
+                  size_mb=$((size_bytes / 1024 / 1024))
+                  echo "Deleting PR cache: $cache_id (Size: ${size_mb}MB, Created: $created_at)"
+                  echo "- **PR Cache $cache_id** (${size_mb}MB, Created: $created_at)" >> cleanup-report.md
+                  gh cache delete "$cache_id" 2>/dev/null && DELETED=$((DELETED + 1)) || true
+                  TOTAL_SIZE_FREED=$((TOTAL_SIZE_FREED + size_bytes))
+                  sleep 0.2  # Rate limit protection
+                fi
+              done
+          fi
+          
+          # Delete caches older than MAX_AGE_DAYS
+          echo "Deleting caches older than $MAX_AGE_DAYS days..." >> cleanup-report.md
+          CUTOFF_DATE=$(date -u -d "$MAX_AGE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${MAX_AGE_DAYS}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
+          
+          if [ -n "$CUTOFF_DATE" ]; then
+            gh cache list --limit 1000 --json id,key,sizeInBytes,createdAt,ref 2>/dev/null | \
+              jq -r ".[] | select(.createdAt < \"$CUTOFF_DATE\") | \"\(.id)|\(.sizeInBytes)|\(.createdAt)|\(.ref)\"" | \
+              while IFS='|' read -r cache_id size_bytes created_at ref; do
+                if [ -n "$cache_id" ] && [ "$cache_id" != "null" ]; then
+                  size_mb=$((size_bytes / 1024 / 1024))
+                  echo "Deleting cache: $cache_id (Size: ${size_mb}MB, Created: $created_at, Ref: $ref)"
+                  echo "- **$cache_id** (${size_mb}MB, Created: $created_at, Ref: $ref)" >> cleanup-report.md
+                  gh cache delete "$cache_id" 2>/dev/null && DELETED=$((DELETED + 1)) || true
+                  TOTAL_SIZE_FREED=$((TOTAL_SIZE_FREED + size_bytes))
+                  sleep 0.2  # Rate limit protection
+                fi
+              done
+          fi
+          
+          echo "" >> cleanup-report.md
+          echo "**Deleted Caches**: $DELETED" >> cleanup-report.md
+          echo "**Total Size Freed**: $((TOTAL_SIZE_FREED / 1024 / 1024))MB" >> cleanup-report.md
+          echo "" >> cleanup-report.md
           
           echo "" >> cleanup-report.md
           echo "**Deleted Caches**: $DELETED" >> cleanup-report.md
