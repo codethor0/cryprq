@@ -53,40 +53,42 @@ pub async fn resolve_hostname(hostname: &str, config: &DnsConfig) -> Result<IpAd
     if config.use_doh {
         return resolve_doh(hostname, config).await;
     }
-    
+
     if config.use_dot {
         return resolve_dot(hostname, config).await;
     }
-    
+
     // Fallback to system DNS (not recommended for privacy)
     resolve_system(hostname).await
 }
 
 /// Resolve using DNS-over-HTTPS (DoH)
 async fn resolve_doh(hostname: &str, config: &DnsConfig) -> Result<IpAddr, DnsError> {
-    let endpoint = config.doh_endpoint.as_ref()
+    let endpoint = config
+        .doh_endpoint
+        .as_ref()
         .ok_or(DnsError::ConfigurationError("DoH endpoint not configured"))?;
-    
+
     // Build DoH query URL
     let url = format!("{}?name={}&type=A", endpoint, hostname);
-    
+
     // Make HTTPS request
     let client = reqwest::Client::builder()
         .timeout(config.timeout)
         .build()
         .map_err(|e| DnsError::NetworkError(e.to_string()))?;
-    
+
     let response = timeout(config.timeout, client.get(&url).send())
         .await
         .map_err(|_| DnsError::Timeout)?
         .map_err(|e| DnsError::NetworkError(e.to_string()))?;
-    
+
     // Parse JSON response (simplified - real implementation would parse DNS wire format)
     let json: serde_json::Value = response
         .json()
         .await
         .map_err(|e| DnsError::ParseError(e.to_string()))?;
-    
+
     // Extract IP address from DoH JSON response
     if let Some(answer) = json.get("Answer").and_then(|a| a.as_array()) {
         for record in answer {
@@ -97,7 +99,7 @@ async fn resolve_doh(hostname: &str, config: &DnsConfig) -> Result<IpAddr, DnsEr
             }
         }
     }
-    
+
     Err(DnsError::NotFound)
 }
 
@@ -111,15 +113,12 @@ async fn resolve_dot(hostname: &str, _config: &DnsConfig) -> Result<IpAddr, DnsE
 /// Resolve using system DNS (fallback)
 async fn resolve_system(hostname: &str) -> Result<IpAddr, DnsError> {
     use tokio::net::lookup_host;
-    
+
     let mut addrs = lookup_host(hostname)
         .await
         .map_err(|e| DnsError::NetworkError(e.to_string()))?;
-    
-    addrs
-        .next()
-        .map(|addr| addr.ip())
-        .ok_or(DnsError::NotFound)
+
+    addrs.next().map(|addr| addr.ip()).ok_or(DnsError::NotFound)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -139,7 +138,7 @@ pub enum DnsError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_resolve_system() {
         // Test system DNS resolution
@@ -147,4 +146,3 @@ mod tests {
         assert!(result.is_ok() || result.is_err()); // May fail in test environment
     }
 }
-

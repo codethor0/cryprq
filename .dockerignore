@@ -11,7 +11,7 @@
 # Rust build artifacts
 target/
 **/*.rs.bk
-Cargo.lock
+# Note: Cargo.lock should be included for reproducible builds
 
 # IDE
 .vscode/

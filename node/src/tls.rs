@@ -53,7 +53,7 @@ impl TlsServer {
             listener: None,
         }
     }
-    
+
     /// Start listening on the specified address
     pub async fn listen(&mut self, addr: &str) -> Result<(), TlsError> {
         let listener = TcpListener::bind(addr)
@@ -62,21 +62,19 @@ impl TlsServer {
         self.listener = Some(listener);
         Ok(())
     }
-    
+
     /// Accept a new TLS connection
     pub async fn accept(&self) -> Result<TlsStream, TlsError> {
-        let listener = self.listener.as_ref()
-            .ok_or(TlsError::NotListening)?;
-        
-        let (stream, _) = listener.accept()
+        let listener = self.listener.as_ref().ok_or(TlsError::NotListening)?;
+
+        let (stream, _) = listener
+            .accept()
             .await
             .map_err(|e| TlsError::NetworkError(e.to_string()))?;
-        
+
         // TODO: Wrap stream with rustls or native-tls
         // For now, return raw TCP stream wrapper
-        Ok(TlsStream {
-            inner: stream,
-        })
+        Ok(TlsStream { inner: stream })
     }
 }
 
@@ -90,18 +88,16 @@ impl TlsClient {
     pub fn new(config: TlsConfig) -> Self {
         Self { config }
     }
-    
+
     /// Connect to a TLS server
     pub async fn connect(&self, addr: &str) -> Result<TlsStream, TlsError> {
         let stream = TcpStream::connect(addr)
             .await
             .map_err(|e| TlsError::NetworkError(e.to_string()))?;
-        
+
         // TODO: Wrap stream with rustls or native-tls
         // For now, return raw TCP stream wrapper
-        Ok(TlsStream {
-            inner: stream,
-        })
+        Ok(TlsStream { inner: stream })
     }
 }
 
@@ -114,18 +110,24 @@ impl TlsStream {
     /// Read data from TLS stream
     pub async fn read(&self, buf: &mut [u8]) -> Result<usize, TlsError> {
         use tokio::io::AsyncReadExt;
-        self.inner.readable().await
+        self.inner
+            .readable()
+            .await
             .map_err(|e| TlsError::NetworkError(e.to_string()))?;
-        self.inner.try_read(buf)
+        self.inner
+            .try_read(buf)
             .map_err(|e| TlsError::NetworkError(e.to_string()))
     }
-    
+
     /// Write data to TLS stream
     pub async fn write(&self, buf: &[u8]) -> Result<usize, TlsError> {
         use tokio::io::AsyncWriteExt;
-        self.inner.writable().await
+        self.inner
+            .writable()
+            .await
             .map_err(|e| TlsError::NetworkError(e.to_string()))?;
-        self.inner.try_write(buf)
+        self.inner
+            .try_write(buf)
             .map_err(|e| TlsError::NetworkError(e.to_string()))
     }
 }
@@ -141,4 +143,3 @@ pub enum TlsError {
     #[error("Server not listening")]
     NotListening,
 }
-

@@ -52,7 +52,7 @@ impl PQCSuite {
             sig: PQCSignature::Ed25519,
         }
     }
-    
+
     /// High security suite: ML-KEM1024 + Dilithium3 (when available)
     pub fn high_security() -> Self {
         Self {
@@ -60,7 +60,7 @@ impl PQCSuite {
             sig: PQCSignature::Dilithium3,
         }
     }
-    
+
     /// Legacy suite: X25519-only + Ed25519 (not recommended)
     pub fn legacy() -> Self {
         Self {
@@ -68,12 +68,15 @@ impl PQCSuite {
             sig: PQCSignature::Ed25519,
         }
     }
-    
+
     /// Check if post-quantum encryption is enabled
     pub fn is_post_quantum(&self) -> bool {
-        matches!(self.kex, PQCKeyExchange::MLKEM768 | PQCKeyExchange::MLKEM1024)
+        matches!(
+            self.kex,
+            PQCKeyExchange::MLKEM768 | PQCKeyExchange::MLKEM1024
+        )
     }
-    
+
     /// Get algorithm names for display
     pub fn algorithm_names(&self) -> (&'static str, &'static str) {
         let kex_name = match self.kex {
@@ -81,13 +84,13 @@ impl PQCSuite {
             PQCKeyExchange::MLKEM1024 => "ML-KEM 1024",
             PQCKeyExchange::X25519Only => "X25519",
         };
-        
+
         let sig_name = match self.sig {
             PQCSignature::Ed25519 => "Ed25519",
             PQCSignature::Dilithium3 => "Dilithium3",
             PQCSignature::SPHINCSPlus => "SPHINCS+",
         };
-        
+
         (kex_name, sig_name)
     }
 }
@@ -101,21 +104,21 @@ impl Default for PQCSuite {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_suite() {
         let suite = PQCSuite::default();
         assert!(suite.is_post_quantum());
         assert_eq!(suite.kex, PQCKeyExchange::MLKEM768);
     }
-    
+
     #[test]
     fn test_legacy_suite() {
         let suite = PQCSuite::legacy();
         assert!(!suite.is_post_quantum());
         assert_eq!(suite.kex, PQCKeyExchange::X25519Only);
     }
-    
+
     #[test]
     fn test_algorithm_names() {
         let suite = PQCSuite::default();
@@ -124,4 +127,3 @@ mod tests {
         assert_eq!(sig, "Ed25519");
     }
 }
-

@@ -9,8 +9,8 @@
 //! PPKs provide enhanced security for peer authentication and can be
 //! rotated independently of session keys.
 
-use blake3::Hasher;
 use alloc::vec::Vec;
+use blake3::Hasher;
 use zeroize::ZeroizeOnDrop;
 
 // For no_std compatibility, we'll use a timestamp-based approach
@@ -60,10 +60,10 @@ impl PostQuantumPSK {
         hasher.update(peer_id);
         hasher.update(salt);
         let hash = hasher.finalize();
-        
+
         let mut key = [0u8; 32];
         key.copy_from_slice(&hash.as_bytes()[..32]);
-        
+
         Self {
             key,
             peer_id: *peer_id,
@@ -71,17 +71,17 @@ impl PostQuantumPSK {
             expires_at: current_timestamp_secs + rotation_interval_secs,
         }
     }
-    
+
     /// Get the PPK value (for use in authentication)
     pub fn key(&self) -> &[u8; 32] {
         &self.key
     }
-    
+
     /// Get the peer ID this PPK is associated with
     pub fn peer_id(&self) -> &[u8; 32] {
         &self.peer_id
     }
-    
+
     /// Check if this PPK has expired
     ///
     /// # Arguments
@@ -90,7 +90,7 @@ impl PostQuantumPSK {
     pub fn is_expired_at(&self, current_timestamp_secs: u64) -> bool {
         current_timestamp_secs >= self.expires_at
     }
-    
+
     /// Get time until expiration (in seconds)
     ///
     /// # Arguments
@@ -114,14 +114,14 @@ impl PPKStore {
     pub fn new() -> Self {
         Self { ppks: Vec::new() }
     }
-    
+
     /// Store a PPK for a peer
     pub fn store(&mut self, ppk: PostQuantumPSK) {
         // Remove existing PPK for this peer if present
         self.ppks.retain(|p| p.peer_id() != ppk.peer_id());
         self.ppks.push(ppk);
     }
-    
+
     /// Get the current PPK for a peer (if not expired)
     ///
     /// # Arguments
@@ -133,16 +133,17 @@ impl PPKStore {
             .iter()
             .find(|p| p.peer_id() == peer_id && !p.is_expired_at(current_timestamp_secs))
     }
-    
+
     /// Remove expired PPKs
     ///
     /// # Arguments
     ///
     /// * `current_timestamp_secs` - Current Unix timestamp in seconds
     pub fn cleanup_expired(&mut self, current_timestamp_secs: u64) {
-        self.ppks.retain(|p| !p.is_expired_at(current_timestamp_secs));
+        self.ppks
+            .retain(|p| !p.is_expired_at(current_timestamp_secs));
     }
-    
+
     /// Remove all PPKs for a peer
     pub fn remove_peer(&mut self, peer_id: &[u8; 32]) {
         self.ppks.retain(|p| p.peer_id() != peer_id);
@@ -158,59 +159,58 @@ impl Default for PPKStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_ppk_derivation() {
         let kyber_shared = [1u8; 32];
         let peer_id = [2u8; 32];
         let salt = [3u8; 16];
-        
+
         let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300);
-        
+
         assert_eq!(ppk.peer_id(), &peer_id);
         assert!(!ppk.is_expired());
         assert!(ppk.expires_in() <= 300);
     }
-    
+
     #[test]
     fn test_ppk_expiration() {
         let kyber_shared = [1u8; 32];
         let peer_id = [2u8; 32];
         let salt = [3u8; 16];
-        
+
         let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 1);
-        
+
         // Should not be expired immediately
         assert!(!ppk.is_expired());
-        
+
         // Wait 2 seconds
         std::thread::sleep(std::time::Duration::from_secs(2));
-        
+
         // Should be expired now
         assert!(ppk.is_expired());
     }
-    
+
     #[test]
     fn test_ppk_store() {
         let mut store = PPKStore::new();
-        
+
         let kyber_shared = [1u8; 32];
         let peer_id = [2u8; 32];
         let salt = [3u8; 16];
-        
+
         let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300);
         store.store(ppk);
-        
+
         // Should retrieve the PPK
         assert!(store.get(&peer_id).is_some());
-        
+
         // Different peer ID should return None
         let other_peer = [4u8; 32];
         assert!(store.get(&other_peer).is_none());
-        
+
         // Remove peer
         store.remove_peer(&peer_id);
-        assert!(store.get(&peer_id).is_none());
+        assert!(store.get(&peer_id, 1000).is_none());
     }
 }
-

@@ -31,7 +31,7 @@ use tokio::sync::RwLock;
 use tokio::time::MissedTickBehavior;
 
 // Import the *public* items from the crypto crate
-use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PostQuantumPSK, PPKStore};
+use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, PostQuantumPSK};
 
 mod metrics;
 pub use metrics::start_metrics_server;
@@ -180,16 +180,16 @@ pub async fn derive_and_store_ppk(
     rotation_interval_secs: u64,
 ) {
     use rand::RngCore;
-    
+
     // Generate random salt for this PPK derivation
     let mut salt = [0u8; 16];
     rand::thread_rng().fill_bytes(&mut salt);
-    
+
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    
+
     let ppk = PostQuantumPSK::derive(
         kyber_shared,
         peer_id_bytes,
@@ -197,13 +197,16 @@ pub async fn derive_and_store_ppk(
         rotation_interval_secs,
         now,
     );
-    
+
     let mut store = PPK_STORE.write().await;
     store.store(ppk);
-    
+
     info!(
         "event=ppk_derived peer_id={:x} expires_in_secs={}",
-        peer_id_bytes.iter().take(8).fold(0u64, |acc, &b| (acc << 8) | b as u64),
+        peer_id_bytes
+            .iter()
+            .take(8)
+            .fold(0u64, |acc, &b| (acc << 8) | b as u64),
         rotation_interval_secs
     );
 }

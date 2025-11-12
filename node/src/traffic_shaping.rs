@@ -31,20 +31,20 @@ impl TrafficShaper {
         let interval_ms = (1000.0 / packets_per_second) as u64;
         let mut interval = interval(Duration::from_millis(interval_ms));
         interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
-        
+
         Self {
             pps: packets_per_second,
             last_packet: None,
             interval,
         }
     }
-    
+
     /// Wait for the next packet slot (for constant-rate traffic)
     pub async fn wait_for_slot(&mut self) {
         self.interval.tick().await;
         self.last_packet = Some(Instant::now());
     }
-    
+
     /// Check if it's time to send a packet (for constant-rate traffic)
     pub fn should_send(&mut self) -> bool {
         if let Some(last) = self.last_packet {
@@ -55,7 +55,7 @@ impl TrafficShaper {
             true
         }
     }
-    
+
     /// Add jitter to packet timing to avoid perfect constant-rate detection
     ///
     /// Returns a random delay between 0 and `max_jitter_ms` milliseconds
@@ -70,17 +70,16 @@ impl TrafficShaper {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_traffic_shaper_creation() {
         let shaper = TrafficShaper::new(10.0);
         assert_eq!(shaper.pps, 10.0);
     }
-    
+
     #[test]
     fn test_should_send() {
         let mut shaper = TrafficShaper::new(1.0);
         assert!(shaper.should_send()); // Should send immediately if no previous packet
     }
 }
-

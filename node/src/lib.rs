@@ -60,17 +60,17 @@ use tokio::time;
 use x25519_dalek::{EphemeralSecret, PublicKey};
 use zeroize::Zeroize;
 
+mod dns;
 mod error;
 mod padding;
-mod dns;
-mod traffic_shaping;
 mod tls;
+mod traffic_shaping;
 
+pub use dns::{resolve_hostname, DnsConfig, DnsError};
 pub use error::TunnelError;
-pub use padding::{PaddingConfig, pad_packet, unpad_packet};
-pub use dns::{DnsConfig, resolve_hostname, DnsError};
+pub use padding::{pad_packet, unpad_packet, PaddingConfig};
+pub use tls::{TlsClient, TlsConfig, TlsError, TlsServer, TlsStream};
 pub use traffic_shaping::TrafficShaper;
-pub use tls::{TlsConfig, TlsServer, TlsClient, TlsStream, TlsError};
 
 const MAX_NONCE_VALUE: u64 = u64::MAX - 1000; // Force rekey before overflow
 const REPLAY_WINDOW_SIZE: usize = 2048; // Track last 2048 nonces

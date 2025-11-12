@@ -28,10 +28,10 @@ pub struct PaddingConfig {
 impl Default for PaddingConfig {
     fn default() -> Self {
         Self {
-            min_packet_size: 64,      // Minimum to avoid tiny packet detection
-            max_packet_size: 1500,    // Ethernet MTU
-            target_packet_size: 512,  // Target size for padding
-            constant_rate: false,      // Disabled by default (performance)
+            min_packet_size: 64,            // Minimum to avoid tiny packet detection
+            max_packet_size: 1500,          // Ethernet MTU
+            target_packet_size: 512,        // Target size for padding
+            constant_rate: false,           // Disabled by default (performance)
             constant_rate_interval_ms: 100, // 10 packets/second
         }
     }
@@ -43,7 +43,7 @@ impl Default for PaddingConfig {
 /// packet size fingerprinting attacks.
 pub fn pad_packet(data: &[u8], config: &PaddingConfig) -> Vec<u8> {
     let current_size = data.len();
-    
+
     // If already at or above target, return as-is (or pad to max if needed)
     if current_size >= config.target_packet_size {
         if current_size > config.max_packet_size {
@@ -52,20 +52,20 @@ pub fn pad_packet(data: &[u8], config: &PaddingConfig) -> Vec<u8> {
         }
         return data.to_vec();
     }
-    
+
     // Calculate padding needed
     let padding_needed = config.target_packet_size - current_size;
-    
+
     // Generate random padding (not just zeros to avoid detection)
     let mut padded = Vec::with_capacity(config.target_packet_size);
     padded.extend_from_slice(data);
-    
+
     // Add random padding bytes
     let mut rng = rand::thread_rng();
     for _ in 0..padding_needed {
         padded.push(rng.gen());
     }
-    
+
     padded
 }
 
@@ -84,24 +84,23 @@ pub fn unpad_packet(padded: &[u8], original_len: usize) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_pad_packet() {
         let config = PaddingConfig::default();
         let data = vec![1u8; 100];
         let padded = pad_packet(&data, &config);
-        
+
         assert_eq!(padded.len(), config.target_packet_size);
         assert_eq!(&padded[..100], &data);
     }
-    
+
     #[test]
     fn test_unpad_packet() {
         let padded = vec![1u8, 2u8, 3u8, 4u8, 5u8];
         let unpadded = unpad_packet(&padded, 3);
-        
+
         assert_eq!(unpadded.len(), 3);
         assert_eq!(unpadded, vec![1u8, 2u8, 3u8]);
     }
 }
-
