@@ -119,14 +119,15 @@ pub struct Libp2pPacketForwarder {
 }
 
 impl Libp2pPacketForwarder {
-    pub fn new(
-        swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
-        peer_id: PeerId,
-    ) -> (
+    // Type alias for return tuple to reduce complexity
+    type NewReturn = (
         Self,
         Arc<tokio::sync::mpsc::UnboundedSender<Vec<u8>>>,
         Arc<tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>>,
-    ) {
+    );
+
+    #[allow(clippy::type_complexity)]
+    pub fn new(swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, peer_id: PeerId) -> NewReturn {
         let (send_tx, mut send_rx) = tokio::sync::mpsc::unbounded_channel();
         let (recv_tx, recv_rx) = tokio::sync::mpsc::unbounded_channel();
 
