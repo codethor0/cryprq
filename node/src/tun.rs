@@ -229,6 +229,7 @@ impl TunInterface {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn netmask_to_cidr(&self, netmask: &str) -> Result<u8> {
         let parts: Vec<u8> = netmask
             .split('.')
