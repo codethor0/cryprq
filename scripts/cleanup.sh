@@ -1,54 +1,64 @@
-#!/bin/bash
-# Cleanup & Quick Ops
-# Stop Docker services, kill stray processes, wipe transient artifacts
+#!/usr/bin/env bash
 
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Cleanup script for CrypRQ
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+cd "$PROJECT_ROOT"
 
-info() {
-  echo -e "${GREEN}ℹ️${NC} $1"
-}
-
-warning() {
-  echo -e "${YELLOW}⚠️${NC} $1"
-}
-
-echo "🧼 Cleanup & Quick Ops"
-echo "======================"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🧹 Cleaning Up"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Stop Docker services
-info "Stopping Docker services..."
-cd gui && docker compose down && cd .. || warning "GUI Docker compose down failed"
-cd mobile && docker compose down && cd .. || warning "Mobile Docker compose down failed (may not exist)"
+# Clean Rust build artifacts
+echo "🦀 Cleaning Rust build artifacts..."
+cargo clean
 
-# Kill stray Electron dev processes
-info "Killing stray Electron processes..."
-pkill -f electron || warning "No Electron processes found"
+# Clean Docker containers and images
+echo "🐳 Cleaning Docker containers and images..."
+docker compose down -v 2>/dev/null || true
+docker rm -f cryprq-listener cryprq-dialer test-runner 2>/dev/null || true
+docker rmi cryprq-node:latest cryprq-node:test 2>/dev/null || true
 
-# Wipe transient artifacts (keeps reports)
-info "Cleaning transient artifacts..."
-rm -rf gui/node_modules mobile/node_modules gui/.playwright artifacts/desktop/* 2>/dev/null || true
+# Clean test logs
+echo "📝 Cleaning test logs..."
+rm -f test-*.log security-audit-*.log performance-*.log compliance-*.log
 
-# Keep reports directory structure
-mkdir -p artifacts/reports 2>/dev/null || true
+# Clean temporary files
+echo "🗑️  Cleaning temporary files..."
+find . -type f -name "*.tmp" -delete
+find . -type f -name "*.bak" -delete
+find . -type f -name "*~" -delete
 
-info "Cleanup complete!"
+# Clean coverage reports
+echo "📊 Cleaning coverage reports..."
+rm -rf coverage/ tarpaulin-report.html
+
+# Clean mobile build artifacts (optional)
+if [ "${CLEAN_MOBILE:-}" = "true" ]; then
+    echo "📱 Cleaning mobile build artifacts..."
+    rm -rf mobile/android/app/build
+    rm -rf mobile/ios/build
+    rm -rf mobile/node_modules
+fi
+
+# Clean GUI build artifacts (optional)
+if [ "${CLEAN_GUI:-}" = "true" ]; then
+    echo "🖥️  Cleaning GUI build artifacts..."
+    rm -rf gui/dist gui/dist-electron gui/dist-package
+    rm -rf gui/node_modules
+fi
+
 echo ""
-echo "Removed:"
-echo "  • Docker containers (stopped)"
-echo "  • Electron dev processes"
-echo "  • node_modules directories"
-echo "  • Playwright cache"
-echo "  • Desktop artifacts"
+echo "✅ Cleanup completed"
 echo ""
-echo "Kept:"
-echo "  • artifacts/reports/ (test reports preserved)"
 
+exit 0
