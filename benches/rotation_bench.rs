@@ -18,7 +18,11 @@ fn bench_ppk_derivation(c: &mut Criterion) {
     c.bench_function("ppk_derivation", |b| {
         b.iter(|| {
             black_box(PostQuantumPSK::derive(
-                &kyber_shared, &peer_id, &salt, 300, current_time,
+                &kyber_shared,
+                &peer_id,
+                &salt,
+                300,
+                current_time,
             ));
         });
     });
@@ -35,9 +39,7 @@ fn bench_rotation_overhead(c: &mut Criterion) {
 
     c.bench_function("rotation_overhead", |b| {
         b.iter(|| {
-            let ppk = PostQuantumPSK::derive(
-                &kyber_shared, &peer_id, &salt, 300, current_time,
-            );
+            let ppk = PostQuantumPSK::derive(&kyber_shared, &peer_id, &salt, 300, current_time);
             store.store(ppk);
             store.cleanup_expired(current_time);
             current_time += 1;

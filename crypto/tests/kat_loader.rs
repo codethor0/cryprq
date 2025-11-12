@@ -57,7 +57,8 @@ mod tests {
     #[test]
     fn test_kat_loader_structure() {
         // Verify loader structure exists
-        let vectors = load_kat_vectors("crypto/tests/kat_vectors/PQCkemKAT_2400.rsp").expect("Failed to load KAT vectors");
+        let vectors = load_kat_vectors("crypto/tests/kat_vectors/PQCkemKAT_2400.rsp")
+            .expect("Failed to load KAT vectors");
         assert_eq!(
             vectors.len(),
             0,

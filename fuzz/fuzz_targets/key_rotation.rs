@@ -17,9 +17,14 @@ fuzz_target!(|data: &[u8]| {
         for i in 0..(data.len() / 80).min(10) {
             let offset = i * 80;
             if offset + 80 <= data.len() {
-                let kyber_shared: [u8; 32] = data[offset..offset + 32].try_into().expect("Invalid slice");
-                let peer_id: [u8; 32] = data[offset + 32..offset + 64].try_into().expect("Invalid slice");
-                let salt: [u8; 16] = data[offset + 64..offset + 80].try_into().expect("Invalid slice");
+                let kyber_shared: [u8; 32] =
+                    data[offset..offset + 32].try_into().expect("Invalid slice");
+                let peer_id: [u8; 32] = data[offset + 32..offset + 64]
+                    .try_into()
+                    .expect("Invalid slice");
+                let salt: [u8; 16] = data[offset + 64..offset + 80]
+                    .try_into()
+                    .expect("Invalid slice");
 
                 let rotation_interval = (i as u64 + 1) * 60; // 60, 120, 180, etc.
                 let now = 1000u64 + (i as u64 * 60); // Vary timestamps
