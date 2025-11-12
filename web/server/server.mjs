@@ -139,21 +139,30 @@ app.post('/connect', async (req,res)=>{
       
       proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, RUST_LOG: 'debug' }
+        env: { ...process.env, RUST_LOG: 'debug' },
+        detached: false // Keep attached so we can capture output
       });
       
       currentMode = mode;
       currentPort = port;
       push('status', `spawn ${args.join(' ')}`);
+      push('status', `Process PID: ${proc.pid}`);
+      
+      // Buffer for incomplete lines
+      let stdoutBuffer = '';
+      let stderrBuffer = '';
       
       proc.stdout.on('data', d => {
-        const s = d.toString();
-        s.split(/\r?\n/).filter(Boolean).forEach(line => {
+        stdoutBuffer += d.toString();
+        const lines = stdoutBuffer.split(/\r?\n/);
+        stdoutBuffer = lines.pop() || ''; // Keep incomplete line in buffer
+        
+        lines.filter(Boolean).forEach(line => {
           let level = 'info';
           if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
           else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
           else if (/rotate|rotation/i.test(line)) level = 'rotation';
-          else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+          else if (/peer|connect|handshake|ping|connected|Dialing/i.test(line)) level = 'peer';
           else if (/vpn|tun|interface/i.test(line)) level = 'status';
           else if (/error|failed|panic/i.test(line)) level = 'error';
           push(level, line);
@@ -161,15 +170,21 @@ app.post('/connect', async (req,res)=>{
       });
       
       proc.stderr.on('data', d => {
-        const s = d.toString();
-        s.split(/\r?\n/).filter(Boolean).forEach(line => {
+        stderrBuffer += d.toString();
+        const lines = stderrBuffer.split(/\r?\n/);
+        stderrBuffer = lines.pop() || ''; // Keep incomplete line in buffer
+        
+        lines.filter(Boolean).forEach(line => {
           let level = 'error';
           if (/INFO|DEBUG|TRACE/i.test(line)) {
             level = 'info';
             if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
             else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
             else if (/rotate|rotation/i.test(line)) level = 'rotation';
-            else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
+            else if (/peer|connect|handshake|ping|connected|Dialing/i.test(line)) level = 'peer';
+            else if (/Local peer id/i.test(line)) level = 'peer';
+          } else if (/Local peer id|Dialing|Connected/i.test(line)) {
+            level = 'peer';
           }
           push(level, line);
         });
@@ -197,13 +212,19 @@ app.post('/connect', async (req,res)=>{
         currentPort = null;
       });
       
+      // Don't wait for connection - return immediately and let process run
+      // The connection will be established and events will stream via /events endpoint
+      push('status', `✅ Dialer process started - connecting to container...`);
+      push('status', `Watch debug console for connection status`);
+      
       return res.json({ 
         ok: true, 
         vpn: !!vpn,
         containerIP,
         containerPeer,
         mode: 'dialer',
-        dockerMode: true
+        dockerMode: true,
+        processId: proc.pid
       });
     }
     

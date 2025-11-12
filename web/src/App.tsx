@@ -46,30 +46,51 @@ export default function App(){
           }
         }
         
-        // Extract connected peer (dialer connects to peer, listener receives connection)
-        // Match "Connected to <peer-id> via Dialer" or similar patterns
-        if (text.includes('Connected to') || text.includes('connected to')) {
-          // Try to match peer ID (starts with 12D3KooW followed by alphanumeric)
-          const match = text.match(/[Cc]onnected to (12D3KooW\w+)/);
-          if (match) {
-            setStatus(prev => ({ 
-              ...prev, 
-              connected: true, 
-              connectedPeer: match[1],
-              mode: mode
-            }));
-            // Log connection success
-            setEvents(prev => [...prev, {t: `✅ Connected to peer ${match[1]}`, level: 'peer'}]);
-          } else {
-            // Fallback: if we see "Connected to" but can't extract peer, still mark as connected
-            setStatus(prev => ({ 
-              ...prev, 
-              connected: true,
-              mode: mode
-            }));
-            setEvents(prev => [...prev, {t: '✅ Connection established', level: 'peer'}]);
-          }
-        }
+                // Extract connected peer (dialer connects to peer, listener receives connection)
+                // Match "Connected to <peer-id> via Dialer" or similar patterns
+                if (text.includes('Connected to') || text.includes('connected to')) {
+                  // Try to match peer ID (starts with 12D3KooW followed by alphanumeric)
+                  const match = text.match(/[Cc]onnected to (12D3KooW\w+)/);
+                  if (match) {
+                    setStatus(prev => ({ 
+                      ...prev, 
+                      connected: true, 
+                      connectedPeer: match[1],
+                      mode: mode
+                    }));
+                    // Log connection success
+                    setEvents(prev => [...prev, {t: `✅ Connected to peer ${match[1]}`, level: 'peer'}]);
+                  } else {
+                    // Fallback: if we see "Connected to" but can't extract peer, still mark as connected
+                    setStatus(prev => ({ 
+                      ...prev, 
+                      connected: true,
+                      mode: mode
+                    }));
+                    setEvents(prev => [...prev, {t: '✅ Connection established', level: 'peer'}]);
+                  }
+                }
+                
+                // Also check for "Inbound connection established" from container logs (for dialer)
+                if (text.includes('Inbound connection established')) {
+                  const match = text.match(/Inbound connection established with (12D3KooW\w+)/);
+                  if (match) {
+                    setStatus(prev => ({ 
+                      ...prev, 
+                      connected: true,
+                      connectedPeer: match[1],
+                      mode: mode
+                    }));
+                    setEvents(prev => [...prev, {t: `✅ Connected to container peer ${match[1]}`, level: 'peer'}]);
+                  } else {
+                    setStatus(prev => ({ 
+                      ...prev, 
+                      connected: true,
+                      mode: mode
+                    }));
+                    setEvents(prev => [...prev, {t: '✅ Connection established with container', level: 'peer'}]);
+                  }
+                }
         
         // Also check for "Inbound connection established" messages (listener side)
         if (text.includes('Inbound connection established') || text.includes('Incoming connection attempt')) {
