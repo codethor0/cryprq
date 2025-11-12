@@ -260,9 +260,9 @@ pub async fn init_swarm(
             let mdns_behaviour = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
             
             // Create request-response behaviour for packet forwarding
-            let protocol_wrapper = packet_forwarder::ProtocolWrapper(packet_forwarder::PACKET_PROTOCOL);
+            let protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
             let request_response_behaviour = request_response::Behaviour::new(
-                [(protocol_wrapper, ProtocolSupport::Full)],
+                [(protocol_str, ProtocolSupport::Full)],
                 request_response::Config::default(),
             );
             
