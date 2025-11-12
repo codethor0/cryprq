@@ -63,18 +63,13 @@ static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, PacketRecvTx>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
 /// Register recv_tx channel for a peer (called from connection callback)
-pub async fn register_packet_recv_tx(
-    peer_id: PeerId,
-    recv_tx: Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>,
-) {
+pub async fn register_packet_recv_tx(peer_id: PeerId, recv_tx: PacketRecvTx) {
     let mut map = PACKET_RECV_TX.write().await;
     map.insert(peer_id, recv_tx);
 }
 
 /// Get recv_tx channel for a peer (called from swarm event handler)
-pub async fn get_packet_recv_tx(
-    peer_id: &PeerId,
-) -> Option<Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>> {
+pub async fn get_packet_recv_tx(peer_id: &PeerId) -> Option<PacketRecvTx> {
     let map = PACKET_RECV_TX.read().await;
     map.get(peer_id).cloned()
 }
