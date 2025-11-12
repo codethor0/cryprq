@@ -160,10 +160,6 @@ jobs:
           echo "**Deleted Caches**: $DELETED" >> cleanup-report.md
           echo "**Total Size Freed**: $((TOTAL_SIZE_FREED / 1024 / 1024))MB" >> cleanup-report.md
           echo "" >> cleanup-report.md
-          
-          echo "" >> cleanup-report.md
-          echo "**Deleted Caches**: $DELETED" >> cleanup-report.md
-          echo "" >> cleanup-report.md
 
       - name: Cleanup summary
         run: |
