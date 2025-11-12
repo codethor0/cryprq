@@ -37,6 +37,9 @@ jobs:
           max_cache_age_days: 7
           workspace_clean: true
       
+      - name: Aggressive cleanup (10GB cap)
+        run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
+      
       - uses: actions/checkout@v4
 
       - name: No-emoji gate
