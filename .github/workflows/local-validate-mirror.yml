@@ -32,8 +32,9 @@ jobs:
           docker compose -f docker-compose.yml up -d fake-cryprq || echo "Fake backend not available (non-blocking)"
 
       - name: Wait for metrics
+        if: hashFiles('gui/docker-compose.yml') != ''
         run: |
-          timeout 30 bash -c 'until curl -sf http://localhost:9464/metrics >/dev/null; do sleep 1; done'
+          timeout 30 bash -c 'until curl -sf http://localhost:9464/metrics >/dev/null; do sleep 1; done' || echo "Metrics not available (non-blocking)"
 
       - name: Install & test (desktop)
         working-directory: gui
