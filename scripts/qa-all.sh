@@ -105,11 +105,18 @@ echo ""
 
 # 4. Property tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4: Property Tests"
+echo "Step 4: Property Tests (1k+ cases, shrinking enabled)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if bash scripts/run-property-tests.sh 2>&1 | tee "$ARTIFACT_DIR/property-summary.log"; then
+STEP_START=$(date +%s)
+STEP_DIR="$ARTIFACT_DIR/property"
+mkdir -p "$STEP_DIR"
+if bash scripts/run-property-tests.sh 1000 record 2>&1 | tee "$STEP_DIR/execution.log"; then
+    STEP_DURATION=$(($(date +%s) - STEP_START))
+    bash scripts/qa-verification-card.sh "property-tests" 0 "$STEP_DURATION" "$STEP_DIR"
     echo "✅ Property tests passed"
 else
+    STEP_DURATION=$(($(date +%s) - STEP_START))
+    bash scripts/qa-verification-card.sh "property-tests" 1 "$STEP_DURATION" "$STEP_DIR"
     echo "❌ Property tests failed"
     FAILED_STEPS+=("property")
 fi
