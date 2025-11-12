@@ -377,7 +377,11 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 connection_id,
             } => {
                 metrics::record_handshake_attempt();
-                println!("Dialing {peer_id:?} (connection {connection_id:?})");
+                if let Some(pid) = peer_id {
+                    println!("Dialing peer {pid} (connection {connection_id:?})");
+                } else {
+                    println!("Dialing peer (connection {connection_id:?})");
+                }
             }
             SwarmEvent::ConnectionClosed { peer_id, .. } => {
                 println!("Connection closed with {peer_id:?}");
