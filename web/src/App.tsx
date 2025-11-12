@@ -119,6 +119,15 @@ export default function App(){
           }));
         }
         
+        // Docker mode - container is listening (connected)
+        if (text.includes('🐳 Docker mode') || text.includes('Container IP') || text.includes('Container cryprq-vpn')) {
+          setStatus(prev => ({ 
+            ...prev, 
+            connected: true,
+            mode: mode
+          }));
+        }
+        
         // Listener is listening - mark as ready (will be connected when peer dials)
         if (text.includes('Listening on') || text.includes('listening on')) {
           setStatus(prev => ({ 
@@ -222,7 +231,12 @@ export default function App(){
             setEvents(prev=>[...prev, {t:`Container IP: ${data.containerIP}`, level:'status'}]);
           }
         }
-        setStatus(prev => ({ ...prev, mode: mode, connected: false }));
+        // For Docker mode, if we got container info, mark as connected
+        if (data.dockerMode && data.containerIP) {
+          setStatus(prev => ({ ...prev, mode: mode, connected: true }));
+        } else {
+          setStatus(prev => ({ ...prev, mode: mode, connected: false }));
+        }
       }
     } catch (err: any) {
       setEvents(prev=>[...prev, {t:`Connect error: ${err.message || err}`, level:'error'}]);
