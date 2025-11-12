@@ -42,11 +42,11 @@ docker compose up -d fake-cryprq
 
 ### Android E2E Tests
 ```bash
-# Build app
+## Build app
 cd android
 ./gradlew assembleDebug
 
-# Run Detox tests (headless)
+## Run Detox tests (headless)
 cd ..
 npx detox build -c android.emu.debug
 npx detox test -c android.emu.debug --headless --record-logs all
@@ -59,7 +59,7 @@ npx detox test -c android.emu.debug --headless --record-logs all
 
 ### iOS E2E Tests (macOS only)
 ```bash
-# Build app
+## Build app
 cd ios
 xcodebuild -workspace CrypRQ.xcworkspace \
   -scheme CrypRQ \
@@ -67,7 +67,7 @@ xcodebuild -workspace CrypRQ.xcworkspace \
   -sdk iphonesimulator \
   -derivedDataPath build
 
-# Run Detox tests
+## Run Detox tests
 cd ..
 npx detox build -c ios.sim.debug
 npx detox test -c ios.sim.debug --record-logs all

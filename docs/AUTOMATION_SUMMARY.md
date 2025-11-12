@@ -35,13 +35,13 @@
 
 **Usage:**
 ```bash
-# Basic (validate + PR)
+## Basic (validate + PR)
 ./scripts/one-shot.sh
 
-# With ship
+## With ship
 SHIP=true ./scripts/one-shot.sh --ship
 
-# Full workflow
+## Full workflow
 SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 ```
 
@@ -58,19 +58,19 @@ SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 
 **Usage:**
 ```bash
-# Quick sanity
+## Quick sanity
 ./scripts/quick-smoke.sh
 
-# Full validation
+## Full validation
 ./scripts/local-validate.sh
 
-# Cleanup
+## Cleanup
 ./scripts/cleanup.sh
 
-# Pre-release sanity
+## Pre-release sanity
 ./scripts/sanity-checks.sh
 
-# Post-release monitoring
+## Post-release monitoring
 ./scripts/observability-checks.sh
 ```
 
@@ -91,10 +91,10 @@ SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 
 **Usage:**
 ```bash
-# Disable features at runtime
+## Disable features at runtime
 CRYPRQ_FLAGS='{"enableCharts":false}' npm run dev
 
-# Watch telemetry (if enabled)
+## Watch telemetry (if enabled)
 tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 ```
 
@@ -120,28 +120,28 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 ### Pre-Release
 
 ```bash
-# 1. Fast sanity
+## 1. Fast sanity
 ./scripts/quick-smoke.sh || ./scripts/local-validate.sh
 
-# 2. Observability + sanity
+## 2. Observability + sanity
 ./scripts/observability-checks.sh
 ./scripts/sanity-checks.sh
 
-# 3. Create PR
+## 3. Create PR
 gh pr create --fill --base main
 
-# 4. Full one-shot (optional)
+## 4. Full one-shot (optional)
 SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 ```
 
 ### Post-Release (Day-0)
 
 ```bash
-# Every 2 hours
+## Every 2 hours
 ./scripts/observability-checks.sh
 ./scripts/sanity-checks.sh
 
-# Watch telemetry (if enabled)
+## Watch telemetry (if enabled)
 tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl | grep event
 ```
 

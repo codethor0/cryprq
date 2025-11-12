@@ -7,16 +7,16 @@
 Confirm JSONL v1 adoption in real logs:
 
 ```bash
-# Check log schema compliance
+## Check log schema compliance
 jq -c 'fromjson | select(.event=="session.state") | .ts,.data' ~/.cryprq/logs/cryprq-*.log | head
 
-# Verify no secrets in logs
+## Verify no secrets in logs
 grep -r "bearer\|privKey=" ~/.cryprq/logs/ || echo "✓ No secrets found"
 
-# Count structured log entries
+## Count structured log entries
 jq -c 'fromjson | select(.v==1)' ~/.cryprq/logs/cryprq-*.log | wc -l
 
-# Check rotation events
+## Check rotation events
 jq -c 'fromjson | select(.event | startswith("rotation"))' ~/.cryprq/logs/cryprq-*.log | tail -20
 ```
 
@@ -39,13 +39,13 @@ jq -c 'fromjson | select(.event | startswith("rotation"))' ~/.cryprq/logs/cryprq
 ### One-Liners for Quick Checks
 
 ```bash
-# Last 10 session state changes
+## Last 10 session state changes
 jq -c 'fromjson | select(.event=="session.state") | {ts,state:.data.state}' ~/.cryprq/logs/cryprq-*.log | tail -10
 
-# Error rate (last 24h)
+## Error rate (last 24h)
 jq -c 'fromjson | select(.lvl=="error")' ~/.cryprq/logs/cryprq-$(date +%Y-%m-%d).log | wc -l
 
-# Rotation count (last 24h)
+## Rotation count (last 24h)
 jq -c 'fromjson | select(.event | startswith("rotation"))' ~/.cryprq/logs/cryprq-$(date +%Y-%m-%d).log | wc -l
 ```
 

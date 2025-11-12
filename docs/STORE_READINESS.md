@@ -142,25 +142,25 @@
 
 ### Fastlane Commands
 ```bash
-# Android
+## Android
 cd mobile
 fastlane android build    # Build AAB
 fastlane android beta     # Build + upload to Internal testing
 
-# iOS
+## iOS
 fastlane ios build        # Archive
 fastlane ios beta         # Archive + upload to TestFlight
 ```
 
 ### Version Bumping
 ```bash
-# Desktop
+## Desktop
 cd gui
 npm version patch|minor|major
 
-# Mobile
-# Update android/app/build.gradle (versionCode, versionName)
-# Update ios/CrypRQ/Info.plist (CFBundleShortVersionString, CFBundleVersion)
+## Mobile
+## Update android/app/build.gradle (versionCode, versionName)
+## Update ios/CrypRQ/Info.plist (CFBundleShortVersionString, CFBundleVersion)
 ```
 
 ### Contact

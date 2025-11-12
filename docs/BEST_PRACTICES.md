@@ -39,15 +39,15 @@ cargo clippy --all-targets --all-features -- -D warnings
 Use profiling tools to identify bottlenecks:
 
 ```bash
-# Generate flamegraph
+## Generate flamegraph
 cargo install flamegraph
 cargo flamegraph --bin cryprq
 
-# Use perf (Linux)
+## Use perf (Linux)
 perf record ./target/release/cryprq
 perf report
 
-# Use Instruments (macOS)
+## Use Instruments (macOS)
 instruments -t 'Time Profiler' ./target/release/cryprq
 ```
 
@@ -104,13 +104,13 @@ impl Drop for SecretKey {
 ### Dependency Management
 
 ```bash
-# Update dependencies regularly
+## Update dependencies regularly
 cargo update
 
-# Audit for vulnerabilities
+## Audit for vulnerabilities
 cargo audit
 
-# Check license compliance
+## Check license compliance
 cargo deny check
 ```
 
@@ -133,13 +133,13 @@ cargo deny check
 ### Running Tests
 
 ```bash
-# All tests
+## All tests
 cargo test --all
 
-# Specific crate
+## Specific crate
 cargo test -p cryprq-crypto
 
-# With output
+## With output
 cargo test -- --nocapture
 ```
 
@@ -246,16 +246,16 @@ refactor: simplify key rotation logic
 ### Pre-Commit Checks
 
 ```bash
-# Format check
+## Format check
 cargo fmt --all -- --check
 
-# Lint check
+## Lint check
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Test check
+## Test check
 cargo test --all
 
-# Security audit
+## Security audit
 cargo audit
 ```
 

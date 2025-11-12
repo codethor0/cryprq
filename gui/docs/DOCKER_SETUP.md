@@ -31,16 +31,16 @@
 ## Quick Commands
 
 ```bash
-# Run all tests
+## Run all tests
 cd gui && make test
 
-# Build Linux artifacts
+## Build Linux artifacts
 cd gui && make build-linux
 
-# Build Windows artifacts
+## Build Windows artifacts
 cd gui && make build-win
 
-# Run tests manually
+## Run tests manually
 cd gui && docker compose -f docker-compose.yml up --build
 ```
 

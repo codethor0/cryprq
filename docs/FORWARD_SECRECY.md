@@ -96,10 +96,10 @@ impl Drop for SessionKey {
 ### Rotation Interval
 
 ```bash
-# Default: 300 seconds (5 minutes)
+## Default: 300 seconds (5 minutes)
 CRYPRQ_ROTATE_SECS=300 ./cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Custom: 60 seconds (1 minute)
+## Custom: 60 seconds (1 minute)
 CRYPRQ_ROTATE_SECS=60 ./cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 

@@ -121,22 +121,22 @@
 
 ### Desktop
 ```bash
-# macOS Gatekeeper
+## macOS Gatekeeper
 spctl --assess --type open --verbose dist-package/CrypRQ.dmg
 
-# Windows signature
+## Windows signature
 signtool verify /pa dist-package/CrypRQ.exe
 
-# Linux checksums
+## Linux checksums
 sha256sum dist-package/*.{AppImage,deb}
 ```
 
 ### Mobile
 ```bash
-# Android AAB verification
+## Android AAB verification
 jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
 
-# iOS archive verification
+## iOS archive verification
 codesign -dv --verbose=4 ios/build/Build/Products/Release-iphoneos/CrypRQ.app
 ```
 

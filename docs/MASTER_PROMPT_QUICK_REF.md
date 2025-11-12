@@ -45,7 +45,7 @@ pub fn derive_ppk(kyber_shared: &[u8; 32], peer_id: &PeerId) -> PostQuantumPSK
 
 ### 3. OQS Integration (Weeks 7-9)
 ```toml
-# Cargo.toml
+## Cargo.toml
 dilithium = "0.1"
 sphincsplus = "0.1"
 ```

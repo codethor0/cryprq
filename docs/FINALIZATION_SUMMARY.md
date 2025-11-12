@@ -149,28 +149,28 @@ strip = true        # Strip symbols
 
 ### Run Tests
 ```bash
-# Exploratory testing
+## Exploratory testing
 bash scripts/exploratory-testing.sh
 
-# Performance benchmarks
+## Performance benchmarks
 bash scripts/performance-benchmark.sh
 
-# Optimization analysis
+## Optimization analysis
 bash scripts/optimize-performance.sh
 
-# Final verification
+## Final verification
 bash scripts/final-verification.sh
 
-# Docker QA suite
+## Docker QA suite
 bash scripts/docker-qa-suite.sh
 ```
 
 ### Build & Deploy
 ```bash
-# Build optimized release
+## Build optimized release
 cargo build --release -p cryprq
 
-# Run application
+## Run application
 ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 

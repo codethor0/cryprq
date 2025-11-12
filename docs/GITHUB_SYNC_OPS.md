@@ -140,16 +140,16 @@ make github-sync
 ## Common Invocations
 
 ```bash
-# Sync + CI only
+## Sync + CI only
 ./scripts/github-sync.sh
 
-# Ship after PR review
+## Ship after PR review
 SHIP=true ./scripts/github-sync.sh
 
-# Ship + monitoring
+## Ship + monitoring
 SHIP=true RUN_POST=true ./scripts/github-sync.sh
 
-# Makefile alias
+## Makefile alias
 make github-sync
 ```
 

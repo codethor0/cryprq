@@ -91,13 +91,13 @@ artifacts/
 
 ### Fake Backend Not Starting
 ```bash
-# Check Docker is running
+## Check Docker is running
 docker ps
 
-# Check fake backend logs
+## Check fake backend logs
 docker compose -f gui/docker-compose.yml logs fake-cryprq
 
-# Manually start
+## Manually start
 docker compose -f gui/docker-compose.yml up -d fake-cryprq
 ```
 
@@ -121,11 +121,11 @@ docker compose -f gui/docker-compose.yml up -d fake-cryprq
 After validation:
 
 ```bash
-# Stop fake backends
+## Stop fake backends
 docker compose -f gui/docker-compose.yml down
 docker compose -f mobile/docker-compose.yml down
 
-# Remove artifacts (optional)
+## Remove artifacts (optional)
 rm -rf artifacts/
 ```
 

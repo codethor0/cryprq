@@ -12,14 +12,14 @@ make test
 ```bash
 cd gui
 make build-linux
-# Artifacts in gui/dist/
+## Artifacts in gui/dist/
 ```
 
 ### Build Windows Artifacts (Unsigned)
 ```bash
 cd gui
 make build-win
-# Artifacts in gui/dist/
+## Artifacts in gui/dist/
 ```
 
 ## What's Included

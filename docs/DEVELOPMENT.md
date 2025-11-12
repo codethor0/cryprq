@@ -32,14 +32,14 @@ This guide covers setting up a local development environment for CrypRQ, includi
 ### 1. Install Rust Toolchain
 
 ```bash
-# Install rustup if not already installed
+## Install rustup if not already installed
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Install Rust 1.83.0
+## Install Rust 1.83.0
 rustup install 1.83.0
 rustup default 1.83.0
 
-# Install required components
+## Install required components
 rustup component add rustfmt clippy
 ```
 
@@ -62,10 +62,10 @@ cargo --version
 ### Development Build
 
 ```bash
-# Build all crates
+## Build all crates
 cargo build
 
-# Build specific crate
+## Build specific crate
 cargo build -p cryprq-crypto
 cargo build -p node
 cargo build -p p2p
@@ -75,24 +75,24 @@ cargo build -p cli
 ### Release Build
 
 ```bash
-# Optimized release build
+## Optimized release build
 cargo build --release
 
-# Binary location
+## Binary location
 ./target/release/cryprq
 ```
 
 ### Build for Specific Target
 
 ```bash
-# Linux (musl - static binary)
+## Linux (musl - static binary)
 cargo build --release --target x86_64-unknown-linux-musl
 
-# macOS
+## macOS
 cargo build --release --target x86_64-apple-darwin
 cargo build --release --target aarch64-apple-darwin
 
-# Windows
+## Windows
 cargo build --release --target x86_64-pc-windows-msvc
 ```
 
@@ -101,33 +101,33 @@ cargo build --release --target x86_64-pc-windows-msvc
 ### Unit Tests
 
 ```bash
-# Run all unit tests
+## Run all unit tests
 cargo test --lib --all
 
-# Run tests for specific crate
+## Run tests for specific crate
 cargo test -p cryprq-crypto
 
-# Run with output
+## Run with output
 cargo test --lib --all -- --nocapture
 ```
 
 ### Integration Tests
 
 ```bash
-# Run integration tests
+## Run integration tests
 bash scripts/test-integration.sh
 
-# Run E2E tests
+## Run E2E tests
 bash scripts/test-e2e.sh
 ```
 
 ### Test Coverage
 
 ```bash
-# Install cargo-tarpaulin
+## Install cargo-tarpaulin
 cargo install cargo-tarpaulin
 
-# Generate coverage report
+## Generate coverage report
 cargo tarpaulin --out Html
 ```
 
@@ -148,19 +148,19 @@ git checkout -b feature/my-feature
 ### 3. Run Checks Before Commit
 
 ```bash
-# Format code
+## Format code
 cargo fmt --all
 
-# Run linter
+## Run linter
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Run tests
+## Run tests
 cargo test --all
 
-# Run security audit
+## Run security audit
 bash scripts/security-audit.sh
 
-# Run compliance checks
+## Run compliance checks
 bash scripts/compliance-checks.sh
 ```
 
@@ -175,7 +175,7 @@ git commit -m "feat: add new feature"
 
 ```bash
 git push origin feature/my-feature
-# Create PR on GitHub
+## Create PR on GitHub
 ```
 
 ## Code Style
@@ -183,20 +183,20 @@ git push origin feature/my-feature
 ### Formatting
 
 ```bash
-# Format all code
+## Format all code
 cargo fmt --all
 
-# Check formatting
+## Check formatting
 cargo fmt --all -- --check
 ```
 
 ### Linting
 
 ```bash
-# Run clippy
+## Run clippy
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Auto-fix issues
+## Auto-fix issues
 cargo clippy --fix --allow-dirty
 ```
 
@@ -214,7 +214,7 @@ cargo clippy --fix --allow-dirty
 
 ```bash
 cargo build
-# Binary: ./target/debug/cryprq
+## Binary: ./target/debug/cryprq
 ```
 
 ### Enable Debug Logging
@@ -232,10 +232,10 @@ Install the "CodeLLDB" extension for debugging Rust code.
 #### GDB/LLDB
 
 ```bash
-# Linux (GDB)
+## Linux (GDB)
 gdb ./target/debug/cryprq
 
-# macOS (LLDB)
+## macOS (LLDB)
 lldb ./target/debug/cryprq
 ```
 
@@ -250,23 +250,23 @@ docker build -t cryprq-dev -f Dockerfile .
 ### Run in Docker
 
 ```bash
-# Run listener
+## Run listener
 docker run --rm -p 9999:9999/udp cryprq-dev --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Run dialer
+## Run dialer
 docker run --rm cryprq-dev --peer /ip4/<LISTENER_IP>/udp/9999/quic-v1
 ```
 
 ### Docker Compose
 
 ```bash
-# Start services
+## Start services
 docker compose up -d
 
-# View logs
+## View logs
 docker compose logs -f
 
-# Stop services
+## Stop services
 docker compose down
 ```
 
@@ -293,7 +293,7 @@ cargo outdated
 ### Generate Documentation
 
 ```bash
-# Build docs
+## Build docs
 cargo doc --no-deps --all --open
 ```
 

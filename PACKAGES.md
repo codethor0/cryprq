@@ -9,13 +9,13 @@
 
 ### Build Commands:
 ```bash
-# Build binary
+## Build binary
 bash scripts/build-macos.sh
 
-# Create app bundle
+## Create app bundle
 VERSION=1.0.1 bash macos/scripts/build-app.sh
 
-# Create DMG
+## Create DMG
 VERSION=1.0.1 bash macos/scripts/create-dmg.sh
 ```
 
@@ -39,10 +39,10 @@ VERSION=1.0.1 bash macos/scripts/create-dmg.sh
 
 ### Build Commands (on Windows):
 ```powershell
-# Cross-compile from macOS (or build on Windows)
+## Cross-compile from macOS (or build on Windows)
 cargo build --release --target x86_64-pc-windows-msvc -p cryprq
 
-# On Windows, create MSIX:
+## On Windows, create MSIX:
 cd windows/scripts
 .\build-msix.ps1 -Version "1.0.1.0"
 ```
@@ -57,11 +57,11 @@ Windows cross-compilation from macOS requires Windows SDK libraries. For full MS
 
 Run these to generate checksums:
 ```bash
-# macOS DMG
+## macOS DMG
 shasum -a 256 dist/macos/CrypRQ-1.0.1-macOS.dmg
 shasum -a 1 dist/macos/CrypRQ-1.0.1-macOS.dmg
 
-# Windows MSIX (when available)
+## Windows MSIX (when available)
 shasum -a 256 dist/windows/CrypRQ_1.0.1.0.msix
 shasum -a 1 dist/windows/CrypRQ_1.0.1.0.msix
 ```

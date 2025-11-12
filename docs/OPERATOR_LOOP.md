@@ -5,13 +5,13 @@
 ## 🔄 Every 2h for First 24h
 
 ```bash
-# Observability checks
+## Observability checks
 ./scripts/observability-checks.sh
 
-# Sanity checks
+## Sanity checks
 ./scripts/sanity-checks.sh
 
-# Spot-check redaction on a fresh diagnostics zip
+## Spot-check redaction on a fresh diagnostics zip
 grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo "✅ redaction OK"
 ```
 
@@ -49,10 +49,10 @@ grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || ec
 
 **Step 2: Check Session Summary**
 ```bash
-# Extract ZIP
+## Extract ZIP
 unzip cryprq-diagnostics-*.zip -d /tmp/diag
 
-# Check session-summary.json
+## Check session-summary.json
 cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Events[-10:]'
 ```
 
@@ -64,7 +64,7 @@ cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Even
 
 **Step 3: Search JSONL Logs**
 ```bash
-# Find error events around timestamp
+## Find error events around timestamp
 TIMESTAMP="2025-01-15T12:00:00Z"  # From user report
 jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 hour\" +%Y-%m-%dT%H:%M:%SZ)\") | select(.event == \"session.error\" or .event == \"cli.raw\" or .lvl == \"error\")" /tmp/diag/logs/*.log
 ```

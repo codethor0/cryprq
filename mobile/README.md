@@ -56,13 +56,13 @@ npm test
 
 **Android:**
 ```bash
-# Start Android emulator first
+## Start Android emulator first
 npm run e2e:android
 ```
 
 **iOS:**
 ```bash
-# Start iOS simulator first
+## Start iOS simulator first
 npm run e2e:ios
 ```
 

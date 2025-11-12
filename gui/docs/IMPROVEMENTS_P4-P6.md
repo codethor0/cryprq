@@ -132,20 +132,20 @@
 
 ### Tray Parity Check
 ```bash
-# After connect and rotate, assert status changes within 1s
-# Implemented in gui/tests/e2e/tray-state.spec.ts
+## After connect and rotate, assert status changes within 1s
+## Implemented in gui/tests/e2e/tray-state.spec.ts
 ```
 
 ### Log Schema Smoke
 ```bash
 jq -c 'fromjson | .v and .ts and .lvl and .src and .event and .msg' ~/.cryprq/logs/cryprq-*.log | wc -l
-# Returns > 0 if schema is valid
+## Returns > 0 if schema is valid
 ```
 
 ### Redaction Check
 ```bash
 grep -r "bearer\|privKey=" ~/.cryprq/logs/ || echo "No secrets found"
-# Should return zero matches
+## Should return zero matches
 ```
 
 ## Files Modified
@@ -167,10 +167,10 @@ grep -r "bearer\|privKey=" ~/.cryprq/logs/ || echo "No secrets found"
 
 Run tests:
 ```bash
-# Unit tests
+## Unit tests
 npm test
 
-# E2E tests (requires fake backend)
+## E2E tests (requires fake backend)
 docker compose -f gui/docker-compose.yml up -d fake-cryprq
 npm run test:e2e
 ```

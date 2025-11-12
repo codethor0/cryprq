@@ -7,10 +7,10 @@ This document tracks test results from Docker QA testing suite.
 ### Running Tests
 
 ```bash
-# Complete QA suite
+## Complete QA suite
 bash scripts/docker-qa-suite.sh
 
-# Individual tests
+## Individual tests
 bash scripts/docker-test-individual.sh <test-name>
 ```
 

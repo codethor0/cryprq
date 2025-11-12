@@ -258,7 +258,7 @@ test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured
 
 All changes validated with:
 ```bash
-# Clean build from scratch
+## Clean build from scratch
 rm -rf target/
 cargo clean
 cargo build --release

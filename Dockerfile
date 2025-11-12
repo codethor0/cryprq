@@ -26,6 +26,10 @@ RUN cargo build --release -p cryprq
 
 # ---- runtime ----
 FROM debian:bookworm-slim
+LABEL org.opencontainers.image.title="CrypRQ"
+LABEL org.opencontainers.image.description="Post-Quantum, Zero-Trust VPN"
+LABEL org.opencontainers.image.vendor="CrypRQ"
+LABEL org.opencontainers.image.logo="https://raw.githubusercontent.com/codethor0/cryprq/main/store-assets/icon_master_1024.png"
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \

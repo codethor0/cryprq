@@ -36,20 +36,20 @@ store/
 
 ### Android (Emulator)
 ```bash
-# Start emulator
+## Start emulator
 emulator -avd Pixel_6_API_33 &
 
-# Take screenshot
+## Take screenshot
 adb shell screencap -p /sdcard/screenshot.png
 adb pull /sdcard/screenshot.png store/play/screenshots/
 ```
 
 ### iOS (Simulator)
 ```bash
-# Start simulator
+## Start simulator
 xcrun simctl boot "iPhone 14 Pro Max"
 
-# Take screenshot
+## Take screenshot
 xcrun simctl io booted screenshot store/appstore/screenshots/6.7-dark.png
 ```
 

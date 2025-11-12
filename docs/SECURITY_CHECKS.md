@@ -165,13 +165,13 @@ bash scripts/performance-tests.sh
 
 **Usage**:
 ```bash
-# Start services
+## Start services
 docker compose up -d cryprq-listener
 
-# Run tests
+## Run tests
 docker exec -it cryprq-listener bash -c "cargo test"
 
-# Validate crypto
+## Validate crypto
 docker exec -it cryprq-listener bash -c "cargo run --example crypto_tests"
 ```
 

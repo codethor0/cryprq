@@ -32,10 +32,10 @@ This provides **defense-in-depth** - even if one algorithm is compromised, the o
 ### CLI
 
 ```bash
-# Post-quantum enabled (default)
+## Post-quantum enabled (default)
 ./cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Disable post-quantum (not recommended)
+## Disable post-quantum (not recommended)
 ./cryprq --no-post-quantum --listen /ip4/0.0.0.0/udp/9999/quic-v1
 ```
 

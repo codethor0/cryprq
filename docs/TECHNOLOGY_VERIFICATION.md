@@ -190,7 +190,7 @@ bash scripts/final-verification.sh
 ### Docker Testing
 
 ```bash
-# Run in Docker environment
+## Run in Docker environment
 docker exec cryprq-test-runner bash -c "cd /workspace && bash scripts/exploratory-testing.sh"
 ```
 

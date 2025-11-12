@@ -45,32 +45,32 @@ This guide covers the Continuous Integration and Continuous Deployment (CI/CD) p
 ### Run All Checks
 
 ```bash
-# Run production readiness script
+## Run production readiness script
 bash scripts/finalize-production.sh
 ```
 
 ### Individual Checks
 
 ```bash
-# Compilation
+## Compilation
 cargo check --workspace
 
-# Build
+## Build
 cargo build --release
 
-# Tests
+## Tests
 cargo test --all
 
-# Formatting
+## Formatting
 cargo fmt --all -- --check
 
-# Linting
+## Linting
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Security
+## Security
 bash scripts/security-audit.sh
 
-# Compliance
+## Compliance
 bash scripts/compliance-checks.sh
 ```
 
@@ -201,8 +201,8 @@ git checkout -b release/v1.0.0
 
 2. **Update Version**:
 ```bash
-# Update Cargo.toml versions
-# Update CHANGELOG.md
+## Update Cargo.toml versions
+## Update CHANGELOG.md
 ```
 
 3. **Run Tests**:
@@ -224,7 +224,7 @@ git push origin v1.0.0
 ### Automated Deployment
 
 ```yaml
-# .github/workflows/release.yml
+## .github/workflows/release.yml
 name: Release
 
 on:
@@ -257,7 +257,7 @@ jobs:
 ### Local Testing
 
 ```bash
-# Test CI locally
+## Test CI locally
 act -l  # List workflows
 act -j build  # Run build job
 ```

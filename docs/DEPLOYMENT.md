@@ -24,7 +24,7 @@ docker build -t cryprq:latest -f Dockerfile .
 #### Run Container
 
 ```bash
-# Listener node
+## Listener node
 docker run -d \
   --name cryprq-listener \
   -p 9999:9999/udp \
@@ -32,14 +32,14 @@ docker run -d \
   cryprq:latest \
   --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Check logs
+## Check logs
 docker logs -f cryprq-listener
 ```
 
 #### Docker Compose
 
 ```yaml
-# docker-compose.prod.yml
+## docker-compose.prod.yml
 version: '3.8'
 
 services:
@@ -70,7 +70,7 @@ sudo chmod +x /usr/local/bin/cryprq
 
 2. **Create systemd service**:
 ```ini
-# /etc/systemd/system/cryprq.service
+## /etc/systemd/system/cryprq.service
 [Unit]
 Description=CrypRQ VPN Listener
 After=network-online.target
@@ -196,13 +196,13 @@ az container create \
 ### Command-Line Arguments
 
 ```bash
-# Listener mode
+## Listener mode
 cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
 
-# Dialer mode
+## Dialer mode
 cryprq --peer /ip4/<PEER_IP>/udp/9999/quic-v1
 
-# Help
+## Help
 cryprq --help
 ```
 
@@ -211,26 +211,26 @@ cryprq --help
 ### Logs
 
 ```bash
-# Docker
+## Docker
 docker logs -f cryprq-listener
 
-# Systemd
+## Systemd
 journalctl -u cryprq -f
 
-# macOS launchd
+## macOS launchd
 tail -f /var/log/cryprq.log
 ```
 
 ### Health Checks
 
 ```bash
-# Check if process is running
+## Check if process is running
 ps aux | grep cryprq
 
-# Check port
+## Check port
 netstat -uln | grep 9999
 
-# Test connectivity
+## Test connectivity
 nc -u <PEER_IP> 9999
 ```
 
@@ -247,7 +247,7 @@ CrypRQ exposes Prometheus metrics (if configured):
 ### Firewall Configuration
 
 ```bash
-# Allow UDP 9999 from trusted IPs only
+## Allow UDP 9999 from trusted IPs only
 sudo ufw allow from <TRUSTED_IP> to any port 9999 proto udp
 ```
 
@@ -288,23 +288,23 @@ sudo ufw allow from <TRUSTED_IP> to any port 9999 proto udp
 ### Docker
 
 ```bash
-# Stop current version
+## Stop current version
 docker stop cryprq-listener
 
-# Start previous version
+## Start previous version
 docker run -d --name cryprq-listener cryprq:previous-version
 ```
 
 ### Systemd
 
 ```bash
-# Stop service
+## Stop service
 sudo systemctl stop cryprq
 
-# Revert binary
+## Revert binary
 sudo cp cryprq.previous /usr/local/bin/cryprq
 
-# Start service
+## Start service
 sudo systemctl start cryprq
 ```
 
@@ -313,23 +313,23 @@ sudo systemctl start cryprq
 ### Docker
 
 ```bash
-# Pull new image
+## Pull new image
 docker pull cryprq:latest
 
-# Restart container
+## Restart container
 docker restart cryprq-listener
 ```
 
 ### Bare Metal
 
 ```bash
-# Stop service
+## Stop service
 sudo systemctl stop cryprq
 
-# Update binary
+## Update binary
 sudo cp target/release/cryprq /usr/local/bin/
 
-# Start service
+## Start service
 sudo systemctl start cryprq
 ```
 

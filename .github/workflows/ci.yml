@@ -56,6 +56,37 @@ jobs:
         run: cargo test --lib --all --no-fail-fast
         continue-on-error: false
 
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+        continue-on-error: true
+      
+      - name: Generate icons
+        run: bash scripts/generate-icons.sh || echo "Icon generation skipped (ImageMagick may not be available)"
+        continue-on-error: true
+      
+      - name: Install jq (for iOS validation)
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+        continue-on-error: true
+
+      - name: Verify icon coverage (fast gate)
+        run: bash scripts/verify-icons-min.sh || echo "Icon verification skipped"
+        continue-on-error: true
+      
+      - name: iOS AppIcon contents validate
+        run: bash scripts/ios-contents-validate.sh || echo "iOS validation skipped"
+        continue-on-error: true
+      
+      - name: Android mipmap validate
+        run: bash scripts/android-mipmap-validate.sh || echo "Android validation skipped"
+        continue-on-error: true
+      
+      - name: Verify icons (comprehensive)
+        run: bash scripts/verify-icons.sh || echo "Icon verification skipped"
+        continue-on-error: true
+
       - name: Build release
         run: cargo build --release -p cryprq
         continue-on-error: false

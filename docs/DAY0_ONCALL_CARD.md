@@ -17,20 +17,20 @@
 
 **Quick Check**:
 ```bash
-# See docs/GOLDEN_PATH.md for detailed steps
+## See docs/GOLDEN_PATH.md for detailed steps
 ```
 
 ## 🔍 Quick Checks (Every 2h for First 24h)
 
 **Copy-paste loop**:
 ```bash
-# Observability checks
+## Observability checks
 ./scripts/observability-checks.sh
 
-# Sanity checks
+## Sanity checks
 ./scripts/sanity-checks.sh
 
-# Spot-check redaction on fresh diagnostics zip
+## Spot-check redaction on fresh diagnostics zip
 grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || echo "✅ redaction OK"
 ```
 
@@ -63,7 +63,7 @@ grep -R -E "bearer |privKey=|authorization:" path/to/exported/zip_unpacked || ec
 
 **Option 2: Cut Back-Out Tag**
 ```bash
-# If you need to cut a new release from previous version
+## If you need to cut a new release from previous version
 git checkout v1.0.1  # or last stable tag
 ./scripts/go-live.sh 1.0.2  # or appropriate version
 ```
@@ -81,10 +81,10 @@ git checkout v1.0.1  # or last stable tag
 
 **Step 2: Check Session Summary**
 ```bash
-# Extract ZIP
+## Extract ZIP
 unzip cryprq-diagnostics-*.zip -d /tmp/diag
 
-# Check session-summary.json
+## Check session-summary.json
 cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Events[-10:]'
 ```
 
@@ -95,7 +95,7 @@ cat /tmp/diag/session-summary.json | jq '.sessions, .stateDurations, .last50Even
 
 **Step 3: Search JSONL Logs**
 ```bash
-# Find error events around timestamp
+## Find error events around timestamp
 TIMESTAMP="2025-01-15T12:00:00Z"  # From user report
 jq -c "select(.ts >= \"$TIMESTAMP\" and .ts <= \"$(date -u -d \"$TIMESTAMP +1 hour\" +%Y-%m-%dT%H:%M:%SZ)\") | select(.event == \"session.error\" or .event == \"cli.raw\" or .lvl == \"error\")" /tmp/diag/logs/*.log
 ```

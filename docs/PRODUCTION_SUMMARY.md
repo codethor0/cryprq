@@ -98,55 +98,55 @@ CrypRQ has been fully finalized for production deployment with comprehensive cry
 
 ### Verification
 ```bash
-# Run full production verification
+## Run full production verification
 bash scripts/finalize-production.sh
 
-# Run benchmarks
+## Run benchmarks
 bash scripts/benchmark.sh
 
-# Profile performance
+## Profile performance
 bash scripts/profile.sh
 ```
 
 ### Testing
 ```bash
-# All tests
+## All tests
 cargo test --all
 
-# Unit tests
+## Unit tests
 cargo test --lib --all
 
-# Integration tests
+## Integration tests
 bash scripts/test-integration.sh
 
-# E2E tests
+## E2E tests
 bash scripts/test-e2e.sh
 ```
 
 ### Code Quality
 ```bash
-# Format code
+## Format code
 cargo fmt --all
 
-# Lint code
+## Lint code
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Security audit
+## Security audit
 bash scripts/security-audit.sh
 
-# Compliance checks
+## Compliance checks
 bash scripts/compliance-checks.sh
 ```
 
 ### Deployment
 ```bash
-# Build release
+## Build release
 cargo build --release
 
-# Docker build
+## Docker build
 docker build -t cryprq:latest -f Dockerfile .
 
-# Docker Compose
+## Docker Compose
 docker compose up -d
 ```
 

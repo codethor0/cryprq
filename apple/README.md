@@ -1,4 +1,4 @@
-## CrypRQ Apple Host Scaffold
+# ## CrypRQ Apple Host Scaffold
 
 This directory contains the initial Swift package and scripts required to integrate `cryp-rq-core` with Apple platforms (iOS/macOS).
 

@@ -1,220 +1,145 @@
 # Reproducible Builds
 
-CrypRQ binaries are byte-for-byte reproducible using either Nix or Docker.
+CrypRQ supports reproducible builds for Linux (musl), macOS, Docker, and Nix environments.
 
-## Prerequisites
-- Git with GPG verification enabled
-- SHA256 checksum tools
-- Either: Nix (recommended) OR Docker
+## Overview
 
-## Quick Verification
+Reproducible builds ensure that the same source code always produces bit-for-bit identical binaries, enabling verification of release artifacts and supply-chain security.
 
-### Method 1: Nix Shell (One-Liner)
+## Build Methods
+
+### Linux (musl)
+
 ```bash
-nix-shell --pure -p rustc cargo --run "cargo build --release --locked" && sha256sum target/release/cryprq
+## Build statically linked binary with musl
+bash scripts/build-musl.sh
+
+## Binary will be in: target/x86_64-unknown-linux-musl/release/cryprq
 ```
 
-**Expected Output:**
-```
-[HASH] target/release/cryprq
-```
+### macOS
 
-### Method 2: Docker Reproducer
 ```bash
-docker build -t cryprq-reproducible - <<'EOF'
-FROM debian:bookworm-slim
-ENV RUST_VERSION=1.82.0
-RUN apt-get update && apt-get install -y curl build-essential git
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
-ENV PATH="/root/.cargo/bin:${PATH}"
-WORKDIR /build
-COPY . .
-RUN cargo build --release --locked
-CMD ["sha256sum", "target/release/cryprq"]
-EOF
+## Build macOS binary
+bash scripts/build-macos.sh
 
-docker run --rm cryprq-reproducible
+## Binary will be in: target/release/cryprq
 ```
 
-## Full Reproducible Build Process
+### Docker
 
-### Step 1: Clone with Verification
 ```bash
-# Enable GPG signature verification
-git config --global commit.gpgSign true
-git config --global tag.gpgSign true
+## Build Docker image
+docker build -t cryprq-node:latest -f Dockerfile .
 
-# Clone repository
-git clone https://github.com/codethor0/cryprq.git
-cd cryprq
-
-# Verify latest commit signature
-git verify-commit HEAD
-
-# Checkout specific release tag
-git checkout v0.1.0
-git verify-tag v0.1.0
+## Verify image
+docker run --rm cryprq-node:latest --help
 ```
 
-### Step 2: Verify rust-toolchain.toml
+### Nix
+
 ```bash
-sha256sum rust-toolchain.toml
-# Expected: [HASH_TO_BE_UPDATED]
+## Build with Nix
+nix build
+
+## Run binary
+./result/bin/cryprq --help
 ```
 
-### Step 3: Build with Nix
+## Validation
+
+### Automated Validation
+
 ```bash
-# Create shell.nix if not present
-cat > shell.nix <<'EOF'
-{ pkgs ? import <nixpkgs> {} }:
+## Run reproducible build validation script
+bash scripts/repro-build.sh
 
-pkgs.mkShell {
-  buildInputs = with pkgs; [
-    rustc
-    cargo
-    pkg-config
-    openssl
-  ];
-  
-  RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-  
-  shellHook = ''
-    export CARGO_HOME=$PWD/.cargo
-    export RUSTUP_HOME=$PWD/.rustup
-  '';
-}
-EOF
-
-# Enter pure Nix shell
-nix-shell --pure
-
-# Build with locked dependencies
-cargo build --release --locked
-
-# Exit shell
-exit
-
-# Verify checksum
-sha256sum target/release/cryprq
+## This performs two clean builds and compares hashes
 ```
 
-### Step 4: Compare with Official Release
+### Manual Validation
+
+1. **Build 1**: Clean build, capture binary hash
+2. **Build 2**: Clean build again, capture binary hash
+3. **Compare**: Hashes should match for true reproducibility
+
 ```bash
-# Download official release
-gh release download v0.1.0 -p checksums.txt
+## Build 1
+cargo clean
+cargo build --release -p cryprq
+shasum -a 256 target/release/cryprq > build1.sha256
 
-# Compare checksums
-sha256sum target/release/cryprq | cut -d' ' -f1 > local.sum
-grep "cryprq-x86_64" checksums.txt | cut -d' ' -f1 > official.sum
-diff local.sum official.sum && echo "✓ Build is reproducible"
+## Build 2
+cargo clean
+cargo build --release -p cryprq
+shasum -a 256 target/release/cryprq > build2.sha256
+
+## Compare
+diff build1.sha256 build2.sha256
 ```
 
-### Step 5: Generate Release Bundle (Optional)
+## Deterministic Build Settings
+
+The project uses the following settings for reproducible builds:
+
+```toml
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+```
+
+## Known Limitations
+
+1. **Timestamps**: Build timestamps may differ between builds
+2. **Build Paths**: Absolute paths in debug info may differ
+3. **Rust Version**: Must use exact same Rust toolchain version (1.83.0)
+4. **Dependencies**: Cargo.lock must be committed and unchanged
+
+## Docker Reproducibility
+
+Docker builds are more reproducible due to:
+- Fixed base images
+- Isolated build environment
+- Deterministic dependency resolution
+
 ```bash
-./finish_qa_and_package.sh VERSION=v0.1.0 IMAGE=ghcr.io/codethor0/cryprq
+## Build with Docker
+docker build -t cryprq-node:latest -f Dockerfile .
+
+## Verify reproducibility
+docker build -t cryprq-node:v2 -f Dockerfile .
+docker diff cryprq-node:latest cryprq-node:v2
 ```
 
-- `release-v0.1.0/security/sbom-v0.1.0.spdx.json` – SPDX SBOM generated via Syft (Docker fallback included).
-- `release-v0.1.0/security/grype-v0.1.0.txt` – Grype vulnerability scan (defaults to `--fail-on critical`).
-- QA logs and checksums remain under `release-v0.1.0/qa` and `release-v0.1.0/bin`.
+## Nix Reproducibility
 
-## Docker Method (Detailed)
+Nix provides the highest level of reproducibility:
+- Pure builds (no network access)
+- Deterministic dependency resolution
+- Isolated build environments
 
-### Dockerfile.reproducible
-```dockerfile
-FROM debian:bookworm-slim
-
-# Pin Rust version
-ENV RUST_VERSION=1.82.0
-ENV RUSTUP_HOME=/usr/local/rustup
-ENV CARGO_HOME=/usr/local/cargo
-ENV PATH=/usr/local/cargo/bin:$PATH
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    git \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Rust with pinned version
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal --component clippy rustfmt
-
-# Set working directory
-WORKDIR /build
-
-# Copy project files
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
-COPY crypto ./crypto
-COPY p2p ./p2p
-COPY node ./node
-COPY cli ./cli
-
-# Build with locked dependencies
-RUN cargo build --release --locked
-
-# Generate checksum
-RUN sha256sum target/release/cryprq > /checksum.txt
-
-# Default command
-CMD ["cat", "/checksum.txt"]
-```
-
-### Build & Verify
 ```bash
-# Build Docker image
-docker build -f Dockerfile.reproducible -t cryprq-reproducible .
+## Build with Nix
+nix build
 
-# Extract binary and checksum
-docker run --rm cryprq-reproducible cat /checksum.txt
-docker cp $(docker create cryprq-reproducible):/build/target/release/cryprq ./cryprq-docker
-
-# Verify
-sha256sum cryprq-docker
+## Verify
+nix-build --check
 ```
 
-## Troubleshooting
+## Release Artifacts
 
-### Different checksums?
-1. Verify Rust version: `rustc --version` (must be 1.82.0)
-2. Verify clean build: `cargo clean && cargo build --release --locked`
-3. Check for local patches: `git diff HEAD`
-4. Verify Cargo.lock: `git diff Cargo.lock`
+Release bundles include:
+- Binary checksums (SHA256)
+- SBOM (Software Bill of Materials)
+- Build logs
+- Reproducibility validation reports
 
-### Nix build fails?
-```bash
-# Update Nix channels
-nix-channel --update
-
-# Clear Nix store
-nix-collect-garbage -d
-
-# Retry with verbose output
-nix-shell --pure --show-trace
-```
-
-### Docker build fails?
-```bash
-# Clean Docker build cache
-docker system prune -a
-
-# Rebuild without cache
-docker build --no-cache -f Dockerfile.reproducible -t cryprq-reproducible .
-```
-
-## Verification Checklist
-- [ ] Git commit signature verified
-- [ ] Git tag signature verified
-- [ ] rust-toolchain.toml checksum matches
-- [ ] Cargo.lock unchanged
-- [ ] Build completed with --locked flag
-- [ ] Binary checksum matches official release
-- [ ] No local modifications (git status clean)
+See `scripts/release.sh` for the complete release pipeline.
 
 ## References
+
 - [Reproducible Builds Project](https://reproducible-builds.org/)
-- [Nix Package Manager](https://nixos.org/manual/nix/stable/)
-- [Rust Toolchain File](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
+- [Rust Reproducible Builds](https://rust-lang.github.io/rfcs/3328-reproducible-builds.html)
+- [Nix Manual](https://nixos.org/manual/nix/stable/)
