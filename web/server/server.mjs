@@ -12,12 +12,22 @@ function push(level, t){ const e={level,t}; events.push(e); if(events.length>500
 
 app.post('/connect', (req,res)=>{
   const { mode, port, peer, vpn } = req.body || {};
+  
+  // Kill any existing processes and clear the port
   if(proc) { 
     proc.kill('SIGKILL'); 
-    proc = null; 
-    // Give it a moment to release the port
-    setTimeout(() => {}, 500);
+    proc = null;
   }
+  
+  // Kill any cryprq processes and clear port 9999
+  const { execSync } = require('child_process');
+  try {
+    execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
+    execSync(`pkill -9 -f "cryprq.*${port}" 2>/dev/null || true`, {stdio: 'ignore'});
+  } catch(e) {}
+  
+  // Wait a moment for ports to be released
+  setTimeout(() => {}, 1000);
   let args = [];
   if(mode==='listener') args = ['--listen', `/ip4/0.0.0.0/udp/${port}/quic-v1`];
   else if(mode==='dialer') args = ['--peer', peer || `/ip4/127.0.0.1/udp/${port}/quic-v1`];
@@ -57,7 +67,13 @@ app.post('/connect', (req,res)=>{
       if(/INFO|DEBUG|TRACE/i.test(line)) {
         level='info';
         if(/rotate|rotation/i.test(line)) level='rotation';
-        if(/peer|connect|handshake|ping|connected/i.test(line)) level='peer';
+        if(/peer|connect|handshake|ping|connected|listening/i.test(line)) level='peer';
+        if(/listening on/i.test(line)) level='peer'; // Listening is a peer event
+      } else if(/listening on/i.test(line)) {
+        level='peer'; // Listening messages are peer events
+      } else if(/Address already in use/i.test(line)) {
+        level='error';
+        push('status', `⚠️ Port ${port} is in use - killing existing processes...`);
       }
       push(level, line);
     });

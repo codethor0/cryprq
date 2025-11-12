@@ -25,8 +25,10 @@ export function EncryptionStatus({ status }: { status: Status }) {
       
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', color: '#ddd' }}>
         <div style={{ color: '#888' }}>Connection:</div>
-        <div style={{ color: status.connected ? '#4f4' : '#f55' }}>
-          {status.connected ? '✓ Encrypted Tunnel Active' : '✗ Disconnected'}
+        <div style={{ color: status.connected ? '#4f4' : status.mode === 'listener' && status.peerId ? '#ff8' : '#f55' }}>
+          {status.connected ? '✓ Encrypted Tunnel Active' : 
+           status.mode === 'listener' && status.peerId ? '⏳ Listening (waiting for peer)' :
+           status.mode === 'dialer' ? '⏳ Connecting...' : '✗ Disconnected'}
         </div>
 
         <div style={{ color: '#888' }}>Encryption:</div>

@@ -47,7 +47,7 @@ export default function App(){
         }
         
         // Extract connected peer (dialer connects to peer, listener receives connection)
-        if (text.includes('Connected to') || text.includes('connected to')) {
+        if (text.includes('Connected to') || text.includes('connected to') || text.match(/Connected to/i)) {
           const match = text.match(/[Cc]onnected to (\S+)/);
           if (match) {
             setStatus(prev => ({ 
@@ -59,9 +59,19 @@ export default function App(){
           }
         }
         
+        // Listener is listening - mark as ready (will be connected when peer dials)
+        if (text.includes('Listening on') || text.includes('listening on')) {
+          setStatus(prev => ({ 
+            ...prev, 
+            mode: mode,
+            // Keep connected status if already connected, otherwise ready but not connected yet
+          }));
+        }
+        
         // Listener receives connection (check for incoming connection events)
         if (text.includes('New connection') || text.includes('Connection established') || 
-            text.includes('connection established') || text.includes('peer connected')) {
+            text.includes('connection established') || text.includes('peer connected') ||
+            text.includes('Incoming connection')) {
           setStatus(prev => ({ 
             ...prev, 
             connected: true,
@@ -78,12 +88,12 @@ export default function App(){
           }));
         }
         
-        // Check for listener starting
+        // Check for listener starting - this means it's ready
         if (text.includes('Starting listener') && mode === 'listener') {
           setStatus(prev => ({ 
             ...prev, 
             mode: mode,
-            connected: false // Will be set to true when peer connects
+            // Don't reset connected - might already be connected from previous attempt
           }));
         }
         
