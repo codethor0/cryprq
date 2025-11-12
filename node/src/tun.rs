@@ -195,7 +195,7 @@ impl TunInterface {
         // Use ip command to configure the interface
         // This requires root/admin privileges
         let output = Command::new("sudo")
-            .args(&[
+            .args([
                 "ip",
                 "addr",
                 "add",
@@ -214,7 +214,7 @@ impl TunInterface {
         }
 
         let output = Command::new("sudo")
-            .args(&["ip", "link", "set", name, "up"])
+            .args(["ip", "link", "set", name, "up"])
             .output()
             .context("Failed to bring TUN interface up (ip link)")?;
 
