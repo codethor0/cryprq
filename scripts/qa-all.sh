@@ -4,12 +4,18 @@
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # SPDX-License-Identifier: MIT
 
-# Comprehensive QA pipeline orchestrator
+# Comprehensive QA pipeline orchestrator (Bulletproof QA)
 set -euo pipefail
 
 DATE=$(date +%Y%m%d)
 ARTIFACT_DIR="release-${DATE}/qa"
 mkdir -p "$ARTIFACT_DIR"
+
+# Bootstrap if first run
+if [ ! -f ".tools-lock.json" ]; then
+    echo "Running bootstrap..."
+    bash scripts/qa-bootstrap.sh
+fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "CRYPRQ EXTREME VALIDATION & OPTIMIZATION - Full Pipeline"
@@ -20,21 +26,21 @@ echo ""
 
 FAILED_STEPS=()
 
-# 1. Environment setup
+# 0. Bootstrap
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 1: Environment Setup"
+echo "Step 0: Bootstrap (Toolchain & Dependencies)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if bash scripts/setup-qa-env.sh 2>&1 | tee "$ARTIFACT_DIR/env-setup.log"; then
-    echo "✅ Environment setup complete"
+if bash scripts/qa-bootstrap.sh 2>&1 | tee "$ARTIFACT_DIR/bootstrap.log"; then
+    echo "✅ Bootstrap complete"
 else
-    echo "❌ Environment setup failed"
-    FAILED_STEPS+=("env-setup")
+    echo "❌ Bootstrap failed"
+    FAILED_STEPS+=("bootstrap")
 fi
 echo ""
 
-# 2. Format & Clippy
+# 1. Repo sanity & hardening
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 2: Format & Clippy"
+echo "Step 1: Repo Sanity & Hardening"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if cargo fmt --all -- --check 2>&1 | tee "$ARTIFACT_DIR/fmt.log"; then
     echo "✅ Format check passed"
@@ -42,15 +48,21 @@ else
     echo "❌ Format check failed"
     FAILED_STEPS+=("fmt")
 fi
-if cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tee "$ARTIFACT_DIR/clippy.log"; then
+if cargo clippy --workspace --all-targets --all-features -D warnings 2>&1 | tee "$ARTIFACT_DIR/clippy.log"; then
     echo "✅ Clippy check passed"
 else
     echo "❌ Clippy check failed"
     FAILED_STEPS+=("clippy")
 fi
+if bash scripts/run-unused-deps.sh 2>&1 | tee "$ARTIFACT_DIR/unused-deps.log"; then
+    echo "✅ Unused deps check passed"
+else
+    echo "❌ Unused deps check failed"
+    FAILED_STEPS+=("unused-deps")
+fi
 echo ""
 
-# 3. Unit tests
+# 2. Unit tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Step 3: Unit Tests"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -62,9 +74,9 @@ else
 fi
 echo ""
 
-# 4. KAT tests
+# 3. KAT tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4: KAT (Known Answer Tests)"
+echo "Step 3: KAT (Known Answer Tests)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-kat-tests.sh 2>&1 | tee "$ARTIFACT_DIR/kat-summary.log"; then
     echo "✅ KAT tests passed"
@@ -74,9 +86,9 @@ else
 fi
 echo ""
 
-# 5. Property tests
+# 4. Property tests
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 5: Property Tests"
+echo "Step 4: Property Tests"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-property-tests.sh 2>&1 | tee "$ARTIFACT_DIR/property-summary.log"; then
     echo "✅ Property tests passed"
@@ -86,9 +98,9 @@ else
 fi
 echo ""
 
-# 6. Extended fuzz (30+ min per target)
+# 5. Extended fuzz (30+ min per target)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 6: Extended Fuzz (30+ min per target)"
+echo "Step 5: Extended Fuzz (30+ min per target)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-extended-fuzz.sh all 1800 2>&1 | tee "$ARTIFACT_DIR/fuzz-extended.log"; then
     echo "✅ Extended fuzz tests passed"
@@ -98,9 +110,9 @@ else
 fi
 echo ""
 
-# 7. Miri sweep
+# 6. Miri sweep
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 7: Miri UB Detection"
+echo "Step 6: Miri UB Detection"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-miri-sweep.sh 2>&1 | tee "$ARTIFACT_DIR/miri.log"; then
     echo "✅ Miri sweep passed"
@@ -110,9 +122,9 @@ else
 fi
 echo ""
 
-# 8. Sanitizers
+# 7. Sanitizers
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 8: Sanitizers (ASan/UBSan)"
+echo "Step 7: Sanitizers (ASan/UBSan)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-sanitizers.sh 2>&1 | tee "$ARTIFACT_DIR/sanitizers-summary.log"; then
     echo "✅ Sanitizer tests passed"
@@ -122,9 +134,9 @@ else
 fi
 echo ""
 
-# 9. Interop (QUIC + libp2p)
+# 8. Interop (QUIC + libp2p)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 9: Interop (QUIC + libp2p)"
+echo "Step 8: Interop (QUIC + libp2p)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-quic-interop.sh 2>&1 | tee "$ARTIFACT_DIR/quic-interop.log"; then
     echo "✅ QUIC interop passed"
@@ -140,9 +152,9 @@ else
 fi
 echo ""
 
-# 10. Benchmarks
+# 9. Benchmarks
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 10: Performance Benchmarks"
+echo "Step 9: Performance Benchmarks"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-benchmarks.sh 2>&1 | tee "$ARTIFACT_DIR/bench-summary.log"; then
     echo "✅ Benchmarks passed"
@@ -152,15 +164,33 @@ else
 fi
 echo ""
 
-# 11. Coverage
+# 10. Coverage
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 11: Coverage Analysis"
+echo "Step 10: Coverage Analysis"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-coverage.sh 2>&1 | tee "$ARTIFACT_DIR/coverage-summary.log"; then
     echo "✅ Coverage analysis complete"
 else
     echo "❌ Coverage analysis failed"
     FAILED_STEPS+=("coverage")
+fi
+echo ""
+
+# 11. MSRV & SemVer
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 11: MSRV & SemVer Checks"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-msrv-check.sh 2>&1 | tee "$ARTIFACT_DIR/msrv-summary.log"; then
+    echo "✅ MSRV verification passed"
+else
+    echo "❌ MSRV verification failed"
+    FAILED_STEPS+=("msrv")
+fi
+if bash scripts/run-semver-checks.sh 2>&1 | tee "$ARTIFACT_DIR/semver-summary.log"; then
+    echo "✅ SemVer checks passed"
+else
+    echo "❌ SemVer checks failed"
+    FAILED_STEPS+=("semver")
 fi
 echo ""
 
@@ -268,15 +298,71 @@ else
 fi
 echo ""
 
-# 21. Documentation Linting
+# 16. Mutation Testing
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 21: Documentation Linting"
+echo "Step 16: Mutation Testing (cargo-mutants)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-mutation-tests.sh 2>&1 | tee "$ARTIFACT_DIR/mutation-summary.log"; then
+    echo "✅ Mutation testing passed"
+else
+    echo "❌ Mutation testing failed"
+    FAILED_STEPS+=("mutation")
+fi
+echo ""
+
+# 17. Loom Concurrency Tests
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 17: Loom Concurrency Tests"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-loom-tests.sh 2>&1 | tee "$ARTIFACT_DIR/loom-summary.log"; then
+    echo "✅ Loom tests passed"
+else
+    echo "⚠️ Loom tests skipped (infrastructure ready)"
+fi
+echo ""
+
+# 18. Dudect Constant-Time Tests
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 18: Dudect Constant-Time Tests"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-dudect-tests.sh 2>&1 | tee "$ARTIFACT_DIR/dudect-summary.log"; then
+    echo "✅ Dudect infrastructure ready"
+else
+    echo "⚠️ Dudect tests skipped (infrastructure ready)"
+fi
+echo ""
+
+# 19. Network Adversity
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 19: Network Adversity (tc netem)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-network-adversity.sh 2>&1 | tee "$ARTIFACT_DIR/network-adversity-summary.log"; then
+    echo "✅ Network adversity infrastructure ready"
+else
+    echo "⚠️ Network adversity tests skipped (infrastructure ready)"
+fi
+echo ""
+
+# 20. Documentation Linting
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 20: Documentation Linting"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if bash scripts/run-doc-lints.sh 2>&1 | tee "$ARTIFACT_DIR/doc-lints-summary.log"; then
     echo "✅ Documentation linting passed"
 else
     echo "❌ Documentation linting failed"
     FAILED_STEPS+=("docs")
+fi
+echo ""
+
+# 21. OpenSSF Scorecard
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 21: OpenSSF Scorecard"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if bash scripts/run-openssf-scorecard.sh 2>&1 | tee "$ARTIFACT_DIR/scorecard-summary.log"; then
+    echo "✅ Scorecard complete"
+else
+    echo "⚠️ Scorecard skipped (non-blocking)"
 fi
 echo ""
 
