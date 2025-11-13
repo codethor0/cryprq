@@ -30,8 +30,8 @@ echo "== Trim language caches =="
 rm -rf ~/.cache/pip/http 2>/dev/null || true
 find ~/.cache/pip wheels -type f -mtime +7 -delete 2>/dev/null || true
 npm cache verify || true
-npm cache prune || true
-pnpm store prune || true
+# npm cache prune is deprecated, use verify instead
+pnpm store prune 2>/dev/null || true
 rm -rf ~/.gradle/caches/*/file-* || true
 
 # Docker cleanup if available
