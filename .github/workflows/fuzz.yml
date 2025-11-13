@@ -34,7 +34,7 @@ jobs:
       
       - name: Build fuzz targets
         env:
-          RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
+          RUSTFLAGS: "-C link-arg=-fuse-ld=lld -C link-arg=-fsanitize=address"
         run: |
           cd fuzz
           rustup override set nightly
