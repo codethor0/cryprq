@@ -43,9 +43,6 @@ jobs:
       
       - name: Aggressive cleanup (10GB cap)
         run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
-      
-      - name: Aggressive cleanup (10GB cap)
-        run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
