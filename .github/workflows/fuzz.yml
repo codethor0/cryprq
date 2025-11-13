@@ -45,9 +45,11 @@ jobs:
         run: |
           cd fuzz
           # Run each fuzz target for 30 seconds
-          for target in hybrid_handshake ppk_derivation protocol_parse key_rotation; do
-            timeout 30 cargo fuzz run $target -- -max_total_time=30 || true
-          done
+          # Note: cargo-fuzz uses binary names from Cargo.toml (fuzz_target_1-4)
+          timeout 30 cargo fuzz run fuzz_target_1 -- -max_total_time=30 || true
+          timeout 30 cargo fuzz run fuzz_target_2 -- -max_total_time=30 || true
+          timeout 30 cargo fuzz run fuzz_target_3 -- -max_total_time=30 || true
+          timeout 30 cargo fuzz run fuzz_target_4 -- -max_total_time=30 || true
       
       - name: Upload fuzz artifacts on failure
         if: failure()
