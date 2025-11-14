@@ -1,9 +1,11 @@
 name: Mobile Release
 
+# TEMPORARILY DISABLED - Mobile builds need fixes before deployment
 on:
-  push:
-    tags:
-      - 'mobile-v*'
+  workflow_dispatch:
+  # push:
+  #   tags:
+  #     - 'mobile-v*'
 
 jobs:
   build_android:

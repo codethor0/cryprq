@@ -1,9 +1,12 @@
 name: Release
 
+# TEMPORARILY DISABLED - Web version ready, other builds need fixes
+# Re-enable after fixing GUI/Mobile builds
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+  # push:
+  #   tags:
+  #     - 'v*'
 
 jobs:
   build:
