@@ -43,7 +43,8 @@ jobs:
   build_linux:
     name: Build Linux
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    # TEMPORARILY DISABLED - GUI builds need fixes before deployment
+    if: false && startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,7 +68,8 @@ jobs:
   build_windows_unsigned:
     name: Build Windows (Unsigned)
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    # TEMPORARILY DISABLED - GUI builds need fixes before deployment
+    if: false && startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,7 +93,8 @@ jobs:
   build_macos:
     name: Build macOS
     runs-on: macos-14
-    if: startsWith(github.ref, 'refs/tags/v')
+    # TEMPORARILY DISABLED - GUI builds need fixes before deployment
+    if: false && startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
