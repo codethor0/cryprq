@@ -4,7 +4,7 @@
 # CrypRQ: Post-Quantum, Zero-Trust VPN
 
 <p align="center">
-  <img src="docs/cryprq-logo.png" alt="Black dragon logo holding a glowing orb" width="180">
+  <img src="https://raw.githubusercontent.com/codethor0/cryprq/main/docs/cryprq-logo.png" alt="Black dragon logo holding a glowing orb" width="180">
 </p>
 
 ## Logo
