@@ -1,314 +1,734 @@
-# CrypRQ: A Post-Quantum–Ready Encrypted Record and File Transfer System
+# CrypRQ: A Post-Quantum-Aware Encrypted Record and File Transfer Layer (Web-Only Preview v1.0.1)
 
-**Project:** CrypRQ  
-**Version:** v1.0.1-web-preview (Web-only, Test Mode)  
-**Reference implementation:** Git tag `v1.0.1-web-preview`  
-**Validated demo build:** `main` @ `db0903f`  
-**Date:** 2025-11-14
+**Version:** v1.0.1-web-preview  
+**Code commit:** db0903f (implementation baseline)  
+**Status:** Web-only, test-mode preview (static keys, no handshake, no peer authentication)
 
 ---
 
-## Abstract
+## 0. Preview / Test-Mode Disclaimer
 
-CrypRQ is a post-quantum-hybrid secure tunnel and file-transfer protocol designed for peer-to-peer communication. It leverages a hybrid key exchange combining ML-KEM (Kyber768) and X25519 to establish secure, ephemeral session keys, ensuring confidentiality and integrity of data in transit. The protocol operates over QUIC/UDP and provides automatic key rotation every five minutes, forward secrecy, and support for multiple concurrent data streams including file transfer and VPN functionality.
+This document describes the CrypRQ v1.0.1-web-preview implementation.
 
-This whitepaper documents the CrypRQ v1.0.1-web-preview architecture, which implements the core record layer and file transfer capabilities in a web-accessible format. The reference implementation demonstrates the protocol's cryptographic design, including the 20-byte record header format, epoch-based key rotation, TLS 1.3-style nonce construction, and HKDF-based key derivation.
+The current release is **not production-ready**:
 
-> **Security Status (Preview Only)**
-> 
-> - Static test keys
-> - No handshake (no CLIENT_HELLO / SERVER_HELLO / CLIENT_FINISH)
-> - No peer identity or authentication
-> - Not suitable for production use
-> 
-> See `docs/SECURITY_NOTES.md` and `docs/WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for the authoritative disclaimers.
+- Uses static, pre-shared symmetric keys for record encryption.
+- No interactive handshake is performed in this version.
+- No peer authentication is enforced.
+- Both ends of the tunnel are effectively configured as "initiators" for test convenience.
+- All usage is expected to be local, single-operator, lab/test environments only.
+
+Subsequent releases will introduce a full post-quantum hybrid handshake, identity binding, and a hardened production security profile.
 
 ---
 
 ## 1. Introduction
 
-CrypRQ v1.0.1-web-preview is a technical preview of a post-quantum secure communication protocol designed to provide encrypted tunnels and secure file transfer capabilities. The protocol is built on modern cryptographic primitives, combining classical and post-quantum algorithms to ensure security against both current and future threats.
+Modern encrypted transport protocols such as TLS 1.3 and QUIC provide strong security, but they carry considerable complexity and tight coupling to specific protocol stacks. CrypRQ explores a different axis:
 
-### 1.1 Protocol Goals
+**A record-layer-centric, post-quantum-aware encrypted transport, optimized for file transfer and tunnel-style networking, with a clear separation between:**
 
-The fundamental goal of CrypRQ is to establish a secure, high-performance communication channel between two peers with the following properties:
+- Cryptographic record/traffic layer
+- Node / tunnel logic
+- Web UI and operator workflows
 
-- **Confidentiality**: All data is encrypted using authenticated encryption with associated data (AEAD)
-- **Integrity**: Data tampering is detected through AEAD authentication
-- **Post-Quantum Security**: Hybrid key exchange using ML-KEM (Kyber768) + X25519
-- **Forward Secrecy**: Ephemeral key rotation every five minutes
-- **Stream Multiplexing**: Support for multiple concurrent data streams
+This whitepaper documents:
 
-### 1.2 Architecture Overview
+- The record layer and key schedule used to protect data in transit.
+- The post-quantum-aware cryptographic design that underpins future handshake work.
+- The file transfer protocol and buffering model implemented in the node crate.
+- The web stack and operational workflows used in the v1.0.1 web-only preview.
+- The security model and limitations of this test-mode release.
+- The validation, CI, and release process that back the published artifacts.
 
-CrypRQ operates as a layer above transport protocols (primarily QUIC/UDP) to provide a secure channel for application data. The protocol's lifecycle includes:
-
-1. **Cryptographic Handshake**: Hybrid key exchange using ML-KEM + X25519 (planned for future release)
-2. **Key Derivation**: HKDF-based derivation of master secret and traffic keys
-3. **Record Layer**: 20-byte header format with epoch, stream ID, sequence number, and message type
-4. **Key Rotation**: Automatic refresh of traffic keys every five minutes
-5. **Data Transfer**: Encrypted records carrying file transfer, VPN packets, or generic data
+Our aim is to provide a transparent, technically detailed description that can be cited, reviewed, and critiqued by practitioners and researchers.
 
 ---
 
-## 2. Cryptographic Design
+## 2. System Overview
 
-### 2.1 Record Layer Format
+CrypRQ is implemented as a set of Rust crates and a small web stack:
 
-Each CrypRQ record consists of a 20-byte header followed by encrypted payload:
+### cryp-rq-core (core crate)
+
+Defines the record format, constants (e.g., `MSG_TYPE_DATA`), header parsing/serialization, and record-level encryption interface.
+
+### cryp-rq-crypto (crypto crate)
+
+- Implements the key derivation functions (KDFs), use of HKDF, and integration with AEAD (e.g., `chacha20poly1305`).
+- Hosts post-quantum ML-KEM (Kyber-768-class) primitives via `pqcrypto-mlkem`.
+- Provides property and KAT tests for handshake-related key derivations.
+
+### node crate
+
+- Implements record-layer usage, file transfer, buffer pools, replay protections, and tunnel orchestration.
+- Uses libp2p, QUIC, and associated transport components to build data paths.
+
+### p2p crate
+
+Encapsulates P2P behaviors: Kademlia, ping, connection limits, allow/block lists, etc.
+
+### CLI (cli crate, cryprq)
+
+Provides an operator-oriented command line interface for local testing and integration.
+
+### Web stack (cryprq-web container)
+
+A small TypeScript/React/Vite front-end, plus a lightweight backend that forwards file operations into the node/record layer. Exposes a localhost web UI on port 8787 for file transfer tests.
+
+### Packaging & deployment
+
+Dockerized via `docker-compose.web.yml` with two containers:
+
+- `cryprq-web` (web UI + backend)
+- `cryprq-vpn` / node container (tunnel & record layer)
+
+In the v1.0.1-web-preview, the system is deliberately constrained:
+
+- Single-operator workflows (local environment).
+- Static keys injected from configuration / environment.
+- No distributed handshake or identity assertions.
+
+This allows us to validate the record layer, file transfer machinery, and web UX in isolation before layering on a full handshake and identity model.
+
+---
+
+## 3. Cryptographic Design
+
+### 3.1 Goals
+
+The cryptographic layer is designed with the following goals:
+
+**Post-quantum awareness**
+
+Integrate a modern ML-KEM (Kyber-class) KEM for forward-compatible key establishment.
+
+**Record-oriented abstraction**
+
+Separate "record encryption" from transport and routing, similar in spirit to TLS record layer, but adapted for our file-transfer/tunnel usage.
+
+**Nonce safety and replay resistance**
+
+Derive per-record nonces from epoch, sequence number, and a static IV, with tests ensuring:
+
+- Determinism where required (for KATs).
+- Uniqueness across the feasible space of sequence numbers.
+- Correct overflow behavior when sequence counters wrap.
+
+**Domain separation**
+
+Distinct HKDF labels are used for handshake, traffic, and directional keys (e.g., Initiator→Responder vs Responder→Initiator), avoiding key/nonce re-use across contexts.
+
+### 3.2 Primitives
+
+From the implementation and tests:
+
+**Symmetric AEAD: `chacha20poly1305`**
+
+- Used for per-record authenticated encryption.
+- 256-bit key, 96-bit nonce, 128-bit authentication tag.
+
+**Key derivation: HKDF**
+
+HKDF-Extract and HKDF-Expand with context-specific labels:
+
+- `LABEL_RI_KEY`, `LABEL_RI_IV`, etc. for derived traffic keys and IVs.
+- Dedicated labels for epoch keys and handshake keys.
+
+**Post-quantum KEM: `pqcrypto-mlkem` (ML-KEM-768-class)**
+
+- Used in tests to validate round-trip encapsulation/decapsulation and deterministic KAT behavior.
+- Forms the PQ half of a hybrid handshake in future work.
+
+**Classical primitives:**
+
+- X25519 via `x25519-dalek` for classical ECDH, and standard hash functions as required by HKDF and KEM binding.
+
+**Auxiliary libraries:**
+
+- `constant_time_eq` for timing-safe comparisons.
+- `blake3` and related modern hash/cr hash utilities where appropriate.
+
+### 3.3 Record Layer Overview
+
+At the core of CrypRQ is a record abstraction:
+
+**A record header that carries:**
+
+- `epoch`: logical key epoch identifier.
+- `stream_id`: multiplexing identifier for logical streams.
+- `sequence_number`: monotonically increasing per-stream counter.
+- `message_type`: e.g., `MSG_TYPE_DATA` (data), and reserved codes for control.
+- `flags`: reserved for future features (e.g., end-of-stream).
+- `length`: ciphertext payload length.
+
+**A payload that is AEAD-encrypted under keys derived from:**
+
+`master_secret` → epoch key → directional traffic keys / IVs.
+
+The `cryp-rq-core` crate exposes functions such as:
+
+- `RecordHeader::from_bytes` / `to_bytes`
+- `Record::from_bytes` / `to_bytes`
+
+An `encrypt` function that binds:
+
+```rust
+encrypt(
+    version,
+    message_type,
+    flags,
+    epoch,
+    stream_id,
+    seq,
+    plaintext,
+    static_iv
+) -> io::Result<Record>
+```
+
+(The exact signature may differ, but this is the conceptual binding.)
+
+Clippy and unit tests assert that:
+
+- Record headers serialize/deserialize correctly.
+- Records can be encrypted/decrypted round-trip with consistent headers.
+- Epoch wrapping and sequence counter behavior is well-defined and tested.
+
+### 3.4 Nonce Construction
+
+The `node::crypto_utils` module contains tests like:
+
+- `test_nonce_construction`
+- `test_nonce_deterministic`
+- `test_nonce_overflow`
+- `test_max_nonce_value_constant`
+
+The nonce strategy is:
+
+1. Start from a static IV (per direction, derived from HKDF).
+2. Mix in:
+   - `epoch`
+   - `sequence_number`
+3. Construct a 96-bit AEAD nonce such that:
+   - For all valid epoch, seq combinations in a deployment, no nonce repeats under the same key.
+   - Overflow behavior is explicit and tested (e.g., when sequence counters reach their maximum).
+
+This is implemented using `generic-array` types from `chacha20poly1305`, with deprecation warnings around `as_slice()` handled in code and tests.
+
+### 3.5 KDF and Key Schedule
+
+The `crypto::kdf` module exposes:
+
+- `derive_handshake_keys(...)`
+- `derive_traffic_keys(...)`
+- `derive_epoch_keys(...)`
+
+Each function:
+
+- Accepts a base secret (`master_secret` or KEM output), plus context (e.g., role, direction).
+- Uses HKDF with distinct labels:
+  - Example: `"handshake_keys"`, `"traffic_keys"`, `LABEL_RI_KEY`, `LABEL_RI_IV`, etc.
+- Produces:
+  - AEAD keys (for both directions).
+  - IVs or static IV components.
+  - Epoch-specific key material.
+
+Tests in this module ensure:
+
+- Determinism for given inputs (KAT-style checks).
+- Correct length and type of output keys and IVs.
+- No panics when HKDF expand is used (clippy enforced by banning `unwrap()` and replacing with safe handling or `expect` with meaningful messages).
+
+### 3.6 Post-Quantum Hybrid Handshake (Planned)
+
+The `cryp-rq-crypto` crate includes:
+
+**KAT tests:**
+
+- `test_kyber768_keypair_kat`
+- `test_kyber768_encaps_decaps_kat`
+- `test_kyber768_roundtrip_correctness`
+- `test_kyber768_wrong_key_rejection`
+
+**Property tests:**
+
+- `test_hybrid_handshake_symmetry`
+- `test_handshake_idempotence`
+- `test_key_sizes_consistent`
+
+These indicate the intended handshake architecture:
+
+**Hybrid construction:**
+
+Combine a classical ECDH component (X25519) with ML-KEM-768 to derive a joint `master_secret`.
+
+**Symmetry and idempotence:**
+
+Both sides derive identical key material when transcripts match. Repeated runs with the same transcript yield the same keys (idempotence), as expected.
+
+**Robustness:**
+
+Wrong key usage leads to rejection as expected.
+
+However, v1.0.1-web-preview does not expose this handshake on the wire. It is confined to tests and internal APIs. The live tunnel still uses static symmetric keys.
+
+---
+
+## 4. Record Format and File Transfer Protocol
+
+### 4.1 Record Header
+
+The record header has a fixed size and is designed for:
+
+- Efficient parsing.
+- Clear separation of:
+  - `epoch`
+  - `stream_id`
+  - `sequence_number`
+  - `message_type`
+  - `flags`
+  - `length`
+
+Unit tests:
+
+- `test_header_serialization`
+- `test_record_serialization`
+- `test_epoch_wrapping`
+
+validate correctness. When decrypting, `RecordHeader::from_bytes` is used, and clippy enforcement ensures that error conditions are handled without unchecked `unwrap()` in tests and library code.
+
+### 4.2 Fragmentation and Padding
+
+The `node/file-transfer` layer treats records as transport units for file chunks:
+
+- Large files are split into fixed-size chunks (`CHUNK_SIZE`).
+- Each chunk is encapsulated in a single record (or a small sequence of records if necessary).
+
+Padding helpers in `node::padding`:
+
+- `test_pad_packet`
+- `test_unpad_packet`
+
+ensure that padding and de-padding are correct and safe for future traffic-shaping features.
+
+### 4.3 File Transfer State Machines
+
+In `node::file_transfer`:
+
+**OutgoingTransfer structure holds:**
+
+- `metadata`: `FileMetadata` (name, size, hash).
+- `file_path`: `PathBuf`.
+- `chunks_sent`: `u32`.
+- `total_chunks`: `u32` (computed using safe `div_ceil` semantics).
+
+**IncomingTransfer is stored in a map keyed by `stream_id`:**
+
+- Tracks file metadata.
+- Accumulates chunks.
+- Reconstructs the final file in a destination directory.
+
+**Concurrency primitives:**
+
+Incoming/outgoing maps are protected via `Mutex`/`RwLock`. Clippy disallows bare `unwrap()`, so state is accessed either with:
+
+- Explicit `expect("...")` with actionable messages, or
+- Pattern matching and early returns.
+
+This protocol supports:
+
+- Start-transfer control messages containing metadata (filename, size, hash).
+- Chunk messages carrying encrypted file data.
+- Completion detection when all `total_chunks` are received.
+
+Tests such as:
+
+- `test_large_packet`
+- `test_tunnel_send_packet`
+- `test_buffer_pool_basic`
+- `test_buffer_pool_reuse`
+- `test_buffer_pool_clear_on_return`
+
+validate buffering behavior and clean state handling.
+
+### 4.4 Replay and Overflow Protections
+
+Nonce and sequence counters are managed in `seq_counters` and replay window logic:
+
+- `test_nonce_overflow_protection`
+- `test_replay_window_sequential`
+- `test_replay_window_out_of_order`
+- `test_replay_window_old_nonces`
+- `test_replay_window_large_gap`
+
+These tests ensure:
+
+- The replay window rejects stale or duplicated nonces/sequence numbers.
+- Overflow scenarios are explicitly handled instead of silently wrapping.
+- Buffer reuse does not leak data across streams or peers.
+
+---
+
+## 5. Networking and Web Stack
+
+### 5.1 Node and P2P Layer
+
+The `node` and `p2p` crates use:
+
+**libp2p and its components:**
+
+- QUIC transports.
+- Noise and TLS wrappers.
+- Kademlia DHT (`libp2p-kad`).
+- `libp2p-mdns` for local discovery (future).
+- `libp2p-ping`, connection limits, and allow/block lists.
+
+**tun** for TUN/TAP integration (VPN-style tunneling).
+
+**reqwest** for HTTP client operations where needed.
+
+In v1.0.1-web-preview:
+
+- The topology is intentionally simple:
+  - Local node plus web UI.
+  - No public bootstrap network.
+- The VPN/TUN features are present but not fully exercised in the web preview.
+
+### 5.2 Web Stack Architecture
+
+The web deployment uses `docker-compose.web.yml` with:
+
+**cryprq-web container:**
+
+- Vite/React front-end.
+- HTTP API on port 8787 (inside container, forwarded to host).
+- Visual UI for selecting a file and initiating transfers.
+
+**cryprq-vpn or equivalent node container:**
+
+- Runs the node binary.
+- Manages encrypted file transfer and the tunnel.
+
+**A typical web smoke test for v1.0.1:**
+
+1. Start web stack:
+   ```bash
+   docker compose -f docker-compose.web.yml up --build
+   ```
+
+2. Open browser:
+   ```
+   http://localhost:8787
+   ```
+
+3. Upload `/tmp/testfile.bin` using the UI.
+
+4. Verify integrity:
+   ```bash
+   sha256sum /tmp/testfile.bin /tmp/receive/testfile.bin
+   # Expected:
+   # 6e2e53bc5d2a187becf1d734d7cea4488042784f188cf4615054d2f2a39db7ec
+   ```
+
+5. Record the result in `docs/WEB_VALIDATION_RUN.md`.
+
+This ties the web UI behavior to the same hash-verified file transfer that is validated by CLI tests, ensuring end-to-end correctness.
+
+---
+
+## 6. Security Model and Limitations
+
+### 6.1 Intended Security Properties (Design Level)
+
+At the design level (including planned handshake work), CrypRQ aims to provide:
+
+**Confidentiality**
+
+Per-record AEAD encryption with unique nonce/key use.
+
+**Integrity and authenticity of records**
+
+AEAD tags; handshake-derived keys bound to peer identities in future versions.
+
+**Forward secrecy and post-quantum robustness**
+
+Hybrid ECDH + ML-KEM handshake so that compromising classical algorithms alone is insufficient.
+
+**Replay protection**
+
+Sequence counters with replay windows and nonce uniqueness.
+
+**Traffic shaping hooks**
+
+Padding and shaping logic in the node layer to support future traffic obfuscation.
+
+### 6.2 Limitations of v1.0.1-web-preview
+
+The current release does not enforce the full security model:
+
+**Static symmetric keys**
+
+- Keys are provisioned out-of-band.
+- Every session may reuse the same keys.
+
+**No live handshake**
+
+- PQ and hybrid KEM logic exists only in tests and KDF design.
+- No negotiated parameters on the wire.
+
+**No peer authentication**
+
+- There is no binding between keys and an identity (certificates, signatures, etc.).
+- The system assumes a test/lab environment where both endpoints are under a single operator's control.
+
+**"Both sides initiator" test hack**
+
+- For simplicity, handshake roles are not distinguished in live traffic.
+- This simplification will be removed once the full handshake is implemented.
+
+**No hardened DoS / resource controls yet**
+
+- While rate limiting tests exist (e.g., `test_rate_limiter_basic`, `test_rate_limiter_burst_then_sustained`), these are not yet treated as a complete DoS hardening story.
+
+### 6.3 Threat Model for v1.0.1-web-preview
+
+Given the limitations, the preview is only appropriate for:
+
+- Localhost / lab environments.
+- Single-operator demos and testing of:
+  - Record format and encryption.
+  - End-to-end file transfer behavior.
+  - Web stack UX and operational flow.
+
+It is **not appropriate for**:
+
+- Internet-exposed use.
+- Multi-tenant scenarios.
+- Protecting high-value or regulated data.
+
+---
+
+## 7. Implementation, Testing, and Validation
+
+### 7.1 Crate-Level Testing
+
+Each Rust crate (`core`, `crypto`, `node`, `p2p`, `cli`) includes:
+
+**Unit tests for low-level primitives:**
+
+- Record serialization.
+- Nonce construction.
+- KDF behavior.
+- Tunnel state machines and buffer pools.
+
+**KAT tests for cryptographic components:**
+
+- ML-KEM keypair/encaps/decaps vectors.
+- KDF output determinism.
+
+**Property-based tests with `proptest`:**
+
+- Key size consistency.
+- Handshake symmetry.
+- Idempotence properties.
+
+All tests are wired into a unified `cargo test` invocation, and CI ensures they pass across the crates.
+
+### 7.2 Clippy and Formatting
+
+The CI pipeline enforces:
+
+- `cargo clippy --all-targets --all-features -- -D warnings` for:
+  - `core`
+  - `crypto`
+  - `node`
+  - `p2p`
+  - `cli`
+- `cargo fmt --all -- --check` for consistent formatting.
+
+**Specific clippy rules that were addressed:**
+
+- `too_many_arguments` for record encryption APIs (suppressed where semantically justified).
+- `disallowed-methods` to remove `unwrap()` from library code and tests where inappropriate.
+- `expect_used` and `slow_vector_initialization` in `crypto::kdf` refactored to:
+  - Use `vec![0; len]` allocations.
+  - Replace `expect` with either:
+    - Clearly labeled failure messages, or
+    - Pattern matches with explicit error propagation.
+
+Warnings in third-party crates are not treated as fatal; the focus is on keeping project code clippy-clean or explicitly justified via `#[allow(...)]` annotations.
+
+### 7.3 Validation Runs
+
+Two key validation documents anchor v1.0.1-web-preview:
+
+**`docs/VALIDATION_RUN.md` (CLI / minimal sanity)**
+
+Describes a minimal file transfer using the CLI. Records hash:
 
 ```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| Version (u8)  |  Epoch (u8)  |      Stream ID (u32)          |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                    Sequence Number (u64)                      |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| Msg Type (u8) | Flags (u8)   |         Reserved (u16)        |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                    Encrypted Payload + Tag                    |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+6e2e53bc5d2a187becf1d734d7cea4488042784f188cf4615054d2f2a39db7ec
 ```
 
-**Header Fields:**
-- **Version**: Protocol version (currently 0x01 for v1.0.1)
-- **Epoch**: 8-bit epoch counter for key rotation (modulo 256)
-- **Stream ID**: 32-bit identifier for multiplexing streams
-- **Sequence Number**: 64-bit per-stream sequence counter
-- **Message Type**: 8-bit type (VPN_PACKET, FILE_META, FILE_CHUNK, FILE_ACK, DATA, CONTROL)
-- **Flags**: 8-bit flags field for future extensions
+as the canonical test vector for `testfile.bin`.
 
-### 2.2 Encryption and Nonce Construction
+**`docs/WEB_VALIDATION_RUN.md` (web smoke tests)**
 
-CrypRQ uses **ChaCha20-Poly1305** for authenticated encryption. Nonces are constructed using TLS 1.3-style XOR construction:
+Records that WEB-1 (basic web transfer) passed with the same hash. Demonstrates that the web UI faithfully drives the same underlying record and file transfer logic as the CLI.
 
-```
-nonce = static_iv XOR (0x00...00 || sequence_number_be)
-```
+**Scripts:**
 
-Where:
-- `static_iv` is a 12-byte initialization vector derived per direction (ir/ri)
-- `sequence_number_be` is the 8-byte big-endian sequence number
-- XOR is applied to the last 8 bytes of the IV
+- `scripts/web-smoke-test.sh`
+- `scripts/update-web-validation.sh`
+- `scripts/preflight-and-tag.sh`
+- `scripts/complete-release.sh`
 
-This ensures that:
-- Same (IV, seq) pair produces the same nonce
-- Different sequence numbers produce different nonces
-- Replay attacks are detectable via sequence number validation
-
-### 2.3 Key Derivation
-
-Keys are derived using **HKDF** (HMAC-based Key Derivation Function) with SHA-256:
-
-**Traffic Keys (per epoch):**
-```
-key_ir = HKDF-Expand(master_secret, "cryp-rq epoch N ir key", 32)
-iv_ir  = HKDF-Expand(master_secret, "cryp-rq epoch N ir iv", 12)
-key_ri = HKDF-Expand(master_secret, "cryp-rq epoch N ri key", 32)
-iv_ri  = HKDF-Expand(master_secret, "cryp-rq epoch N ri iv", 12)
-```
-
-Where:
-- `ir` = initiator-to-responder direction
-- `ri` = responder-to-initiator direction
-- `N` = epoch number (0-255)
-
-### 2.4 Key Rotation
-
-Keys are rotated every five minutes (configurable via `CRYPRQ_ROTATE_SECS`):
-
-1. Epoch counter increments (modulo 256)
-2. New traffic keys derived for the new epoch
-3. Old keys are securely zeroized
-4. Records include epoch number in header for key selection
+support repeatable validation, tagging, and release creation with minimal operator effort.
 
 ---
 
-## 3. File Transfer Protocol
+## 8. Release and Deployment Model
 
-CrypRQ implements a secure file transfer protocol over the encrypted record layer:
+### 8.1 Release v1.0.1-web-preview
 
-### 3.1 Transfer Flow
+The v1.0.1-web-preview release is anchored by:
 
-1. **FILE_META**: Sender sends file metadata (filename, size, SHA-256 hash)
-2. **FILE_CHUNK**: Sender sends file data in chunks (default 64KB)
-3. **FILE_ACK**: Receiver acknowledges chunks (optional, for flow control)
-4. **Verification**: Receiver verifies final SHA-256 hash matches metadata
+**Git tag:** `v1.0.1-web-preview` (immutable)
 
-### 3.2 Message Types
+**Spec and docs:**
 
-- **FILE_META** (msg_type=3): File metadata packet
-- **FILE_CHUNK** (msg_type=4): File data chunk
-- **FILE_ACK** (msg_type=5): Chunk acknowledgment
-- **CONTROL** (msg_type=6): Control messages (end-of-file, errors)
+- Protocol spec (v1.0.1)
+- `WEB_ONLY_RELEASE_NOTES_v1.0.1.md`
+- `SECURITY_NOTES.md`
+- `WEB_STACK_QUICK_START.md`
+- `RELEASE_EXECUTION_SUMMARY.md` and `FINAL_RELEASE_STEPS.md`
 
-Each message type is encapsulated in a CrypRQ record with appropriate stream ID and sequence number.
+**Operator-level runbooks:**
 
----
+- `CUT_THE_RELEASE.md`
+- `OPERATOR_GUIDE.md`
+- `RELEASE_NOW.md`
 
-## 4. Web Stack Architecture
+**Whitepaper and publication docs:**
 
-The v1.0.1-web-preview includes:
+- `WHITEPAPER.md` (this document)
+- `BLOG_OVERVIEW.md` (high-level blog variant)
+- `CITATION.cff` (citation metadata)
 
-### 4.1 Backend
+**GitHub Release:**
 
-- **Rust binary**: Implements CrypRQ record layer and file transfer
-- **libp2p QUIC**: Transport layer for peer-to-peer communication
-- **Record layer**: 20-byte header format with epoch-based key rotation
-- **File transfer manager**: Handles incoming/outgoing file transfers
+- Title: CrypRQ v1.0.1 — Web-Only Preview (Test Mode)
+- Body: `GITHUB_RELEASE_BODY_v1.0.1-web-preview.md`
+- Prominently displays test-mode / preview security warnings.
 
-### 4.2 Frontend
+### 8.2 Docker and Build Strategy
 
-- **React + TypeScript**: Modern web UI for connection management
-- **Real-time logs**: Structured event streaming (handshake, rotation, file transfer)
-- **File transfer UI**: Web-based interface for sending/receiving files
+To decouple source control tags from runtime images, the project uses:
 
-### 4.3 Deployment
+**Immutable git tags for releases:**
 
-- **Docker Compose**: Single-command deployment (`docker compose -f docker-compose.web.yml up`)
-- **Test mode**: Static keys, no handshake (for testing only)
-- **Ports**: Frontend (8787), Backend API (8787), UDP tunnel (9999)
+- `v1.0.1-web-preview` never moves.
 
----
+**Rolling Docker builds from `main` for:**
 
-## 5. Security Considerations
+- Demo and preview environments.
+- Internal testing of new CI and clippy fixes.
 
-### 5.1 Current Limitations (v1.0.1-web-preview)
+For example:
 
-The preview release operates in **test mode** with the following limitations:
+- Build from the version-bound commit (`db0903f`) on `main`:
+  ```bash
+  git checkout db0903f
+  docker build -t cryprq-web:latest -f docker/Dockerfile.web .
+  ```
 
-- **Static Keys**: Pre-shared keys for testing (no key exchange)
-- **No Handshake**: Missing CLIENT_HELLO / SERVER_HELLO / CLIENT_FINISH flow
-- **No Authentication**: No peer identity verification
-- **Test-Mode Hacks**: Key direction workarounds for testing
+- Optionally tag images for registries:
+  ```bash
+  docker tag cryprq-web:latest your-registry/cryprq-web:preview
+  docker push your-registry/cryprq-web:preview
+  ```
 
-**These limitations MUST be addressed before production use.**
+Future releases (e.g., with handshake/identity) will get new git tags such as:
 
-### 5.2 Planned Security Enhancements
+- `v1.1.0-web-preview` or
+- `v2.0.0` for the first production-grade release.
 
-Future releases will include:
+### 8.3 Next-Phase Branch
 
-- **Hybrid Handshake**: ML-KEM (Kyber768) + X25519 key exchange
-- **Peer Authentication**: Ed25519 signature verification
-- **Proper Key Directions**: Role-based key selection (initiator/responder)
-- **Replay Protection**: Sliding window nonce validation
+Handshake and identity work is staged on:
 
-### 5.3 Cryptographic Assumptions
+- **Branch:** `feature/handshake-and-identity`
+- **Driver prompt:** `MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md`
 
-CrypRQ assumes:
+**Work items include:**
 
-- **ChaCha20-Poly1305**: Secure AEAD cipher
-- **HKDF-SHA256**: Secure key derivation function
-- **ML-KEM-768**: Post-quantum key encapsulation (planned)
-- **X25519**: Classical elliptic curve Diffie-Hellman (planned)
-
----
-
-## 6. Implementation Status
-
-### 6.1 Completed (v1.0.1-web-preview)
-
-- ✅ Record layer with 20-byte header format
-- ✅ Epoch-based key rotation (8-bit epoch counter)
-- ✅ TLS 1.3-style nonce construction
-- ✅ HKDF-based key derivation
-- ✅ File transfer protocol (FILE_META, FILE_CHUNK, FILE_ACK)
-- ✅ Web UI for connection management and file transfer
-- ✅ Docker-based deployment
-- ✅ Structured logging and observability
-
-### 6.2 In Progress / Planned
-
-- 🔄 Hybrid handshake (ML-KEM + X25519)
-- 🔄 Peer identity and authentication
-- 🔄 Proper role-based key directions
-- 🔄 Replay protection window
-- 🔄 VPN mode integration
-- 🔄 Production hardening
+- Implement real CrypRQ handshake (`CLIENT_HELLO` / `SERVER_HELLO` / `CLIENT_FINISH`).
+- Integrate PQ + classical KEM/ECDH into a hybrid key schedule.
+- Bind keys to peer identities (via signatures or certificates).
+- Remove static test keys and "both sides initiator" hacks.
+- Harden `SECURITY_NOTES.md` for production recommendations.
 
 ---
 
-## 7. Performance Characteristics
+## 9. Positioning and Related Work
 
-### 7.1 Record Overhead
+CrypRQ is not intended to "replace" TLS or QUIC. Instead, it:
 
-- **Header**: 20 bytes per record
-- **AEAD Tag**: 16 bytes (Poly1305)
-- **Total Overhead**: ~36 bytes per record
+- **Treats the record layer as a first-class object**, enabling:
+  - Custom tunnels.
+  - Specialized file transfer.
+  - Integration in contexts where standard TLS/QUIC stacks are heavy or inflexible.
 
-### 7.2 Key Rotation Impact
+- **Emphasizes post-quantum preparedness:**
+  - ML-KEM hybridization is part of the design from the beginning.
 
-- **Rotation Interval**: 5 minutes (configurable)
-- **Rotation Latency**: < 10ms (key derivation + epoch increment)
-- **No Handshake Required**: Keys rotate without re-handshake
+- **Embraces Rust safety and tooling:**
+  - Clippy, rustfmt, proptest, and KATs are core to how correctness and security properties are enforced.
 
-### 7.3 File Transfer Performance
+The project can be seen as:
 
-- **Chunk Size**: 64KB (configurable)
-- **Throughput**: Limited by network and encryption overhead
-- **Integrity**: SHA-256 verification on completion
-
----
-
-## 8. Use Cases
-
-### 8.1 Secure File Transfer
-
-CrypRQ provides end-to-end encrypted file transfer with:
-- Integrity verification (SHA-256)
-- Chunked transfer for large files
-- Real-time progress monitoring
-
-### 8.2 Encrypted Tunnels
-
-The record layer can carry arbitrary data streams:
-- VPN packets (planned)
-- Generic application data
-- Control messages
-
-### 8.3 Protocol Exploration
-
-The v1.0.1-web-preview enables:
-- Testing cryptographic design
-- Validating record layer format
-- Exploring key rotation mechanisms
+- A research and prototyping platform for PQ-aware tunneling and record layers.
+- A foundation that could be embedded in larger systems once handshake and identity are fully realized.
 
 ---
 
-## 9. Future Directions
+## 10. Conclusion and Future Work
 
-### 9.1 Handshake Implementation
+This whitepaper has described the v1.0.1-web-preview of CrypRQ:
 
-The next major milestone is implementing the full hybrid handshake:
-- CLIENT_HELLO with ML-KEM + X25519 public keys
-- SERVER_HELLO with responder keys
-- CLIENT_FINISH with authentication
-- Master secret derivation
+- A record-centric encrypted transport layer.
+- With a post-quantum-aware cryptographic design.
+- Validated by unit tests, property tests, and deterministic KATs.
+- Exposed through a web-only preview with a clear test-mode stance.
 
-### 9.2 Production Hardening
+**Near-term future work:**
 
-Before production deployment:
-- Remove test-mode static keys
-- Implement proper peer authentication
-- Add replay protection
-- Security audit and penetration testing
+**Handshake and Identity**
 
-### 9.3 Protocol Extensions
+- Implement the hybrid PQ + classical handshake on wire.
+- Bind peers to stable identities and attest them cryptographically.
 
-Future enhancements may include:
-- TLS wrapping for compatibility
-- DNS-over-TLS integration
-- Known Answer Test (KAT) vectors
-- Multi-peer support
+**Production Security Profile**
 
----
+- Eliminate static keys entirely.
+- Harden DoS defenses and resource limits.
+- Add configurable cipher/KEM suites.
 
-## 10. Conclusion
+**Operational Hardening**
 
-CrypRQ v1.0.1-web-preview demonstrates a post-quantum-ready encrypted record and file transfer system with automatic key rotation and stream multiplexing. The protocol's cryptographic design combines classical and post-quantum algorithms to ensure security against both current and future threats.
+- Integrate richer observability (metrics, tracing).
+- Provide production-oriented deployment guides (Kubernetes, etc.).
 
-The reference implementation provides a working demonstration of the record layer, key rotation, and file transfer capabilities, while the web stack makes the protocol accessible for testing and exploration. Future releases will complete the handshake implementation and add production-ready security features.
+**Formalization**
+
+- Capture the record protocol and handshake as a formal specification (TLA+, ProVerif, or similar).
+- Pursue third-party cryptographic review.
+
+The v1.0.1 preview is the first public snapshot of this architecture. It demonstrates that:
+
+- The record layer, KDF, and file transfer stack are coherent and testable.
+- The web UI can drive real encrypted transfers, with deterministic, hash-verified outputs.
+- The project is ready for external review, collaboration, and iteration toward a production-grade system.
 
 ---
 
@@ -327,4 +747,3 @@ The reference implementation provides a working demonstration of the record laye
 **License:** MIT  
 **Repository:** https://github.com/codethor0/cryprq  
 **Contact:** codethor@gmail.com
-
