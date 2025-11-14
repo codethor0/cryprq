@@ -41,6 +41,12 @@ pub use metrics::start_metrics_server;
 pub mod packet_forwarder;
 pub use packet_forwarder::Libp2pPacketForwarder;
 
+pub mod file_transfer;
+pub use file_transfer::{
+    calculate_file_hash, create_end_packet, is_end_packet, DataChunk, FileMetadata,
+    FileTransferCodec, CHUNK_SIZE, FILE_PROTOCOL,
+};
+
 // Store recv_tx channels for each peer to forward incoming packets to TUN
 // Type alias to reduce complexity
 pub type PacketRecvTx = Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>;
@@ -51,6 +57,127 @@ pub type ConnectionCallback =
     Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, PacketRecvTx) + Send + Sync>;
 static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
     Lazy::new(|| RwLock::new(None));
+
+// Callback for file transfer requests (receiving files)
+pub type FileTransferCallback =
+    Arc<dyn Fn(PeerId, Vec<u8>) -> Result<Vec<u8>, String> + Send + Sync>;
+static FILE_TRANSFER_CALLBACK: Lazy<RwLock<Option<FileTransferCallback>>> =
+    Lazy::new(|| RwLock::new(None));
+
+/// Set callback for handling incoming file transfer requests
+pub async fn set_file_transfer_callback(callback: FileTransferCallback) {
+    *FILE_TRANSFER_CALLBACK.write().await = Some(callback);
+}
+
+/// Send a file to a peer using the file transfer protocol
+pub async fn send_file_to_peer(
+    swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
+    peer_id: PeerId,
+    file_path: std::path::PathBuf,
+) -> Result<()> {
+    use std::fs::File;
+    use std::io::Read;
+
+    // Calculate file hash
+    let file_hash = file_transfer::calculate_file_hash(&file_path)?;
+    let file_size = std::fs::metadata(&file_path)?.len();
+    let filename = file_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?
+        .to_string();
+
+    // Create metadata packet
+    let metadata = FileMetadata::new(filename.clone(), file_size, file_hash);
+    let metadata_packet = metadata.serialize();
+
+    // Wait for protocol negotiation - libp2p needs time to negotiate the request-response protocol
+    // After ConnectionEstablished, protocol negotiation happens asynchronously
+    // We need to wait and ensure the swarm event loop is processing events
+    tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+
+    // Send metadata - release lock immediately to allow event loop to process
+    {
+        let mut swarm_guard = swarm.lock().await;
+        swarm_guard
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, metadata_packet.clone());
+    }
+    // Lock released here - event loop can now process protocol negotiation
+
+    log::info!(
+        "Sent file metadata to {}: {} ({} bytes)",
+        peer_id,
+        filename,
+        file_size
+    );
+
+    // Yield to allow event loop to process protocol negotiation
+    // Protocol negotiation happens when send_request is called, but needs event loop processing
+    tokio::task::yield_now().await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Read and send file in chunks
+    let mut file = File::open(&file_path)?;
+    let mut chunk_id = 0u32;
+    let mut buffer = vec![0u8; CHUNK_SIZE];
+
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        let chunk = DataChunk {
+            chunk_id,
+            data: buffer[..bytes_read].to_vec(),
+        };
+        let chunk_packet = chunk.serialize();
+
+        {
+            let mut swarm_guard = swarm.lock().await;
+            swarm_guard
+                .behaviour_mut()
+                .request_response
+                .send_request(&peer_id, chunk_packet);
+        }
+        // Lock released immediately to allow event loop processing
+
+        log::debug!(
+            "Sent chunk {} to {} ({} bytes)",
+            chunk_id,
+            peer_id,
+            bytes_read
+        );
+
+        // Yield to allow event loop to process
+        tokio::task::yield_now().await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        chunk_id += 1;
+    }
+
+    // Send end packet
+    let end_packet = create_end_packet();
+    {
+        let mut swarm_guard = swarm.lock().await;
+        swarm_guard
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, end_packet);
+    }
+    // Lock released immediately
+
+    log::debug!("Sent end packet to {}", peer_id);
+
+    // Yield to allow event loop to process end packet
+    tokio::task::yield_now().await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    log::info!("File transfer complete: {} sent to {}", filename, peer_id);
+    Ok(())
+}
 
 #[allow(clippy::type_complexity)]
 static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, PacketRecvTx>>> =
@@ -202,11 +329,19 @@ async fn rotate_once(interval: Duration) {
     ppk_store.cleanup_expired(now);
 
     let elapsed = start.elapsed();
-    let epoch = metrics::record_rotation_success(elapsed);
+    // TODO: Track actual protocol epoch (u8) from tunnel layer
+    // For now, use a local epoch counter that wraps at 256
+    static LOCAL_EPOCH: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+    let protocol_epoch = LOCAL_EPOCH.fetch_update(
+        std::sync::atomic::Ordering::Relaxed,
+        std::sync::atomic::Ordering::Relaxed,
+        |e| Some(e.wrapping_add(1)),
+    ).unwrap_or(0);
+    let _counter = metrics::record_rotation_success(elapsed, protocol_epoch);
 
     info!(
         "event=key_rotation status=success epoch={} duration_ms={} interval_secs={}",
-        epoch,
+        protocol_epoch,
         elapsed.as_millis(),
         interval.as_secs()
     );
@@ -281,10 +416,11 @@ pub async fn init_swarm(
             let peer_id = PeerId::from(key.public());
             let mdns_behaviour = mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?;
 
-            // Create request-response behaviour for packet forwarding
-            let protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
+            // Create request-response behaviour for packet forwarding and file transfer
+            // Use a single protocol and differentiate by packet content
+            let packet_protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
             let request_response_behaviour = request_response::Behaviour::new(
-                [(protocol_str, ProtocolSupport::Full)],
+                [(packet_protocol_str.clone(), ProtocolSupport::Full)],
                 request_response::Config::default(),
             );
 
@@ -407,31 +543,81 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                             request_response::Message::Request {
                                 request, channel, ..
                             } => {
-                                // Incoming packet from peer - send empty response and forward packet to TUN
-                                let mut s = swarm_for_loop.lock().await;
-                                let _ = s
-                                    .behaviour_mut()
-                                    .request_response
-                                    .send_response(channel, vec![]);
-                                log::debug!(
-                                    "DECRYPT: Received {} bytes packet from peer {}",
-                                    request.len(),
-                                    peer
-                                );
+                                // Check if this is a file transfer packet (starts with packet type)
+                                let is_file_transfer = request.len() >= 4
+                                    && u32::from_be_bytes([
+                                        request[0], request[1], request[2], request[3],
+                                    ]) < 3; // File transfer packet types are 0, 1, or 2
 
-                                // Forward packet to TUN interface via recv_tx channel
-                                if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
-                                    let recv_tx_guard = recv_tx_arc.lock().await;
-                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
-                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                if is_file_transfer {
+                                    // Handle file transfer request
+                                    let callback = FILE_TRANSFER_CALLBACK.read().await.clone();
+                                    let mut s = swarm_for_loop.lock().await;
+                                    if let Some(cb) = callback {
+                                        match cb(peer, request.clone()) {
+                                            Ok(response) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, response);
+                                                log::info!(
+                                                    "File transfer request handled from peer {}",
+                                                    peer
+                                                );
+                                            }
+                                            Err(e) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, e.as_bytes().to_vec());
+                                                log::warn!(
+                                                    "File transfer error from peer {}: {}",
+                                                    peer,
+                                                    e
+                                                );
+                                            }
+                                        }
                                     } else {
+                                        // No file transfer callback - send error response
+                                        let _ = s.behaviour_mut().request_response.send_response(
+                                            channel,
+                                            b"File transfer not enabled".to_vec(),
+                                        );
                                         log::debug!(
-                                            "Forwarded {} bytes packet to TUN",
-                                            request.len()
+                                            "File transfer request from {} but no callback set",
+                                            peer
                                         );
                                     }
                                 } else {
-                                    log::debug!("No recv_tx channel registered for peer {}", peer);
+                                    // Regular packet forwarding
+                                    let mut s = swarm_for_loop.lock().await;
+                                    let _ = s
+                                        .behaviour_mut()
+                                        .request_response
+                                        .send_response(channel, vec![]);
+                                    log::debug!(
+                                        "DECRYPT: Received {} bytes packet from peer {}",
+                                        request.len(),
+                                        peer
+                                    );
+
+                                    // Forward packet to TUN interface via recv_tx channel
+                                    if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                        let recv_tx_guard = recv_tx_arc.lock().await;
+                                        if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                            log::warn!("Failed to forward packet to TUN: {}", e);
+                                        } else {
+                                            log::debug!(
+                                                "Forwarded {} bytes packet to TUN",
+                                                request.len()
+                                            );
+                                        }
+                                    } else {
+                                        log::debug!(
+                                            "No recv_tx channel registered for peer {}",
+                                            peer
+                                        );
+                                    }
                                 }
                             }
                             request_response::Message::Response {
@@ -577,31 +763,81 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                             request_response::Message::Request {
                                 request, channel, ..
                             } => {
-                                // Incoming packet from peer - send empty response and forward packet to TUN
-                                let mut s = swarm_for_loop.lock().await;
-                                let _ = s
-                                    .behaviour_mut()
-                                    .request_response
-                                    .send_response(channel, vec![]);
-                                log::debug!(
-                                    "DECRYPT: Received {} bytes packet from peer {}",
-                                    request.len(),
-                                    peer
-                                );
+                                // Check if this is a file transfer packet (starts with packet type)
+                                let is_file_transfer = request.len() >= 4
+                                    && u32::from_be_bytes([
+                                        request[0], request[1], request[2], request[3],
+                                    ]) < 3; // File transfer packet types are 0, 1, or 2
 
-                                // Forward packet to TUN interface via recv_tx channel
-                                if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
-                                    let recv_tx_guard = recv_tx_arc.lock().await;
-                                    if let Err(e) = recv_tx_guard.send(request.clone()) {
-                                        log::warn!("Failed to forward packet to TUN: {}", e);
+                                if is_file_transfer {
+                                    // Handle file transfer request
+                                    let callback = FILE_TRANSFER_CALLBACK.read().await.clone();
+                                    let mut s = swarm_for_loop.lock().await;
+                                    if let Some(cb) = callback {
+                                        match cb(peer, request.clone()) {
+                                            Ok(response) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, response);
+                                                log::info!(
+                                                    "File transfer request handled from peer {}",
+                                                    peer
+                                                );
+                                            }
+                                            Err(e) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, e.as_bytes().to_vec());
+                                                log::warn!(
+                                                    "File transfer error from peer {}: {}",
+                                                    peer,
+                                                    e
+                                                );
+                                            }
+                                        }
                                     } else {
+                                        // No file transfer callback - send error response
+                                        let _ = s.behaviour_mut().request_response.send_response(
+                                            channel,
+                                            b"File transfer not enabled".to_vec(),
+                                        );
                                         log::debug!(
-                                            "Forwarded {} bytes packet to TUN",
-                                            request.len()
+                                            "File transfer request from {} but no callback set",
+                                            peer
                                         );
                                     }
                                 } else {
-                                    log::debug!("No recv_tx channel registered for peer {}", peer);
+                                    // Regular packet forwarding
+                                    let mut s = swarm_for_loop.lock().await;
+                                    let _ = s
+                                        .behaviour_mut()
+                                        .request_response
+                                        .send_response(channel, vec![]);
+                                    log::debug!(
+                                        "DECRYPT: Received {} bytes packet from peer {}",
+                                        request.len(),
+                                        peer
+                                    );
+
+                                    // Forward packet to TUN interface via recv_tx channel
+                                    if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                        let recv_tx_guard = recv_tx_arc.lock().await;
+                                        if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                            log::warn!("Failed to forward packet to TUN: {}", e);
+                                        } else {
+                                            log::debug!(
+                                                "Forwarded {} bytes packet to TUN",
+                                                request.len()
+                                            );
+                                        }
+                                    } else {
+                                        log::debug!(
+                                            "No recv_tx channel registered for peer {}",
+                                            peer
+                                        );
+                                    }
                                 }
                             }
                             request_response::Message::Response {

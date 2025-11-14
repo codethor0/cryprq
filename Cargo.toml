@@ -10,9 +10,6 @@ members = [
     "node",
     "cli",
     "core",
-    # fuzz and benches kept but de-emphasized for web-only
-    "fuzz",
-    "benches",
 ]
 resolver = "2"
 

@@ -37,3 +37,4 @@ bytes = "1.5"
 async-trait = "0.1"
 futures = "0.3"
 node = { path = "../node" }
+sha2 = "0.10"

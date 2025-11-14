@@ -16,6 +16,10 @@ x25519-dalek = "2.0.1"
 chacha20poly1305 = "0.10"
 blake3 = "1"
 zeroize = "1.8"
+cryprq-crypto = { path = "../crypto" }
+cryp-rq-core = { path = "../core" }
+# p2p dependency removed to avoid cycle: node -> p2p -> node
+# File transfer types are duplicated in node/src/file_transfer.rs
 rand_core = { version = "0.6", features = ["getrandom"] }
 ed25519-dalek = "2.1"
 rand = "0.8"
@@ -28,6 +32,7 @@ anyhow = "1"
 log = "0.4"
 tun = "0.6"
 async-trait = "0.1"
+hex = "0.4"
 
 # Force older base64ct to avoid edition2024 requirement
 base64ct = "=1.6.0"

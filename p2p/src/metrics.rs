@@ -70,7 +70,7 @@ static ROTATION_INTERVAL_SECONDS: Lazy<Gauge> = Lazy::new(|| {
 static ROTATION_EPOCH: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge(
         "rotation_epoch",
-        "Current key rotation epoch (monotonic counter)",
+        "Current key rotation epoch (8-bit, wraps at 256)",
     )
 });
 static ACTIVE_PEERS: Lazy<IntGauge> =
@@ -160,10 +160,10 @@ pub(crate) fn set_rotation_interval(interval: Duration) {
     ROTATION_INTERVAL_SECONDS.set(interval.as_secs_f64());
 }
 
-pub(crate) fn record_rotation_success(duration: Duration) -> u64 {
-    let epoch = ROTATION_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
+pub(crate) fn record_rotation_success(duration: Duration, epoch: u8) -> u64 {
+    let counter = ROTATION_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
     ROTATIONS_TOTAL.inc();
     ROTATION_DURATION_SECONDS.set(duration.as_secs_f64());
-    ROTATION_EPOCH.set(epoch as i64);
-    epoch
+    ROTATION_EPOCH.set(epoch as i64); // Protocol epoch (u8)
+    counter // Return metric counter (u64) for logging compatibility
 }

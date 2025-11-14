@@ -15,5 +15,7 @@ once_cell = "1.21"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 log = "0.4"
 env_logger = "0.11"
-p2p = { path = "../p2p" }
+chacha20poly1305 = "0.10"
+# p2p dependency removed to break cycle: core -> p2p -> node -> core
+# handle.rs will need to be refactored or p2p made optional
 

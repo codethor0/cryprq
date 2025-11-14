@@ -227,10 +227,12 @@ export default function App(){
             }
           }
         }
-      } catch {}
+      } catch (error) {
+        // EventSource errors are handled above - don't add error messages to UI
+        // EventSource will auto-reconnect automatically
+        console.debug('EventSource error (handled):', error);
+      }
     };
-    // EventSource errors are handled above - don't add error messages to UI
-    // EventSource will auto-reconnect automatically
     esRef.current = es;
     return ()=>{ es.close(); };
   },[mode]);
@@ -338,8 +340,9 @@ export default function App(){
           }));
         }
       }
-    } catch (err: any) {
-      setEvents(prev=>[...prev, {t:`Connect error: ${err.message || err}`, level:'error'}]);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setEvents(prev=>[...prev, {t:`Connect error: ${errorMessage}`, level:'error'}]);
     } finally {
       setConnecting(false);
     }

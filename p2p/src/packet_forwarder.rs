@@ -35,15 +35,20 @@ impl Codec for PacketCodec {
         T: AsyncRead + Unpin + Send,
     {
         use futures::AsyncReadExt;
+        // Read length prefix (4 bytes, big-endian)
         let mut len_bytes = [0u8; 4];
         io.read_exact(&mut len_bytes).await?;
         let len = u32::from_be_bytes(len_bytes) as usize;
-        if len > 65535 {
+
+        if len > 10 * 1024 * 1024 {
+            // Max 10MB per packet
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Packet too large",
             ));
         }
+
+        // Read the actual request data
         let mut buf = vec![0u8; len];
         io.read_exact(&mut buf).await?;
         Ok(buf)
@@ -82,6 +87,7 @@ impl Codec for PacketCodec {
         T: AsyncWrite + Unpin + Send,
     {
         use futures::AsyncWriteExt;
+        // Always write length-prefixed for libp2p request-response protocol
         let len = req.len() as u32;
         io.write_all(&len.to_be_bytes()).await?;
         io.write_all(&req).await?;

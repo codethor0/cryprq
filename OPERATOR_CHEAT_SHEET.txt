@@ -1,0 +1,168 @@
+CRYPRQ OPERATOR CHEAT SHEET
+===========================
+
+QUICK REFERENCE FOR CRYPRQ WEB-ONLY OPERATIONS
+
+LOCAL DEVELOPMENT
+-----------------
+
+Build Rust workspace:
+  cargo build --release -p cryprq
+
+Run tests:
+  cargo test --workspace
+
+Format code:
+  cargo fmt --all
+
+Lint code:
+  cargo clippy --all-targets --all-features -- -D warnings
+
+Start listener:
+  RUST_LOG=info ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+Start dialer:
+  RUST_LOG=info ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
+
+Start listener (VPN mode):
+  RUST_LOG=info ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1 --vpn
+
+Start dialer (VPN mode):
+  RUST_LOG=info ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1 --vpn
+
+FILE TRANSFER
+-------------
+
+Send file to peer:
+  ./target/release/cryprq send-file --peer /ip4/127.0.0.1/udp/9999/quic-v1/p2p/<PEER_ID> --file <FILE>
+
+Receive files (listener mode):
+  ./target/release/cryprq receive-file --listen /ip4/0.0.0.0/udp/9999/quic-v1 --output-dir ./received
+
+WEB STACK
+---------
+
+Install web dependencies:
+  cd web && npm install
+
+Start web server (backend):
+  cd web && node server/server.mjs
+
+Start frontend dev server:
+  cd web && npm run dev
+
+Build frontend:
+  cd web && npm run build
+
+DOCKER OPERATIONS
+-----------------
+
+Build web stack:
+  docker compose -f docker-compose.web.yml build
+
+Start web stack:
+  docker compose -f docker-compose.web.yml up
+
+Start web stack (detached):
+  docker compose -f docker-compose.web.yml up -d
+
+View web stack logs:
+  docker compose -f docker-compose.web.yml logs -f
+
+Stop web stack:
+  docker compose -f docker-compose.web.yml down
+
+VPN STACK
+---------
+
+Start VPN stack (listener + dialer):
+  docker compose -f docker-compose.vpn.yml up --build
+
+View VPN logs:
+  docker compose -f docker-compose.vpn.yml logs -f
+
+View listener logs:
+  docker compose -f docker-compose.vpn.yml logs -f cryprq-listener
+
+View dialer logs:
+  docker compose -f docker-compose.vpn.yml logs -f cryprq-dialer
+
+Stop VPN stack:
+  docker compose -f docker-compose.vpn.yml down
+
+LOG FILTERING
+-------------
+
+Show handshake events:
+  grep "event=handshake"
+
+Show rotation events:
+  grep "event=rotation"
+
+Show connection events:
+  grep "event=connection"
+
+Show errors:
+  grep -i error
+
+KEY EVENTS TO MONITOR
+---------------------
+
+event=listener_starting    - Listener beginning to bind
+event=listener_ready       - Listener ready for connections
+event=dialer_starting      - Dialer beginning connection
+event=handshake_complete   - ML-KEM + X25519 handshake done
+event=connection_established - Encrypted tunnel ready
+event=rotation_task_started - Key rotation task started
+event=key_rotation         - Keys rotated (every 300s default)
+
+ENVIRONMENT VARIABLES
+---------------------
+
+RUST_LOG=info              - Set log level (info/debug/trace)
+CRYPRQ_ROTATE_SECS=300    - Key rotation interval (seconds)
+
+PORTS
+-----
+
+8787  - Web backend API
+5173  - Vite dev server / frontend
+9999  - CrypRQ QUIC listener (UDP)
+
+NETWORK ADDRESSES
+-----------------
+
+Listener (local):
+  /ip4/0.0.0.0/udp/9999/quic-v1
+
+Dialer (connect to localhost):
+  /ip4/127.0.0.1/udp/9999/quic-v1
+
+Dialer (connect to Docker listener):
+  /ip4/cryprq-listener/udp/9999/quic-v1
+
+TROUBLESHOOTING
+---------------
+
+Port already in use:
+  lsof -i :9999
+  kill -9 <PID>
+
+Permission denied (TUN):
+  sudo ./target/release/cryprq --vpn ...
+
+Docker build fails:
+  docker compose -f docker-compose.web.yml build --no-cache
+
+Container won't start:
+  docker compose -f docker-compose.web.yml logs
+
+No handshake events:
+  - Check network connectivity
+  - Verify firewall rules
+  - Check addresses are correct
+
+No key rotation:
+  - Verify CRYPRQ_ROTATE_SECS is set
+  - Check rotation_task_started event
+

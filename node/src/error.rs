@@ -16,6 +16,7 @@ pub enum TunnelError {
     RateLimitExceeded,
     InvalidPeerIdentity,
     HandshakeFailed(String),
+    NetworkError(String),
     IoError(std::io::Error),
 }
 
@@ -33,6 +34,7 @@ impl fmt::Display for TunnelError {
             TunnelError::RateLimitExceeded => write!(f, "Rate limit exceeded - too many packets"),
             TunnelError::InvalidPeerIdentity => write!(f, "Peer identity verification failed"),
             TunnelError::HandshakeFailed(msg) => write!(f, "Handshake failed: {}", msg),
+            TunnelError::NetworkError(msg) => write!(f, "Network error: {}", msg),
             TunnelError::IoError(e) => write!(f, "I/O error: {}", e),
         }
     }

@@ -19,8 +19,6 @@ COPY crypto/Cargo.toml ./crypto/
 COPY node/Cargo.toml ./node/
 COPY p2p/Cargo.toml ./p2p/
 COPY core/Cargo.toml ./core/
-COPY fuzz/Cargo.toml ./fuzz/
-COPY benches/Cargo.toml ./benches/
 
 # Copy source
 COPY cli/src ./cli/src
@@ -29,9 +27,6 @@ COPY node/src ./node/src
 COPY p2p/src ./p2p/src
 COPY core/src ./core/src
 COPY third_party/if-watch ./third_party/if-watch
-# Copy fuzz and benches (workspace members need their source)
-COPY fuzz/ ./fuzz/
-COPY benches/ ./benches/
 
 # Build optimized binary
 RUN cargo build --release -p cryprq
@@ -44,6 +39,8 @@ WORKDIR /build
 COPY web/package*.json ./web/
 COPY web/vite.config.ts ./web/
 COPY web/tsconfig.json ./web/
+COPY web/tsconfig.app.json ./web/
+COPY web/tsconfig.node.json ./web/
 COPY web/index.html ./web/
 COPY web/src ./web/src
 COPY web/public ./web/public
@@ -66,14 +63,13 @@ COPY --from=rust-builder /build/target/release/cryprq /usr/local/bin/cryprq
 
 # Copy web server code
 COPY web/server ./web/server
-COPY web/package*.json ./web/
 
 # Copy built frontend assets
 COPY --from=web-builder /build/web/dist ./web/dist
 COPY --from=web-builder /build/web/index.html ./web/
 
 # Install web server dependencies
-WORKDIR /app/web
+WORKDIR /app/web/server
 RUN npm ci --production
 
 # Expose ports

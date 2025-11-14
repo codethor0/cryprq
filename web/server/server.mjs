@@ -5,7 +5,8 @@ import { exec } from 'node:child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync, accessSync, constants } from 'fs';
+import { existsSync, accessSync, constants, writeFileSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +65,9 @@ async function getContainerLogs(lines = 20) {
 let proc = null;
 let currentMode = null;
 let currentPort = null;
+let currentPeer = null; // Track peer address for file transfer
+let connectedPeerId = null; // Track connected peer ID
+let localPeerId = null; // Track local peer ID
 const events = [];
 const eventClients = new Set(); // Track all connected EventSource clients
 
@@ -94,7 +98,6 @@ app.post('/connect', async (req,res)=>{
     // Try multiple fallback paths
     const possiblePaths = [
       join(__dirname, '..', '..', 'target', 'release', 'cryprq'), // Cargo build
-      join(__dirname, '..', '..', 'dist', 'macos', 'CrypRQ.app', 'Contents', 'MacOS', 'CrypRQ'), // macOS app
       'cryprq', // System PATH
     ];
     
@@ -112,7 +115,6 @@ app.post('/connect', async (req,res)=>{
   if (!binPath || !existsSync(binPath)) {
     const triedPaths = [
       join(__dirname, '..', '..', 'target', 'release', 'cryprq'),
-      join(__dirname, '..', '..', 'dist', 'macos', 'CrypRQ.app', 'Contents', 'MacOS', 'CrypRQ'),
       'cryprq',
     ];
     const errorMsg = `CrypRQ binary not found. Tried: ${triedPaths.join(', ')}. Set CRYPRQ_BIN environment variable or build with 'cargo build --release -p cryprq'`;
@@ -196,6 +198,7 @@ app.post('/connect', async (req,res)=>{
       
       currentMode = mode;
       currentPort = port;
+      currentPeer = peer || (mode === 'dialer' ? `/ip4/127.0.0.1/udp/${port}/quic-v1` : null);
       push('status', `spawn ${args.join(' ')}`);
       push('status', `Process PID: ${proc.pid}`);
       
@@ -210,6 +213,23 @@ app.post('/connect', async (req,res)=>{
         
         lines.filter(Boolean).forEach(line => {
           let level = 'info';
+          
+          // Extract peer IDs for file transfer
+          if (line.match(/Local peer id:\s*(\S+)/i)) {
+            const match = line.match(/Local peer id:\s*(\S+)/i);
+            if (match) {
+              localPeerId = match[1];
+              console.log(`[FILE TRANSFER] Local peer ID: ${localPeerId}`);
+            }
+          }
+          if (line.match(/Connected to\s+(\S+)/i)) {
+            const match = line.match(/Connected to\s+(\S+)/i);
+            if (match) {
+              connectedPeerId = match[1];
+              console.log(`[FILE TRANSFER] Connected peer ID: ${connectedPeerId}`);
+            }
+          }
+          
           // Parse structured event= logs
           if (/event=listener_starting|event=dialer_starting|event=listener_ready/i.test(line)) {
             level = 'peer';
@@ -236,6 +256,30 @@ app.post('/connect', async (req,res)=>{
         
         lines.filter(Boolean).forEach(line => {
           let level = 'error';
+          
+          // Extract peer IDs for file transfer
+          if (line.match(/Local peer id:\s*(\S+)/i)) {
+            const match = line.match(/Local peer id:\s*(\S+)/i);
+            if (match) {
+              localPeerId = match[1];
+              console.log(`[FILE TRANSFER] Local peer ID: ${localPeerId}`);
+            }
+          }
+          if (line.match(/Connected to\s+(\S+)/i)) {
+            const match = line.match(/Connected to\s+(\S+)/i);
+            if (match) {
+              connectedPeerId = match[1];
+              console.log(`[FILE TRANSFER] Connected peer ID: ${connectedPeerId}`);
+            }
+          }
+          if (line.match(/Inbound connection established with\s+(\S+)/i)) {
+            const match = line.match(/Inbound connection established with\s+(\S+)/i);
+            if (match) {
+              connectedPeerId = match[1];
+              console.log(`[FILE TRANSFER] Inbound peer ID: ${connectedPeerId}`);
+            }
+          }
+          
           if (/INFO|DEBUG|TRACE/i.test(line)) {
             level = 'info';
             // Parse structured event= logs from stderr (Rust logs go to stderr)
@@ -247,8 +291,8 @@ app.post('/connect', async (req,res)=>{
               level = 'rotation';
             } else if (/event=ppk_derived/i.test(line)) {
               level = 'rotation';
-            } else if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
-            else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+            } else if (/ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+            else if (/DECRYPT|decrypt/i.test(line)) level = 'rotation';
             else if (/rotate|rotation/i.test(line)) level = 'rotation';
             else if (/peer|connect|handshake|ping|connected|Dialing/i.test(line)) level = 'peer';
             else if (/Local peer id/i.test(line)) level = 'peer';
@@ -457,7 +501,7 @@ app.post('/connect', async (req,res)=>{
   if(vpn) {
     args.push('--vpn');
     push('status', 'VPN MODE ENABLED - System-wide routing mode');
-    push('status', 'Note: Full system routing requires Network Extension framework on macOS');
+    push('status', 'Note: Full system routing requires TUN interface support');
     push('status', 'P2P encrypted tunnel is active - all peer traffic is encrypted');
   }
 
@@ -478,6 +522,7 @@ app.post('/connect', async (req,res)=>{
     
     currentMode = mode;
     currentPort = port;
+    currentPeer = peer || (mode === 'dialer' ? `/ip4/127.0.0.1/udp/${port}/quic-v1` : null);
     push('status', `spawn ${process.env.CRYPRQ_BIN} ${args.join(' ')}`);
     push('status', `Process PID: ${proc.pid}`);
     console.log(`[DEBUG] Spawned CrypRQ: PID=${proc.pid}, args=${args.join(' ')}`);
@@ -491,6 +536,23 @@ app.post('/connect', async (req,res)=>{
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
       // stdout contains: "Starting listener...", "Local peer id: ...", "Listening on..."
       let level='info';
+      
+      // Extract peer IDs for file transfer
+      if (line.match(/Local peer id:\s*(\S+)/i)) {
+        const match = line.match(/Local peer id:\s*(\S+)/i);
+        if (match) {
+          localPeerId = match[1];
+          console.log(`[FILE TRANSFER] Local peer ID: ${localPeerId}`);
+        }
+      }
+      if (line.match(/Connected to\s+(\S+)/i)) {
+        const match = line.match(/Connected to\s+(\S+)/i);
+        if (match) {
+          connectedPeerId = match[1];
+          console.log(`[FILE TRANSFER] Connected peer ID: ${connectedPeerId}`);
+        }
+      }
+      
       // Parse structured event= logs
       if (/event=listener_starting|event=dialer_starting|event=listener_ready/i.test(line)) {
         level = 'peer';
@@ -529,6 +591,30 @@ app.post('/connect', async (req,res)=>{
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
       // stderr contains: "[timestamp INFO p2p] event=..." log messages
       let level='error';
+      
+      // Extract peer IDs for file transfer
+      if (line.match(/Local peer id:\s*(\S+)/i)) {
+        const match = line.match(/Local peer id:\s*(\S+)/i);
+        if (match) {
+          localPeerId = match[1];
+          console.log(`[FILE TRANSFER] Local peer ID: ${localPeerId}`);
+        }
+      }
+      if (line.match(/Connected to\s+(\S+)/i)) {
+        const match = line.match(/Connected to\s+(\S+)/i);
+        if (match) {
+          connectedPeerId = match[1];
+          console.log(`[FILE TRANSFER] Connected peer ID: ${connectedPeerId}`);
+        }
+      }
+      if (line.match(/Inbound connection established with\s+(\S+)/i)) {
+        const match = line.match(/Inbound connection established with\s+(\S+)/i);
+        if (match) {
+          connectedPeerId = match[1];
+          console.log(`[FILE TRANSFER] Inbound peer ID: ${connectedPeerId}`);
+        }
+      }
+      
       if(/INFO|DEBUG|TRACE/i.test(line)) {
         level='info';
         // CRITICAL: Key rotation events indicate encryption is active
@@ -541,8 +627,8 @@ app.post('/connect', async (req,res)=>{
           level='peer';
         }
         // Encryption/decryption events
-        else if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation';
-        else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation';
+        else if(/ENCRYPT|encrypt/i.test(line)) level='rotation';
+        else if(/DECRYPT|decrypt/i.test(line)) level='rotation';
         // Connection-related events
         else if(/peer|connect|handshake|ping|connected|listening/i.test(line)) level='peer';
       } else if(/listening on/i.test(line)) {
@@ -642,8 +728,8 @@ app.get('/events', async (req,res)=>{
         if (lines.length > lastLogCount) {
           lines.slice(lastLogCount).forEach(line => {
             let level = 'info';
-            if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
-            else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+            if (/ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+            else if (/DECRYPT|decrypt/i.test(line)) level = 'rotation';
             else if (/rotate|rotation/i.test(line)) level = 'rotation';
             else if (/peer|connect|handshake|ping|connected|Inbound|Incoming/i.test(line)) level = 'peer';
             else if (/vpn|tun|interface/i.test(line)) level = 'status';
@@ -690,51 +776,131 @@ app.post('/api/send-file', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing filename or content' });
     }
 
-                // Check if we have an active connection
-                // Allow file transfer if:
-                // 1. proc is running (active connection)
-                // 2. currentMode is set (connection initiated, even if VPN mode failed)
-                // 3. encryption was initialized (key rotation happened, even if process exited)
-                // This allows file transfer even if VPN mode fails due to privileges - P2P encryption still works
-                const hasActiveConnection = proc !== null || currentMode !== null;
-                if (!hasActiveConnection) {
-                  return res.status(400).json({ success: false, message: 'Not connected to peer. Please connect first.' });
-                }
-                
-                // Note: Even if VPN mode failed (proc exited), file transfer through P2P encrypted tunnel is still valid
-                // The encryption keys were initialized before the VPN TUN interface creation failed
+    // Check if we have an active connection
+    // Allow file transfer if:
+    // 1. proc is running (active connection)
+    // 2. currentMode is set (connection initiated, even if VPN mode failed)
+    // 3. encryption was initialized (key rotation happened, even if process exited)
+    // This allows file transfer even if VPN mode fails due to privileges - P2P encryption still works
+    const hasActiveConnection = proc !== null || currentMode !== null;
+    if (!hasActiveConnection) {
+      return res.status(400).json({ success: false, message: 'Not connected to peer. Please connect first.' });
+    }
+    
+    // Determine peer address for file transfer
+    let peerAddr = null;
+    if (currentMode === 'dialer' && currentPeer) {
+      // For dialer, use the peer address we connected to
+      // If we have a connected peer ID, append it to the address
+      if (connectedPeerId && !currentPeer.includes('/p2p/')) {
+        peerAddr = `${currentPeer}/p2p/${connectedPeerId}`;
+      } else {
+        peerAddr = currentPeer;
+      }
+    } else if (currentMode === 'listener' && connectedPeerId && currentPort) {
+      // For listener, we need to construct the peer address from the connected peer
+      // Extract IP from logs or use localhost if we're the listener
+      // Note: In listener mode, we can't directly send files - the peer needs to connect to us
+      // For now, we'll try to use the connected peer ID with localhost
+      peerAddr = `/ip4/127.0.0.1/udp/${currentPort}/quic-v1/p2p/${connectedPeerId}`;
+    }
+    
+    if (!peerAddr) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Peer address not available. Wait for connection to establish.' 
+      });
+    }
     
     // Log file transfer attempt for debugging
-    console.log(`[FILE TRANSFER] Receiving file "${filename}" (${size} bytes) - Connection: proc=${proc !== null}, mode=${currentMode}`);
+    console.log(`[FILE TRANSFER] Sending file "${filename}" (${size} bytes) to ${peerAddr}`);
 
     // Decode base64 content
     const base64Data = content.split(',')[1] || content;
     const fileBuffer = Buffer.from(base64Data, 'base64');
 
-    // For now, save file locally and log transfer
-    // In production, this would send through CrypRQ packet forwarder
-    const receivedDir = join(__dirname, '..', 'received_files');
-    if (!existsSync(receivedDir)) {
-      const { mkdirSync } = await import('fs');
-      mkdirSync(receivedDir, { recursive: true });
+    // Save file temporarily
+    const tempDir = tmpdir();
+    const tempFilePath = join(tempDir, `cryprq-upload-${Date.now()}-${filename}`);
+    
+    try {
+      writeFileSync(tempFilePath, fileBuffer);
+      console.log(`[FILE TRANSFER] Temporary file created: ${tempFilePath}`);
+      
+      // Use CrypRQ CLI to send file
+      const binPath = process.env.CRYPRQ_BIN || 'cryprq';
+      const sendFileArgs = ['send-file', '--peer', peerAddr, '--file', tempFilePath];
+      
+      push('info', `[FILE TRANSFER] Sending "${filename}" (${(size / 1024).toFixed(2)} KB) through encrypted tunnel...`);
+      
+      const sendProc = spawn(binPath, sendFileArgs, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, RUST_LOG: 'info' }
+      });
+      
+      let stdout = '';
+      let stderr = '';
+      
+      sendProc.stdout.on('data', (d) => {
+        stdout += d.toString();
+      });
+      
+      sendProc.stderr.on('data', (d) => {
+        stderr += d.toString();
+        // Parse and broadcast file transfer logs
+        d.toString().split(/\r?\n/).filter(Boolean).forEach(line => {
+          push('info', `[FILE TRANSFER] ${line}`);
+        });
+      });
+      
+      // Wait for process to complete
+      await new Promise((resolve, reject) => {
+        sendProc.on('exit', (code, signal) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`File transfer failed: code ${code}, signal ${signal || 'none'}\nstdout: ${stdout}\nstderr: ${stderr}`));
+          }
+        });
+        
+        sendProc.on('error', (err) => {
+          reject(new Error(`Failed to spawn file transfer: ${err.message}`));
+        });
+      });
+      
+      // Clean up temp file
+      try {
+        unlinkSync(tempFilePath);
+      } catch (e) {
+        console.warn(`[FILE TRANSFER] Failed to delete temp file: ${e.message}`);
+      }
+      
+      push('info', `[FILE TRANSFER] File "${filename}" (${(size / 1024).toFixed(2)} KB) sent successfully through encrypted tunnel`);
+      
+      res.json({ 
+        success: true, 
+        message: 'File sent successfully through encrypted tunnel',
+        filename,
+        size
+      });
+      
+    } catch (error) {
+      // Clean up temp file on error
+      try {
+        if (existsSync(tempFilePath)) {
+          unlinkSync(tempFilePath);
+        }
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
+      throw error;
     }
-
-    const { writeFileSync } = await import('fs');
-    const filePath = join(receivedDir, filename);
-    writeFileSync(filePath, fileBuffer);
-
-    // Broadcast file transfer event
-    push('info', `[FILE TRANSFER] File "${filename}" (${(size / 1024).toFixed(2)} KB) received securely through encrypted tunnel`);
-
-    res.json({ 
-      success: true, 
-      message: 'File sent successfully',
-      received: true,
-      path: filePath
-    });
+    
   } catch (error) {
     console.error('[ERROR] File transfer error:', error);
-    res.json({ success: false, message: error.message || 'Failed to send file' });
+    push('error', `[FILE TRANSFER] Error: ${error.message || 'Failed to send file'}`);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send file' });
   }
 });
 

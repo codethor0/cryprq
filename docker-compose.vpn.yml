@@ -1,0 +1,68 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Docker Compose for CrypRQ VPN Testing
+# This sets up two peers (listener and dialer) with encrypted tunnel
+
+services:
+  # Peer 1: Listener
+  cryprq-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-listener
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1", "--vpn", "--tun-name", "cryprq0", "--tun-address", "10.0.0.1"]
+    ports:
+      - "9999:9999/udp"
+    environment:
+      - RUST_LOG=info
+      - CRYPRQ_ROTATE_SECS=300
+    networks:
+      - cryprq-vpn-network
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN  # Required for TUN interface creation
+    privileged: true  # Required for TUN interface and IP forwarding in Docker
+    sysctls:
+      - net.ipv4.ip_forward=1
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Peer 2: Dialer (connects to listener)
+  # Note: Peer ID will be extracted from listener logs or connection handshake
+  cryprq-dialer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-dialer
+    command: ["--peer", "/ip4/cryprq-listener/udp/9999/quic-v1", "--vpn", "--tun-name", "cryprq1", "--tun-address", "10.0.0.2"]
+    depends_on:
+      - cryprq-listener
+    environment:
+      - RUST_LOG=info
+      - CRYPRQ_ROTATE_SECS=300
+    networks:
+      - cryprq-vpn-network
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN  # Required for TUN interface creation
+    privileged: true  # Required for TUN interface and IP forwarding in Docker
+    sysctls:
+      - net.ipv4.ip_forward=1
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  cryprq-vpn-network:
+    driver: bridge
+
