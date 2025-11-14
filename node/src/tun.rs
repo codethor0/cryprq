@@ -300,7 +300,7 @@ impl TunInterface {
 
                 if n > 0 {
                     let packet = buf[..n].to_vec();
-                    log::debug!("🔐 Read {} bytes from TUN, encrypting and forwarding", n);
+                    log::debug!("Read {} bytes from TUN, encrypting and forwarding", n);
 
                     // Send via forwarder
                     let fwd = forwarder_read.lock().await;
@@ -329,7 +329,7 @@ impl TunInterface {
                 };
 
                 log::debug!(
-                    "🔓 Received {} bytes from tunnel, decrypting and writing to TUN",
+                    "Received {} bytes from tunnel, decrypting and writing to TUN",
                     packet.len()
                 );
 
@@ -355,7 +355,7 @@ impl TunInterface {
         });
 
         log::info!(
-            "✅ Packet forwarding loop started - routing system traffic through encrypted tunnel"
+            "Packet forwarding loop started - routing system traffic through encrypted tunnel"
         );
 
         // Wait for tasks (they run forever)

@@ -393,7 +393,7 @@ impl Tunnel {
 
         // Log encryption event for debugging
         log::debug!(
-            "🔐 ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})",
+            "ENCRYPT: {} bytes plaintext -> {} bytes ciphertext (nonce: {})",
             pkt.len(),
             ciphertext.len(),
             nonce_value
@@ -519,7 +519,7 @@ impl Tunnel {
 
         // Log decryption event for debugging
         log::debug!(
-            "🔓 DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})",
+            "DECRYPT: {} bytes ciphertext -> {} bytes plaintext (nonce: {})",
             ciphertext.len(),
             plaintext.len(),
             nonce_value
@@ -611,7 +611,7 @@ pub async fn create_tunnel(
                 *counter = 0;
             }
 
-            println!("🔥 ransom rotate – new session key");
+            println!("Key rotation: new session key");
         }
     });
 

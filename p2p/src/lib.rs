@@ -414,7 +414,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                                     .request_response
                                     .send_response(channel, vec![]);
                                 log::debug!(
-                                    "🔓 DECRYPT: Received {} bytes packet from peer {}",
+                                    "DECRYPT: Received {} bytes packet from peer {}",
                                     request.len(),
                                     peer
                                 );
@@ -426,7 +426,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                                         log::warn!("Failed to forward packet to TUN: {}", e);
                                     } else {
                                         log::debug!(
-                                            "✅ Forwarded {} bytes packet to TUN",
+                                            "Forwarded {} bytes packet to TUN",
                                             request.len()
                                         );
                                     }
@@ -441,7 +441,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                             } => {
                                 // Response to our request - acknowledgment
                                 log::debug!(
-                                    "✅ Received response for request {:?} ({} bytes)",
+                                    "Received response for request {:?} ({} bytes)",
                                     request_id,
                                     response.len()
                                 );
@@ -584,7 +584,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                                     .request_response
                                     .send_response(channel, vec![]);
                                 log::debug!(
-                                    "🔓 DECRYPT: Received {} bytes packet from peer {}",
+                                    "DECRYPT: Received {} bytes packet from peer {}",
                                     request.len(),
                                     peer
                                 );
@@ -596,7 +596,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                                         log::warn!("Failed to forward packet to TUN: {}", e);
                                     } else {
                                         log::debug!(
-                                            "✅ Forwarded {} bytes packet to TUN",
+                                            "Forwarded {} bytes packet to TUN",
                                             request.len()
                                         );
                                     }
@@ -611,7 +611,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                             } => {
                                 // Response to our request - acknowledgment
                                 log::debug!(
-                                    "✅ Received response for request {:?} ({} bytes)",
+                                    "Received response for request {:?} ({} bytes)",
                                     request_id,
                                     response.len()
                                 );

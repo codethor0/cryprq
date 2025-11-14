@@ -65,7 +65,7 @@ async fn main() -> Result<()> {
         Arc::new(tokio::sync::Mutex::new(None));
 
     if args.vpn {
-        log::info!("🔒 VPN MODE ENABLED - System-wide routing mode");
+        log::info!("VPN MODE ENABLED - System-wide routing mode");
         log::info!("Creating TUN interface for packet forwarding...");
 
         let tun_config = TunConfig {
@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
             log::warn!("VPN mode: P2P tunnel encryption is active, but system routing requires Network Extension");
         } else {
             log::info!(
-                "✅ TUN interface {} configured with IP {}",
+                "TUN interface {} configured with IP {}",
                 tun.name(),
                 args.tun_address
             );
@@ -116,7 +116,7 @@ async fn main() -> Result<()> {
                 let tun_name_clone = tun_name.clone();
 
                 tokio::spawn(async move {
-                    log::info!("✅ Connection established with {peer_id} - Starting VPN packet forwarding");
+                    log::info!("Connection established with {peer_id} - Starting VPN packet forwarding");
                     log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
 
                     // Get TUN interface from shared state
@@ -139,7 +139,7 @@ async fn main() -> Result<()> {
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
                             log::error!("Failed to start packet forwarding: {}", e);
                         } else {
-                            log::info!("✅ Packet forwarding loop started successfully");
+                            log::info!("Packet forwarding loop started successfully");
                         }
                     } else {
                         log::error!("TUN interface not available for packet forwarding");
@@ -165,7 +165,7 @@ async fn main() -> Result<()> {
                 let tun_name_clone = tun_name.clone();
 
                 tokio::spawn(async move {
-                    log::info!("✅ Connected to {peer_id} - Starting VPN packet forwarding");
+                    log::info!("Connected to {peer_id} - Starting VPN packet forwarding");
                     log::info!("TUN interface {} ready - packets will be forwarded through encrypted tunnel", tun_name_clone);
 
                     // Get TUN interface from shared state
@@ -185,7 +185,7 @@ async fn main() -> Result<()> {
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
                             log::error!("Failed to start packet forwarding: {}", e);
                         } else {
-                            log::info!("✅ Packet forwarding loop started successfully");
+                            log::info!("Packet forwarding loop started successfully");
                         }
                     } else {
                         log::error!("TUN interface not available for packet forwarding");

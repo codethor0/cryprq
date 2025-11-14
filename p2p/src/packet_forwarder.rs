@@ -158,7 +158,7 @@ impl Libp2pPacketForwarder {
                         .request_response
                         .send_request(&peer_id_clone, packet.clone());
                     log::debug!(
-                        "🔐 ENCRYPT: Sent {} bytes packet to {} (request_id: {:?})",
+                        "ENCRYPT: Sent {} bytes packet to {} (request_id: {:?})",
                         packet.len(),
                         peer_id_clone,
                         request_id
