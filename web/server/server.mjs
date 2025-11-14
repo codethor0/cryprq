@@ -148,17 +148,17 @@ app.post('/connect', async (req,res)=>{
     
     // For listener mode, container is already listening
     if (mode === 'listener') {
-      push('status', `🐳 Container ${CONTAINER_NAME} is listening on port ${port}`);
+      push('status', `Container ${CONTAINER_NAME} is listening on port ${port}`);
       push('status', `Container IP: ${containerIP}`);
       push('status', `Connect to: /ip4/${containerIP}/udp/${port}/quic-v1`);
-      push('status', `✅ Docker VPN mode active - container handling encryption`);
+      push('status', `Docker VPN mode active - container handling encryption`);
       
       // Stream container logs
       const logs = await getContainerLogs(20);
       logs.split('\n').filter(Boolean).forEach(line => {
         let level = 'info';
-        if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
-        else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
+        if (/ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+        else if (/DECRYPT|decrypt/i.test(line)) level = 'rotation';
         else if (/rotate|rotation/i.test(line)) level = 'rotation';
         else if (/peer|connect|handshake|ping|connected/i.test(line)) level = 'peer';
         else if (/vpn|tun|interface/i.test(line)) level = 'status';
@@ -180,8 +180,8 @@ app.post('/connect', async (req,res)=>{
     if (mode === 'dialer') {
       // Use container IP instead of provided peer address
       const containerPeer = `/ip4/${containerIP}/udp/${port}/quic-v1`;
-      push('status', `🐳 Connecting Mac to container at ${containerPeer}`);
-      push('status', `✅ Docker VPN mode - container will handle encryption and routing`);
+      push('status', `Connecting Mac to container at ${containerPeer}`);
+      push('status', `Docker VPN mode - container will handle encryption and routing`);
       push('status', `Using container IP ${containerIP} instead of ${peer || 'default'}`);
       
       // Run local cryprq binary to connect to container
@@ -308,7 +308,7 @@ app.post('/connect', async (req,res)=>{
       
       // Don't wait for connection - return immediately and let process run
       // The connection will be established and events will stream via /events endpoint
-      push('status', `✅ Dialer process started - connecting to container...`);
+      push('status', `Dialer process started - connecting to container...`);
       push('status', `Watch debug console for connection status`);
       
       return res.json({ 
@@ -329,7 +329,7 @@ app.post('/connect', async (req,res)=>{
   // Only kill existing process if we're switching modes or ports
   // This prevents killing the listener when dialer tries to connect
   if(proc && (currentMode !== mode || currentPort !== port)) {
-    push('status', `🔄 Switching from ${currentMode} to ${mode} on port ${port}`);
+    push('status', `Switching from ${currentMode} to ${mode} on port ${port}`);
     
     // Use SIGTERM first for graceful shutdown, then SIGKILL if needed
     try {
@@ -342,14 +342,14 @@ app.post('/connect', async (req,res)=>{
         process.kill(proc.pid, 0); // Check if process exists
         // Process still alive, force kill
         proc.kill('SIGKILL');
-        push('status', `⚠️ Process did not terminate gracefully, forced kill`);
+        push('status', `Process did not terminate gracefully, forced kill`);
       } catch (e) {
         // Process already terminated
-        push('status', `✅ Process terminated gracefully`);
+        push('status', `Process terminated gracefully`);
       }
     } catch (err) {
       // Process might already be dead
-      push('status', `⚠️ Error terminating process: ${err.message}`);
+      push('status', `Error terminating process: ${err.message}`);
     }
     
     proc = null;
@@ -364,7 +364,7 @@ app.post('/connect', async (req,res)=>{
   
   // If we already have a process running for this exact mode/port, don't restart it
   if(proc && currentMode === mode && currentPort === port) {
-    push('status', `ℹ️ ${mode} already running on port ${port} - keeping alive`);
+    push('status', `${mode} already running on port ${port} - keeping alive`);
     res.json({ok:true, vpn: !!vpn, alreadyRunning: true});
     return;
   }
@@ -414,19 +414,19 @@ app.post('/connect', async (req,res)=>{
           
           if (killedAny) {
             execSync('sleep 0.5', {stdio: 'ignore'}); // Give processes time to die
-            push('status', `🧹 Cleaned up CrypRQ processes on port ${port} - ready for listener`);
+            push('status', `Cleaned up CrypRQ processes on port ${port} - ready for listener`);
           }
         }
       }
     } catch(e) {
-      push('status', `⚠️ Port cleanup warning: ${e.message}`);
+      push('status', `Port cleanup warning: ${e.message}`);
     }
   } else if(mode === 'dialer') {
     // For dialer, check if listener is running - if not, warn user
     try {
       const portUsers = execSync(`lsof -ti:${port} 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
       if(!portUsers) {
-        push('status', `⚠️ No listener detected on port ${port} - make sure listener is running first`);
+        push('status', `No listener detected on port ${port} - make sure listener is running first`);
       } else {
         // Verify it's actually a CrypRQ listener
         const pids = portUsers.split('\n').filter(Boolean);
@@ -441,9 +441,9 @@ app.post('/connect', async (req,res)=>{
           } catch (e) {}
         }
         if (foundListener) {
-          push('status', `✅ CrypRQ listener detected on port ${port} - connecting...`);
+          push('status', `CrypRQ listener detected on port ${port} - connecting...`);
         } else {
-          push('status', `⚠️ Port ${port} is in use, but may not be a CrypRQ listener`);
+          push('status', `Port ${port} is in use, but may not be a CrypRQ listener`);
         }
       }
     } catch(e) {}
@@ -456,9 +456,9 @@ app.post('/connect', async (req,res)=>{
   // Add VPN mode flag if requested
   if(vpn) {
     args.push('--vpn');
-    push('status', '🔒 VPN MODE ENABLED - System-wide routing mode');
-    push('status', '⚠️ Note: Full system routing requires Network Extension framework on macOS');
-    push('status', '✅ P2P encrypted tunnel is active - all peer traffic is encrypted');
+    push('status', 'VPN MODE ENABLED - System-wide routing mode');
+    push('status', 'Note: Full system routing requires Network Extension framework on macOS');
+    push('status', 'P2P encrypted tunnel is active - all peer traffic is encrypted');
   }
 
   // Set log level (info shows structured events, debug/trace for detailed debugging)
@@ -514,8 +514,8 @@ app.post('/connect', async (req,res)=>{
         console.log(`[DEBUG] Detected listening: ${line}`);
       } else if(/Connected to/i.test(line)) {
         level='peer'; // Connection established
-      } else if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation';
-      else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation';
+      } else if(/ENCRYPT|encrypt/i.test(line)) level='rotation';
+      else if(/DECRYPT|decrypt/i.test(line)) level='rotation';
       else if(/rotate|rotation/i.test(line)) level='rotation';
       else if(/peer|connect|handshake|ping|connected/i.test(line)) level='peer';
       else if(/vpn|tun|interface/i.test(line)) level='status';
@@ -549,7 +549,7 @@ app.post('/connect', async (req,res)=>{
         level='peer';
       } else if(/Address already in use/i.test(line)) {
         level='error';
-        push('status', `⚠️ Port ${port} is in use - killing existing processes...`);
+        push('status', `Port ${port} is in use - killing existing processes...`);
       }
       push(level, line);
     });

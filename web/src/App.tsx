@@ -206,7 +206,7 @@ export default function App(){
             const alreadyShown = prev.some(e => e.t.includes('VPN mode requires administrator privileges'));
             if (!alreadyShown) {
               return [...prev, {
-                t: `⚠️ VPN mode requires administrator privileges. Run with sudo or use P2P mode only. P2P encryption works without admin privileges.`,
+                t: `VPN mode requires administrator privileges. Run with sudo or use P2P mode only. P2P encryption works without admin privileges.`,
                 level: 'error'
               }];
             }
@@ -274,7 +274,7 @@ export default function App(){
 
         const data = await res.json();
         if (data.success) {
-          setFileTransferStatus(`✅ File "${file.name}" sent successfully through encrypted tunnel`);
+          setFileTransferStatus(`File "${file.name}" sent successfully through encrypted tunnel`);
           setFileTransferProgress(100);
           setEvents(prev => [...prev, {
             t: `[FILE TRANSFER] File "${file.name}" (${(file.size / 1024).toFixed(2)} KB) sent securely`,
@@ -546,7 +546,7 @@ export default function App(){
                 marginTop: 4,
                 lineHeight: 1.4
               }}>
-                ⚠️ Requires administrator privileges. Run with sudo or use P2P mode only.
+                Requires administrator privileges. Run with sudo or use P2P mode only.
               </div>
             )}
           </div>
@@ -576,12 +576,12 @@ export default function App(){
                 style={{ display: 'none' }}
                 id="file-upload"
               />
-              <span>📁 {status.connected ? 'Send File Securely' : 'Connect first to send files'}</span>
+              <span>{status.connected ? 'Send File Securely' : 'Connect first to send files'}</span>
             </label>
             {fileTransferStatus && (
               <div style={{
                 fontSize: 12,
-                color: fileTransferStatus.includes('✅') ? '#2f5' : '#f55',
+                color: fileTransferStatus.includes('successfully') ? '#2f5' : '#f55',
                 padding: '4px 8px',
                 backgroundColor: '#222',
                 borderRadius: 4
@@ -645,7 +645,7 @@ export default function App(){
         lineHeight: 1.6
       }}>
         <strong style={{ color: '#fff', display: 'block', marginBottom: 8 }}>
-          💡 How to Test:
+          How to Test:
         </strong>
         <ol style={{ margin: 0, paddingLeft: 20 }}>
           <li>Open this page in <strong style={{ color: '#59f' }}>two browser tabs</strong></li>

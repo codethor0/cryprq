@@ -56,6 +56,10 @@ jobs:
         run: cargo test --lib --all --no-fail-fast
         continue-on-error: false
 
+      - name: Check for emojis in code
+        run: bash scripts/check-no-emojis.sh
+        continue-on-error: false
+
       # Web-only: Removed iOS/Android icon validation steps
 
       - name: Build release
