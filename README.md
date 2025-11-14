@@ -285,6 +285,32 @@ The specification is implementation-independent and serves as the canonical refe
 - **[`docs/MASTER_WEB_RELEASE_PROMPT.md`](docs/MASTER_WEB_RELEASE_PROMPT.md)** — Web-only release alignment prompt
 - **[`docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md`](docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md)** — Next-phase handshake & identity implementation guide
 
+## Development
+
+### Pre-Flight Checks (Before Pushing)
+
+Before pushing code, run these commands locally to match CI:
+
+```bash
+# Format code
+cargo fmt --all
+
+# Run clippy with warnings as errors
+cargo clippy --all-targets --all-features -- -D warnings
+
+# Run all tests
+cargo test --all
+```
+
+**CI Pipeline:** All pushes to `main` and `feature/**` branches are automatically validated via GitHub Actions:
+
+- ✅ `cargo build --release --workspace`
+- ✅ `cargo test --workspace`
+- ✅ `cargo clippy --all-targets --all-features -- -D warnings`
+- ✅ `cargo fmt --all -- --check`
+
+Branch protection ensures these checks must pass before merging to `main`.
+
 ## Architecture
 
 ### Core Crates
