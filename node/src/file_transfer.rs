@@ -251,14 +251,17 @@ impl FileTransferManager {
     /// Register an outgoing transfer
     pub fn register_outgoing(&self, stream_id: u32, metadata: FileMetadata, file_path: PathBuf) {
         const CHUNK_SIZE: usize = 65536; // 64KB
-        let total_chunks = ((metadata.size as usize + CHUNK_SIZE - 1) / CHUNK_SIZE) as u32;
+        let total_chunks = (metadata.size as usize).div_ceil(CHUNK_SIZE) as u32;
         let transfer = OutgoingTransfer {
             metadata,
             file_path,
             chunks_sent: 0,
             total_chunks,
         };
-        let mut outgoing = self.outgoing.lock().expect("Outgoing transfers lock poisoned");
+        let mut outgoing = self
+            .outgoing
+            .lock()
+            .expect("Outgoing transfers lock poisoned");
         outgoing.insert(stream_id, transfer);
     }
 }

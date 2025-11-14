@@ -31,6 +31,7 @@ impl SeqCounters {
 
     /// Get next sequence number for VPN packets
     /// Returns error if sequence number would overflow (at MAX_NONCE_VALUE)
+    #[allow(clippy::result_unit_err)]
     pub fn next_vpn(&self) -> Result<u64, ()> {
         let current = self.vpn.load(Ordering::Relaxed);
         if current >= MAX_NONCE_VALUE {
