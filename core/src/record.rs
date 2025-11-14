@@ -219,6 +219,7 @@ impl Record {
     /// - Constructs nonce using TLS 1.3-style XOR
     /// - Encrypts plaintext with AEAD
     /// - Uses header as AAD
+    #[allow(clippy::too_many_arguments)]
     pub fn encrypt(
         _version: u8,
         message_type: u8,
