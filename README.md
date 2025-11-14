@@ -279,6 +279,12 @@ The specification is implementation-independent and serves as the canonical refe
 - **[`docs/WEB_UI_GUIDE.md`](docs/WEB_UI_GUIDE.md)** — Web UI usage and API guide
 - **[`docs/WEB_STACK_QUICK_START.md`](docs/WEB_STACK_QUICK_START.md)** — Quick start for new contributors (web stack focus)
 
+### Publications & Citation
+
+- **[`docs/WHITEPAPER.md`](docs/WHITEPAPER.md)** — Technical whitepaper (v1.0.1-web-preview)
+- **[`docs/BLOG_OVERVIEW.md`](docs/BLOG_OVERVIEW.md)** — Blog-style overview for public sharing
+- **[`CITATION.cff`](CITATION.cff)** — Citation metadata for academic/project citation
+
 ### Developer Resources
 
 - **[`docs/MASTER_VALIDATION_PROMPT.md`](docs/MASTER_VALIDATION_PROMPT.md)** — Full-stack validation assistant prompt
