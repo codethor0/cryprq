@@ -44,7 +44,7 @@ jobs:
       run: cargo test --workspace
     
     - name: Clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings -- -A clippy::expect_used -A clippy::slow_zero_filling_init
+      run: cargo clippy --all-targets --all-features -- -D warnings -A clippy::expect_used -A clippy::slow_zero_filling_init
     
     - name: Format check
       run: cargo fmt --all -- --check
