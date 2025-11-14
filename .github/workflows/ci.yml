@@ -5,12 +5,51 @@ on:
     branches: [ main, 'feature/**' ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # Run nightly checks every day at 2 AM UTC
+    - cron: '0 2 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Fast feedback job: fmt + clippy only (runs in parallel with full build)
+  quick-check:
+    name: Quick Check (fmt + clippy)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Install clippy and rustfmt (if not already installed)
+      run: |
+        rustup component add clippy || true
+        rustup component add rustfmt || true
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Format check
+      run: cargo fmt --all -- --check
+    
+    - name: Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # Full build and test job
   build:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -50,3 +89,40 @@ jobs:
     
     - name: Format check
       run: cargo fmt --all -- --check
+
+  # Nightly/scheduled job for heavier checks
+  nightly:
+    name: Nightly Checks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Build documentation
+      run: cargo doc --workspace --no-deps --document-private-items
+    
+    - name: Check documentation warnings
+      run: cargo doc --workspace --no-deps 2>&1 | grep -i "warning" && exit 1 || exit 0
+    
+    - name: Build with all features
+      run: cargo build --release --workspace --all-features
+    
+    - name: Test with all features
+      run: cargo test --workspace --all-features
