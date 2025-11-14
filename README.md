@@ -3,7 +3,9 @@
 
 # CrypRQ: Post-Quantum, Zero-Trust VPN
 
-<img width="512" height="512" alt="CrypRQ Logo" src="logo.png" />
+<div align="center">
+  <img width="512" height="512" alt="CrypRQ Logo" src="logo.png" />
+</div>
 
 > Post-quantum, zero-trust VPN with five-minute ephemeral key rotation.
 
