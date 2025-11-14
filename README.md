@@ -304,10 +304,20 @@ cargo test --all
 
 **CI Pipeline:** All pushes to `main` and `feature/**` branches are automatically validated via GitHub Actions:
 
+**Quick Check Job** (runs in parallel for faster feedback):
+- ✅ `cargo fmt --all -- --check`
+- ✅ `cargo clippy --all-targets --all-features -- -D warnings`
+
+**Full Build Job**:
 - ✅ `cargo build --release --workspace`
 - ✅ `cargo test --workspace`
 - ✅ `cargo clippy --all-targets --all-features -- -D warnings`
 - ✅ `cargo fmt --all -- --check`
+
+**Nightly Job** (runs daily at 2 AM UTC):
+- ✅ Documentation generation (`cargo doc`)
+- ✅ Build and test with all features enabled
+- ✅ Documentation warning checks
 
 Branch protection ensures these checks must pass before merging to `main`.
 
