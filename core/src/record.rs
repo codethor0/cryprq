@@ -341,7 +341,8 @@ mod tests {
         let bytes = record.to_bytes();
         assert_eq!(bytes.len(), RECORD_HEADER_SIZE + ciphertext.len());
 
-        let deserialized = Record::from_bytes(&bytes).unwrap();
+        let deserialized = Record::from_bytes(&bytes)
+            .expect("Failed to deserialize record in test");
         assert_eq!(record.header, deserialized.header);
         assert_eq!(record.ciphertext, deserialized.ciphertext);
     }
