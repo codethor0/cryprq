@@ -48,10 +48,7 @@ pub const LABEL_RI_IV: &[u8] = b"cryp-rq ri iv";
 ///
 /// * `hs_auth_key` - Handshake authentication key (32 bytes)
 /// * `master_secret` - Master secret (32 bytes)
-pub fn derive_handshake_keys(
-    ss_kem: &[u8; 32],
-    ss_x: &[u8; 32],
-) -> ([u8; 32], [u8; 32]) {
+pub fn derive_handshake_keys(ss_kem: &[u8; 32], ss_x: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
     // IKM = ss_kem || ss_x
     let mut ikm = [0u8; 64];
     ikm[..32].copy_from_slice(ss_kem);
@@ -215,10 +212,8 @@ mod tests {
     #[test]
     fn test_derive_epoch_keys() {
         let master_secret = [0x42u8; 32];
-        let (key_ir_0, iv_ir_0, key_ri_0, iv_ri_0) =
-            derive_epoch_keys(&master_secret, 0, 32, 12);
-        let (key_ir_1, iv_ir_1, key_ri_1, iv_ri_1) =
-            derive_epoch_keys(&master_secret, 1, 32, 12);
+        let (key_ir_0, iv_ir_0, key_ri_0, iv_ri_0) = derive_epoch_keys(&master_secret, 0, 32, 12);
+        let (key_ir_1, iv_ir_1, key_ri_1, iv_ri_1) = derive_epoch_keys(&master_secret, 1, 32, 12);
 
         // Different epochs should produce different keys
         assert_ne!(key_ir_0, key_ir_1);
@@ -227,4 +222,3 @@ mod tests {
         assert_ne!(iv_ri_0, iv_ri_1);
     }
 }
-

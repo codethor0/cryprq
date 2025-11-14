@@ -16,8 +16,8 @@ mod pqc_suite;
 mod zkp;
 
 pub use kdf::{
-    derive_epoch_keys, derive_handshake_keys, derive_traffic_keys, LABEL_HS_AUTH,
-    LABEL_IR_IV, LABEL_IR_KEY, LABEL_MASTER_SECRET, LABEL_RI_IV, LABEL_RI_KEY, SALT_HS,
+    derive_epoch_keys, derive_handshake_keys, derive_traffic_keys, LABEL_HS_AUTH, LABEL_IR_IV,
+    LABEL_IR_KEY, LABEL_MASTER_SECRET, LABEL_RI_IV, LABEL_RI_KEY, SALT_HS,
 };
 
 #[cfg(test)]

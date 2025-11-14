@@ -332,11 +332,13 @@ async fn rotate_once(interval: Duration) {
     // TODO: Track actual protocol epoch (u8) from tunnel layer
     // For now, use a local epoch counter that wraps at 256
     static LOCAL_EPOCH: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
-    let protocol_epoch = LOCAL_EPOCH.fetch_update(
-        std::sync::atomic::Ordering::Relaxed,
-        std::sync::atomic::Ordering::Relaxed,
-        |e| Some(e.wrapping_add(1)),
-    ).unwrap_or(0);
+    let protocol_epoch = LOCAL_EPOCH
+        .fetch_update(
+            std::sync::atomic::Ordering::Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
+            |e| Some(e.wrapping_add(1)),
+        )
+        .unwrap_or(0);
     let _counter = metrics::record_rotation_success(elapsed, protocol_epoch);
 
     info!(

@@ -265,12 +265,14 @@ impl Record {
                     aad: &header_bytes,
                 },
             )
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Encryption failed: {}", e)))?;
+            .map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Encryption failed: {}", e),
+                )
+            })?;
 
-        Ok(Self {
-            header,
-            ciphertext,
-        })
+        Ok(Self { header, ciphertext })
     }
 
     /// Decrypts the record and returns plaintext
@@ -278,11 +280,7 @@ impl Record {
     /// As specified in Section 6.2:
     /// - Reconstructs nonce using TLS 1.3-style XOR
     /// - Decrypts with AEAD using header as AAD
-    pub fn decrypt(
-        &self,
-        key: &[u8; 32],
-        static_iv: &[u8; 12],
-    ) -> io::Result<Vec<u8>> {
+    pub fn decrypt(&self, key: &[u8; 32], static_iv: &[u8; 12]) -> io::Result<Vec<u8>> {
         // Reconstruct nonce using TLS 1.3-style XOR
         let seq_be = self.header.sequence_number.to_be_bytes();
         let mut nonce_bytes = *static_iv;
@@ -304,7 +302,12 @@ impl Record {
                     aad: &header_bytes,
                 },
             )
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Decryption failed: {}", e)))?;
+            .map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Decryption failed: {}", e),
+                )
+            })?;
 
         Ok(plaintext)
     }
@@ -316,14 +319,7 @@ mod tests {
 
     #[test]
     fn test_header_serialization() {
-        let header = RecordHeader::new(
-            MSG_TYPE_DATA,
-            0x00,
-            0,
-            1,
-            42,
-            100,
-        );
+        let header = RecordHeader::new(MSG_TYPE_DATA, 0x00, 0, 1, 42, 100);
 
         let bytes = header.to_bytes();
         assert_eq!(bytes.len(), RECORD_HEADER_SIZE);
@@ -338,14 +334,7 @@ mod tests {
     #[test]
     fn test_record_serialization() {
         let ciphertext = vec![0x01, 0x02, 0x03, 0x04];
-        let record = Record::new(
-            MSG_TYPE_DATA,
-            0x00,
-            0,
-            1,
-            42,
-            ciphertext.clone(),
-        );
+        let record = Record::new(MSG_TYPE_DATA, 0x00, 0, 1, 42, ciphertext.clone());
 
         let bytes = record.to_bytes();
         assert_eq!(bytes.len(), RECORD_HEADER_SIZE + ciphertext.len());
@@ -367,4 +356,3 @@ mod tests {
         assert_eq!(bytes2[3], 0);
     }
 }
-

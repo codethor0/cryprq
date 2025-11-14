@@ -136,16 +136,8 @@ mod tests {
         };
 
         // Send
-        let encoded = send_record(
-            epoch,
-            stream_id,
-            seq,
-            MSG_TYPE_DATA,
-            0,
-            plaintext,
-            &keys,
-        )
-        .unwrap();
+        let encoded =
+            send_record(epoch, stream_id, seq, MSG_TYPE_DATA, 0, plaintext, &keys).unwrap();
 
         // Receive
         let (header, decrypted) = recv_record(&encoded, &keys).unwrap();
@@ -163,4 +155,3 @@ mod tests {
         assert!(id2 > id1);
     }
 }
-

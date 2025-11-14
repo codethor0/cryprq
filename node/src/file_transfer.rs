@@ -153,11 +153,7 @@ impl FileTransferManager {
     }
 
     /// Start an incoming file transfer
-    pub fn start_incoming_transfer(
-        &self,
-        stream_id: u32,
-        metadata: FileMetadata,
-    ) -> Result<()> {
+    pub fn start_incoming_transfer(&self, stream_id: u32, metadata: FileMetadata) -> Result<()> {
         let output_path = self.output_dir.join(&metadata.filename);
 
         // Create file for writing
@@ -253,4 +249,3 @@ impl FileTransferManager {
         outgoing.insert(stream_id, transfer);
     }
 }
-

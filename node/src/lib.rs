@@ -293,19 +293,20 @@ fn verify_peer_identity(
     let id_all_same = peer_identity_key.iter().all(|&b| b == peer_identity_key[0]);
     let sig_all_same = signature.iter().all(|&b| b == signature[0]);
     let is_test_key = pk_all_same && id_all_same && sig_all_same;
-    
-    if is_test_key && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04) {
+
+    if is_test_key
+        && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04)
+    {
         log::warn!("Test mode: Skipping peer identity verification (using test keys: pk={:02x}, id={:02x}, sig={:02x})", peer_pk[0], peer_identity_key[0], signature[0]);
         return Ok(());
     }
 
     // Construct the verifying key from peer's identity public key
     // This will fail for invalid Ed25519 keys (like test keys), so test mode must bypass above
-    let verifying_key = VerifyingKey::from_bytes(peer_identity_key)
-        .map_err(|e| {
-            log::debug!("Failed to parse verifying key: {:?}", e);
-            TunnelError::InvalidPeerIdentity
-        })?;
+    let verifying_key = VerifyingKey::from_bytes(peer_identity_key).map_err(|e| {
+        log::debug!("Failed to parse verifying key: {:?}", e);
+        TunnelError::InvalidPeerIdentity
+    })?;
 
     // Construct signature from bytes
     let sig = Signature::from_bytes(signature);
@@ -353,11 +354,11 @@ pub fn generate_handshake_auth(peer_pk: &[u8; 32]) -> (SigningKey, [u8; 32], [u8
 pub struct Tunnel {
     socket: Arc<UdpSocket>,
     session_key: Arc<RwLock<[u8; 32]>>, // Legacy - will be replaced by DirectionKeys
-    static_iv: Arc<RwLock<[u8; 12]>>, // Legacy - now part of DirectionKeys
-    epoch: Arc<RwLock<Epoch>>, // Current epoch (u8)
+    static_iv: Arc<RwLock<[u8; 12]>>,   // Legacy - now part of DirectionKeys
+    epoch: Arc<RwLock<Epoch>>,          // Current epoch (u8)
     keys_outbound: Arc<RwLock<DirectionKeys>>, // Outbound encryption keys
     keys_inbound: Arc<RwLock<DirectionKeys>>, // Inbound decryption keys
-    seq_counters: Arc<SeqCounters>, // Per-message-type sequence counters
+    seq_counters: Arc<SeqCounters>,     // Per-message-type sequence counters
     peer_addr: Arc<RwLock<Option<std::net::SocketAddr>>>,
     nonce_counter: Arc<RwLock<u64>>, // Legacy - will be removed
     replay_window: Arc<RwLock<ReplayWindow>>,
@@ -408,7 +409,10 @@ impl Tunnel {
 
         // Get sequence number based on message type
         let seq = match message_type {
-            cryprq_core::MSG_TYPE_VPN_PACKET => self.seq_counters.next_vpn(),
+            cryprq_core::MSG_TYPE_VPN_PACKET => self
+                .seq_counters
+                .next_vpn()
+                .map_err(|_| TunnelError::NonceOverflow)?,
             cryprq_core::MSG_TYPE_FILE_META
             | cryprq_core::MSG_TYPE_FILE_CHUNK
             | cryprq_core::MSG_TYPE_FILE_ACK
@@ -445,7 +449,10 @@ impl Tunnel {
         buf.resize(BUFFER_SIZE, 0);
 
         log::debug!("cryp-rq: waiting for incoming record...");
-        let (len, addr) = self.socket.recv_from(&mut buf).await
+        let (len, addr) = self
+            .socket
+            .recv_from(&mut buf)
+            .await
             .map_err(|e| TunnelError::NetworkError(e.to_string()))?;
         log::debug!("cryp-rq: received {} bytes from {}", len, addr);
 
@@ -486,7 +493,7 @@ impl Tunnel {
         // and receiver must decrypt with keys_outbound (ir), not keys_inbound (ri)
         // In production with proper handshake, roles would be negotiated and keys would match correctly
         let keys = self
-            .keys_outbound  // Use outbound keys for decryption in test mode (both sides use ir)
+            .keys_outbound // Use outbound keys for decryption in test mode (both sides use ir)
             .read()
             .map_err(|e| TunnelError::LockPoisoned(e.to_string()))?
             .clone();
@@ -496,9 +503,11 @@ impl Tunnel {
             Ok((header, payload)) => {
                 log::debug!(
                     "cryp-rq: decrypt success for msg_type={} stream_id={} seq={}",
-                    header.message_type, header.stream_id, header.sequence_number
+                    header.message_type,
+                    header.stream_id,
+                    header.sequence_number
                 );
-                
+
                 // Check for replay attack using sequence number
                 {
                     let mut window = self
@@ -516,7 +525,10 @@ impl Tunnel {
             Err(e) => {
                 log::warn!(
                     "cryp-rq: decrypt FAILED: msg_type={} stream_id={} seq={} error={:?}",
-                    header.message_type, header.stream_id, header.sequence_number, e
+                    header.message_type,
+                    header.stream_id,
+                    header.sequence_number,
+                    e
                 );
                 Err(TunnelError::DecryptionFailed)
             }
@@ -543,21 +555,13 @@ impl Tunnel {
     }
 
     /// Send file chunk through record layer
-    pub async fn send_file_chunk(
-        &self,
-        stream_id: u32,
-        chunk: &[u8],
-    ) -> Result<(), TunnelError> {
+    pub async fn send_file_chunk(&self, stream_id: u32, chunk: &[u8]) -> Result<(), TunnelError> {
         self.send_record(stream_id, cryprq_core::MSG_TYPE_FILE_CHUNK, 0, chunk)
             .await
     }
 
     /// Send file acknowledgment through record layer
-    pub async fn send_file_ack(
-        &self,
-        stream_id: u32,
-        ack_data: &[u8],
-    ) -> Result<(), TunnelError> {
+    pub async fn send_file_ack(&self, stream_id: u32, ack_data: &[u8]) -> Result<(), TunnelError> {
         self.send_record(stream_id, cryprq_core::MSG_TYPE_FILE_ACK, 0, ack_data)
             .await
     }
@@ -782,34 +786,47 @@ impl Tunnel {
 
         match msg_type {
             MSG_TYPE_FILE_META => {
-                let meta = file_transfer::FileMetadata::deserialize(&payload)
-                    .map_err(|e| TunnelError::HandshakeFailed(format!("Failed to decode file metadata: {}", e)))?;
+                let meta = file_transfer::FileMetadata::deserialize(&payload).map_err(|e| {
+                    TunnelError::HandshakeFailed(format!("Failed to decode file metadata: {}", e))
+                })?;
                 log::debug!(
                     "cryp-rq: FILE_META received: stream_id={} name={} size={} hash={}",
-                    stream_id, meta.filename, meta.size, hex::encode(&meta.hash[..8])
+                    stream_id,
+                    meta.filename,
+                    meta.size,
+                    hex::encode(&meta.hash[..8])
                 );
                 self.file_transfer
                     .start_incoming_transfer(stream_id, meta)
-                    .map_err(|e| TunnelError::HandshakeFailed(format!("Failed to start transfer: {}", e)))?;
+                    .map_err(|e| {
+                        TunnelError::HandshakeFailed(format!("Failed to start transfer: {}", e))
+                    })?;
             }
             MSG_TYPE_FILE_CHUNK => {
                 log::debug!(
                     "cryp-rq: FILE_CHUNK received: stream_id={} len={}",
-                    stream_id, payload.len()
+                    stream_id,
+                    payload.len()
                 );
                 self.file_transfer
                     .write_chunk(stream_id, &payload)
-                    .map_err(|e| TunnelError::HandshakeFailed(format!("Failed to write chunk: {}", e)))?;
+                    .map_err(|e| {
+                        TunnelError::HandshakeFailed(format!("Failed to write chunk: {}", e))
+                    })?;
             }
             MSG_TYPE_FILE_ACK => {
                 self.file_transfer
                     .handle_ack(stream_id, &payload)
-                    .map_err(|e| TunnelError::HandshakeFailed(format!("Failed to handle ACK: {}", e)))?;
+                    .map_err(|e| {
+                        TunnelError::HandshakeFailed(format!("Failed to handle ACK: {}", e))
+                    })?;
             }
             MSG_TYPE_CONTROL => {
                 self.file_transfer
                     .handle_control(stream_id, &payload)
-                    .map_err(|e| TunnelError::HandshakeFailed(format!("Failed to handle control: {}", e)))?;
+                    .map_err(|e| {
+                        TunnelError::HandshakeFailed(format!("Failed to handle control: {}", e))
+                    })?;
             }
             _ => {
                 log::warn!("Unknown file/control message type: {}", msg_type);
@@ -823,7 +840,8 @@ impl Tunnel {
     /// Receives a record, decrypts it, and routes it to the appropriate handler.
     pub async fn recv_and_handle_record(&self) -> Result<(), TunnelError> {
         let (msg_type, stream_id, payload) = self.recv_record().await?;
-        self.handle_incoming_record(msg_type, stream_id, payload).await
+        self.handle_incoming_record(msg_type, stream_id, payload)
+            .await
     }
 
     /// Receive and decrypt packet from peer (legacy method - returns payload only)
@@ -860,7 +878,15 @@ pub async fn create_tunnel(
     peer_signature: &[u8; 64],
     listen_addr: &str,
 ) -> Result<Tunnel, TunnelError> {
-    create_tunnel_with_output_dir(local_sk, peer_pk, peer_identity_key, peer_signature, listen_addr, None).await
+    create_tunnel_with_output_dir(
+        local_sk,
+        peer_pk,
+        peer_identity_key,
+        peer_signature,
+        listen_addr,
+        None,
+    )
+    .await
 }
 
 /// Creates a secure tunnel with peer authentication and file output directory
@@ -880,10 +906,12 @@ pub async fn create_tunnel_with_output_dir(
     // Perform authenticated Noise-IK handshake
     // TODO: Replace with CrypRQ handshake (CRYPRQ_CLIENT_HELLO/SERVER_HELLO/CLIENT_FINISH)
     let peer_public = PublicKey::from(*peer_pk);
-    
+
     // TEST MODE: Use fixed shared secret for testing (both sides must use same secret)
     // In production, this would be derived from actual handshake
-    let ss_x = if peer_pk.iter().all(|&b| b == peer_pk[0]) && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04) {
+    let ss_x = if peer_pk.iter().all(|&b| b == peer_pk[0])
+        && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04)
+    {
         // Test mode: use fixed shared secret so both sides derive same keys
         [0xAA; 32]
     } else {
@@ -902,9 +930,10 @@ pub async fn create_tunnel_with_output_dir(
     // For now, assume we're initiator, so ir is outbound, ri is inbound
     let (key_ir, iv_ir, key_ri, iv_ri) =
         cryprq_crypto::derive_epoch_keys(&master_secret, 0, 32, 12);
-    
+
     // TEST MODE: Log key derivation for debugging (only in test mode)
-    let is_test_mode = peer_pk.iter().all(|&b| b == peer_pk[0]) && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04);
+    let is_test_mode = peer_pk.iter().all(|&b| b == peer_pk[0])
+        && (peer_pk[0] == 0x01 || peer_pk[0] == 0x02 || peer_pk[0] == 0x03 || peer_pk[0] == 0x04);
     if is_test_mode {
         log::info!(
             "cryp-rq: derived traffic keys (epoch=0):\n  outbound_key (ir) = {}\n  outbound_iv (ir) = {}\n  inbound_key (ri) = {}\n  inbound_iv (ri) = {}",
@@ -954,7 +983,7 @@ pub async fn create_tunnel_with_output_dir(
     let tunnel = Tunnel {
         socket: Arc::new(socket),
         session_key: Arc::new(RwLock::new(session_key)), // Legacy
-        static_iv: Arc::new(RwLock::new(static_iv)), // Legacy
+        static_iv: Arc::new(RwLock::new(static_iv)),     // Legacy
         epoch: Arc::new(RwLock::new(Epoch::initial())),
         keys_outbound: Arc::new(RwLock::new(keys_outbound)),
         keys_inbound: Arc::new(RwLock::new(keys_inbound)),
@@ -966,7 +995,7 @@ pub async fn create_tunnel_with_output_dir(
         buffer_pool: BufferPool::new(POOL_SIZE),
         tun_write_tx: Arc::new(RwLock::new(None)), // Will be set when TUN forwarding starts
         file_transfer: Arc::new(FileTransferManager::new(
-            file_output_dir.unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+            file_output_dir.unwrap_or_else(|| std::path::PathBuf::from("/tmp")),
         )),
     };
 

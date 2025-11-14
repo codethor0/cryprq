@@ -9,6 +9,8 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+const MAX_NONCE_VALUE: u64 = u64::MAX - 1000; // Force rekey before overflow
+
 /// Sequence counters for different message types
 #[derive(Debug)]
 pub struct SeqCounters {
@@ -28,8 +30,13 @@ impl SeqCounters {
     }
 
     /// Get next sequence number for VPN packets
-    pub fn next_vpn(&self) -> u64 {
-        self.vpn.fetch_add(1, Ordering::Relaxed)
+    /// Returns error if sequence number would overflow (at MAX_NONCE_VALUE)
+    pub fn next_vpn(&self) -> Result<u64, ()> {
+        let current = self.vpn.load(Ordering::Relaxed);
+        if current >= MAX_NONCE_VALUE {
+            return Err(());
+        }
+        Ok(self.vpn.fetch_add(1, Ordering::Relaxed))
     }
 
     /// Get next sequence number for generic data
@@ -48,6 +55,12 @@ impl SeqCounters {
         self.data.store(0, Ordering::Relaxed);
         self.file.store(0, Ordering::Relaxed);
     }
+
+    /// Set VPN counter to a specific value (for testing only)
+    #[cfg(test)]
+    pub fn set_vpn_for_test(&self, value: u64) {
+        self.vpn.store(value, Ordering::Relaxed);
+    }
 }
 
 impl Default for SeqCounters {
@@ -63,8 +76,8 @@ mod tests {
     #[test]
     fn test_seq_counters() {
         let counters = SeqCounters::new();
-        assert_eq!(counters.next_vpn(), 0);
-        assert_eq!(counters.next_vpn(), 1);
+        assert_eq!(counters.next_vpn(), Ok(0));
+        assert_eq!(counters.next_vpn(), Ok(1));
         assert_eq!(counters.next_file(), 0);
         assert_eq!(counters.next_data(), 0);
     }
@@ -72,11 +85,17 @@ mod tests {
     #[test]
     fn test_reset() {
         let counters = SeqCounters::new();
-        counters.next_vpn();
+        let _ = counters.next_vpn();
         counters.next_file();
         counters.reset();
-        assert_eq!(counters.next_vpn(), 0);
+        assert_eq!(counters.next_vpn(), Ok(0));
         assert_eq!(counters.next_file(), 0);
     }
-}
 
+    #[test]
+    fn test_nonce_overflow() {
+        let counters = SeqCounters::new();
+        counters.set_vpn_for_test(MAX_NONCE_VALUE);
+        assert!(counters.next_vpn().is_err());
+    }
+}

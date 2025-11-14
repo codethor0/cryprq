@@ -67,14 +67,9 @@ mod tunnel_tests {
         )
         .await
         {
-            // Set nonce counter to MAX_NONCE_VALUE (at the limit)
-            if let Ok(mut nonce_guard) = tunnel
-                .nonce_counter
-                .write()
-                .map_err(|e| TunnelError::LockPoisoned(e.to_string()))
-            {
-                *nonce_guard = MAX_NONCE_VALUE;
-            }
+            // Set VPN sequence counter to MAX_NONCE_VALUE (at the limit)
+            // send_packet uses send_record which uses seq_counters.next_vpn()
+            tunnel.seq_counters.set_vpn_for_test(MAX_NONCE_VALUE);
 
             // This send should trigger nonce overflow error
             let result = tunnel.send_packet(b"test").await;
@@ -133,10 +128,17 @@ mod tunnel_tests {
 
     #[tokio::test]
     async fn test_key_uniqueness() {
+        // Use non-test keys (not all same byte) to avoid test mode which uses fixed shared secret
+        // Test mode uses [0xAA; 32] for all tunnels, so keys would be identical
+        let mut peer_pk1 = [0u8; 32];
+        peer_pk1[0] = 0x10;
+        peer_pk1[1] = 0x20;
+        let mut peer_pk2 = [0u8; 32];
+        peer_pk2[0] = 0x30;
+        peer_pk2[1] = 0x40;
+
         let local_sk1 = [1u8; 32];
-        let peer_pk1 = [2u8; 32];
         let local_sk2 = [3u8; 32];
-        let peer_pk2 = [4u8; 32];
 
         let (_, peer_identity_key1, peer_signature1) = generate_handshake_auth(&peer_pk1);
         let (_, peer_identity_key2, peer_signature2) = generate_handshake_auth(&peer_pk2);
@@ -159,19 +161,20 @@ mod tunnel_tests {
             )
             .await,
         ) {
+            // Check actual traffic keys (keys_outbound) instead of legacy session_key
             if let (Ok(key1_read), Ok(key2_read)) = (
                 tunnel1
-                    .session_key
+                    .keys_outbound
                     .read()
                     .map_err(|e| TunnelError::LockPoisoned(e.to_string())),
                 tunnel2
-                    .session_key
+                    .keys_outbound
                     .read()
                     .map_err(|e| TunnelError::LockPoisoned(e.to_string())),
             ) {
                 assert_ne!(
-                    &key1_read[..],
-                    &key2_read[..],
+                    &key1_read.key[..],
+                    &key2_read.key[..],
                     "Different tunnels should have different keys"
                 );
             }

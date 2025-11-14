@@ -10,8 +10,8 @@ use libp2p::{Multiaddr, PeerId};
 use node::{FileMetadata, TunConfig, TunInterface};
 use p2p::{
     dial_peer, register_packet_recv_tx, send_file_to_peer, set_file_transfer_callback,
-    start_key_rotation, start_listener, start_metrics_server, DataChunk, FileMetadata as P2PFileMetadata,
-    Libp2pPacketForwarder, CHUNK_SIZE,
+    start_key_rotation, start_listener, start_metrics_server, DataChunk, Libp2pPacketForwarder,
+    CHUNK_SIZE,
 };
 use std::collections::HashMap;
 use std::fs::File;
@@ -332,7 +332,11 @@ async fn handle_send_file(peer_addr: String, file_path: PathBuf) -> Result<()> {
         .send_file_meta(stream_id, &meta)
         .await
         .context("Failed to send file metadata")?;
-    log::info!("Sent FILE_META: stream_id={}, filename={}", stream_id, filename);
+    log::info!(
+        "Sent FILE_META: stream_id={}, filename={}",
+        stream_id,
+        filename
+    );
 
     // Send file chunks
     let mut file = File::open(&file_path)?;
@@ -572,7 +576,10 @@ async fn handle_receive_file(listen_addr: String, output_dir: PathBuf) -> Result
         .context("Failed to create tunnel")?,
     );
 
-    log::info!("Tunnel created, listening for file transfers on {}", listen_socket);
+    log::info!(
+        "Tunnel created, listening for file transfers on {}",
+        listen_socket
+    );
 
     // Spawn receive loop
     let tunnel_clone = tunnel.clone();
@@ -612,11 +619,7 @@ fn parse_udp_addr(addr: &str) -> Result<(String, u16)> {
             ip = Some(parts[i + 1].to_string());
         }
         if *part == "udp" && i + 1 < parts.len() {
-            port = Some(
-                parts[i + 1]
-                    .parse::<u16>()
-                    .context("Invalid UDP port")?,
-            );
+            port = Some(parts[i + 1].parse::<u16>().context("Invalid UDP port")?);
         }
     }
 
