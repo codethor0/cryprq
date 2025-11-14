@@ -9,7 +9,40 @@
 
 ---
 
-## 1. Overview
+## 1. Versioning and Deployment Strategy
+
+**Tag Strategy:**
+- `v1.0.1-web-preview` tag remains fixed at the original preview release point
+- For preview/demo deployments, rebuild and deploy from `main` branch (latest code)
+- Next release will be a new tag (e.g., `v1.1.0-web-preview` or `v1.0.2-web-preview`) when handshake+identity lands
+
+**Rebuilding from Main:**
+```bash
+# Ensure you're on latest main
+git checkout main
+git pull origin main
+
+# Rebuild Docker images
+docker compose -f docker-compose.web.yml build
+
+# (Re)start the web stack
+docker compose -f docker-compose.web.yml up
+```
+
+**For Registry Deployment:**
+```bash
+# Build and tag as preview (without changing git tags)
+docker build -t your-registry/cryprq-web:preview -f Dockerfile.web .
+docker push your-registry/cryprq-web:preview
+
+# Or tag as latest
+docker build -t your-registry/cryprq-web:latest -f Dockerfile.web .
+docker push your-registry/cryprq-web:latest
+```
+
+---
+
+## 2. Overview
 
 The web-only CrypRQ stack runs via Docker Compose and includes:
 
@@ -24,7 +57,7 @@ The entrypoint is `docker-compose.web.yml`.
 
 ---
 
-## 2. Prerequisites
+## 3. Prerequisites
 
 - **Docker** installed and running.
 - **Docker Compose** plugin (usually included with recent Docker Desktop / Docker Engine).
@@ -33,7 +66,7 @@ The entrypoint is `docker-compose.web.yml`.
 
 ---
 
-## 3. File Layout
+## 4. File Layout
 
 Key files involved in the web deployment:
 
@@ -83,7 +116,7 @@ This stops and removes the containers (but not images or volumes).
 
 ---
 
-## 5. Configuration
+## 6. Configuration
 
 ### 5.1 Ports
 
@@ -116,7 +149,7 @@ If `.env` is used, it will typically be automatically loaded by Docker Compose. 
 
 ---
 
-## 6. Common Workflows
+## 7. Common Workflows
 
 ### 6.1 Fresh Rebuild
 
