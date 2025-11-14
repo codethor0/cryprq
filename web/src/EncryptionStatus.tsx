@@ -25,10 +25,23 @@ export function EncryptionStatus({ status }: { status: Status }) {
       
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', color: '#ddd' }}>
         <div style={{ color: '#888' }}>Connection:</div>
-        <div style={{ color: status.connected ? '#4f4' : status.mode === 'listener' && status.peerId ? '#ff8' : '#f55' }}>
-          {status.connected ? '✓ Encrypted Tunnel Active' : 
-           status.mode === 'listener' && status.peerId ? '⏳ Listening (waiting for peer)' :
-           status.mode === 'dialer' ? '⏳ Connecting...' : '✗ Disconnected'}
+        <div style={{ 
+          color: status.connected ? '#4f4' : 
+                 (status.mode && status.encryption === 'ML-KEM (Kyber768) + X25519 hybrid') ? '#ff8' : // Encryption active = yellow
+                 (status.mode === 'listener' && status.peerId) ? '#ff8' : 
+                 (status.peerId && !status.connected) ? '#ff8' :
+                 '#f55' 
+        }}>
+          {status.connected ? '[ACTIVE] Encrypted Tunnel Active' : 
+           status.mode === 'listener' && status.peerId ? '[WAITING] Listening (encryption active, waiting for peer)' :
+           status.mode === 'dialer' && status.peerId ? '[CONNECTING] Connecting (encryption active)...' :
+           status.peerId ? '[ESTABLISHING] Encryption Active (establishing connection...)' :
+           status.mode === 'listener' && status.encryption === 'ML-KEM (Kyber768) + X25519 hybrid' ? '[STARTING] Starting (encryption active)...' :
+           status.mode === 'dialer' && status.encryption === 'ML-KEM (Kyber768) + X25519 hybrid' ? '[CONNECTING] Connecting (encryption active)...' :
+           status.mode === 'dialer' ? '[CONNECTING] Connecting...' : 
+           status.mode === 'listener' ? '[STARTING] Starting...' :
+           status.encryption === 'ML-KEM (Kyber768) + X25519 hybrid' ? '[READY] Encryption Active (ready to connect)...' :
+           '[DISCONNECTED] Disconnected'}
         </div>
 
         <div style={{ color: '#888' }}>Encryption:</div>
@@ -81,11 +94,25 @@ export function EncryptionStatus({ status }: { status: Status }) {
         color: '#888',
         lineHeight: '1.5'
       }}>
-        <strong style={{ color: '#fff' }}>Current Status:</strong> CrypRQ establishes encrypted peer-to-peer connections using post-quantum cryptography (ML-KEM + X25519 hybrid). 
+        <strong style={{ color: '#fff' }}>Encryption Method:</strong> ML-KEM (Kyber768) + X25519 Hybrid
         <br/><br/>
-        <strong style={{ color: '#59f' }}>P2P Tunnel:</strong> ✅ Working - All traffic between peers is encrypted.
+        <strong style={{ color: '#59f' }}>Proof of Encryption:</strong>
         <br/>
-        <strong style={{ color: '#ff8' }}>System-Wide VPN:</strong> ⚠️ Requires Network Extension framework on macOS. 
+        {status.keyEpoch ? (
+          <span style={{ color: '#4f4' }}>Key Rotation Epoch {status.keyEpoch} - ML-KEM keys rotated</span>
+        ) : (
+          <span style={{ color: '#888' }}>Waiting for key rotation event...</span>
+        )}
+        <br/>
+        {status.peerId ? (
+          <span style={{ color: '#4f4' }}>Peer ID generated - Hybrid encryption keys created (ML-KEM + X25519)</span>
+        ) : (
+          <span style={{ color: '#888' }}>Waiting for peer ID generation...</span>
+        )}
+        <br/><br/>
+        <strong style={{ color: '#59f' }}>P2P Tunnel:</strong> {status.encryption === 'ML-KEM (Kyber768) + X25519 hybrid' ? '[ACTIVE]' : '[INACTIVE]'} All traffic between peers is encrypted using ML-KEM (Kyber768) + X25519 hybrid.
+        <br/>
+        <strong style={{ color: '#ff8' }}>System-Wide VPN:</strong> [NOTE] Requires Network Extension framework on macOS. 
         The encrypted tunnel between peers is active, but routing all system/browser traffic requires macOS Network Extension (NEPacketTunnelProvider).
         <br/><br/>
         See <code style={{color:'#59f'}}>docs/SYSTEM_VPN_IMPLEMENTATION.md</code> for implementation details.

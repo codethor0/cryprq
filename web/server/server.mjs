@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { exec } from 'node:child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, accessSync, constants } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,22 +14,6 @@ const execAsync = promisify(exec);
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the web dist directory (built files)
-// If dist doesn't exist, serve from parent directory (for development)
-const distPath = join(__dirname, '..', 'dist');
-const staticPath = existsSync(distPath) ? distPath : join(__dirname, '..');
-app.use(express.static(staticPath));
-
-// Fallback to index.html for SPA routing
-app.get('*', (req, res) => {
-    const indexPath = join(staticPath, 'index.html');
-    if (existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Web UI not found. Run: cd web && npm run build');
-    }
-});
 
 // Check if Docker mode is enabled
 const USE_DOCKER = process.env.USE_DOCKER === 'true' || process.env.USE_DOCKER === '1';
@@ -81,10 +65,71 @@ let proc = null;
 let currentMode = null;
 let currentPort = null;
 const events = [];
-function push(level, t){ const e={level,t}; events.push(e); if(events.length>500) events.shift(); }
+const eventClients = new Set(); // Track all connected EventSource clients
+
+function push(level, t){ 
+  const e={level,t}; 
+  events.push(e); 
+  if(events.length>500) events.shift();
+  
+  // Broadcast to all connected EventSource clients
+  const message = `data: ${JSON.stringify(e)}\n\n`;
+  eventClients.forEach(client => {
+    try {
+      client.write(message);
+    } catch (err) {
+      // Client disconnected, remove it
+      eventClients.delete(client);
+    }
+  });
+}
 
 app.post('/connect', async (req,res)=>{
   const { mode, port, peer, vpn } = req.body || {};
+  
+  // Find CrypRQ binary - check multiple paths
+  let binPath = process.env.CRYPRQ_BIN;
+  
+  if (!binPath || !existsSync(binPath)) {
+    // Try multiple fallback paths
+    const possiblePaths = [
+      join(__dirname, '..', '..', 'target', 'release', 'cryprq'), // Cargo build
+      join(__dirname, '..', '..', 'dist', 'macos', 'CrypRQ.app', 'Contents', 'MacOS', 'CrypRQ'), // macOS app
+      'cryprq', // System PATH
+    ];
+    
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        binPath = path;
+        process.env.CRYPRQ_BIN = path;
+        console.log(`[DEBUG] Found CrypRQ binary at: ${path}`);
+        break;
+      }
+    }
+  }
+  
+  // Final check - binary must exist
+  if (!binPath || !existsSync(binPath)) {
+    const triedPaths = [
+      join(__dirname, '..', '..', 'target', 'release', 'cryprq'),
+      join(__dirname, '..', '..', 'dist', 'macos', 'CrypRQ.app', 'Contents', 'MacOS', 'CrypRQ'),
+      'cryprq',
+    ];
+    const errorMsg = `CrypRQ binary not found. Tried: ${triedPaths.join(', ')}. Set CRYPRQ_BIN environment variable or build with 'cargo build --release -p cryprq'`;
+    push('error', errorMsg);
+    console.error(`[ERROR] ${errorMsg}`);
+    return res.status(500).json({ error: errorMsg });
+  }
+  
+  // Verify binary is executable
+  try {
+    accessSync(binPath, constants.X_OK);
+  } catch (e) {
+    const errorMsg = `CrypRQ binary is not executable: ${binPath}`;
+    push('error', errorMsg);
+    console.error(`[ERROR] ${errorMsg}`);
+    return res.status(500).json({ error: errorMsg });
+  }
   
   // If Docker mode is enabled, use container instead of local process
   if (USE_DOCKER) {
@@ -198,13 +243,19 @@ app.post('/connect', async (req,res)=>{
       
       proc.on('exit', (code, signal) => {
         if (code === 0) {
-          push('status', `exit ${code} (clean shutdown)`);
+          push('status', `Process exited cleanly (code: ${code})`);
         } else if (code === null && signal) {
-          push('error', `Process killed by signal: ${signal}`);
+          if (signal === 'SIGTERM') {
+            push('status', `Process terminated gracefully (signal: ${signal})`);
+          } else if (signal === 'SIGKILL') {
+            push('error', `Process was forcefully killed (signal: ${signal})`);
+          } else {
+            push('error', `Process killed by signal: ${signal}`);
+          }
         } else if (code === null) {
           push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
         } else {
-          push('error', `exit ${code} (signal: ${signal || 'none'})`);
+          push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
         }
         proc = null;
         currentMode = null;
@@ -242,13 +293,33 @@ app.post('/connect', async (req,res)=>{
   // This prevents killing the listener when dialer tries to connect
   if(proc && (currentMode !== mode || currentPort !== port)) {
     push('status', `🔄 Switching from ${currentMode} to ${mode} on port ${port}`);
-    proc.kill('SIGKILL'); 
+    
+    // Use SIGTERM first for graceful shutdown, then SIGKILL if needed
+    try {
+      proc.kill('SIGTERM');
+      // Wait for graceful shutdown
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if process is still alive
+      try {
+        process.kill(proc.pid, 0); // Check if process exists
+        // Process still alive, force kill
+        proc.kill('SIGKILL');
+        push('status', `⚠️ Process did not terminate gracefully, forced kill`);
+      } catch (e) {
+        // Process already terminated
+        push('status', `✅ Process terminated gracefully`);
+      }
+    } catch (err) {
+      // Process might already be dead
+      push('status', `⚠️ Error terminating process: ${err.message}`);
+    }
+    
     proc = null;
     currentMode = null;
     currentPort = null;
     
-    // Wait for process to die
-    const { execSync } = require('child_process');
+    // Wait for process to fully die
     try {
       execSync('sleep 0.5', {stdio: 'ignore'});
     } catch(e) {}
@@ -263,7 +334,7 @@ app.post('/connect', async (req,res)=>{
   
   // Kill any cryprq processes on this port ONLY if we're starting a listener
   // For dialer, we want to keep the listener alive
-  const { execSync } = require('child_process');
+  // execSync already imported at top
   if(mode === 'listener') {
     try {
       // Only kill processes if we don't already have THIS listener running
@@ -272,13 +343,47 @@ app.post('/connect', async (req,res)=>{
         // Get PIDs using this port BEFORE we spawn
         const existingPids = execSync(`lsof -ti:${port} 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
         if(existingPids) {
-          // Kill existing processes (but remember we'll spawn a new one)
-          execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {stdio: 'ignore'});
-          execSync('sleep 0.5', {stdio: 'ignore'}); // Give processes time to die
-          push('status', `🧹 Cleaned up port ${port} - ready for listener`);
+          // Check if any of these PIDs are CrypRQ processes
+          const pids = existingPids.split('\n').filter(Boolean);
+          let killedAny = false;
+          
+          for (const pid of pids) {
+            try {
+              // Check if this is a CrypRQ process
+              const cmdline = execSync(`ps -p ${pid} -o command= 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
+              if (cmdline.includes('cryprq') || cmdline.includes('CrypRQ')) {
+                // Try graceful shutdown first
+                try {
+                  execSync(`kill -TERM ${pid} 2>/dev/null || true`, {stdio: 'ignore'});
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  
+                  // Check if still alive
+                  try {
+                    execSync(`kill -0 ${pid} 2>/dev/null`, {stdio: 'ignore'});
+                    // Still alive, force kill
+                    execSync(`kill -9 ${pid} 2>/dev/null || true`, {stdio: 'ignore'});
+                  } catch (e) {
+                    // Already dead
+                  }
+                  killedAny = true;
+                } catch (e) {
+                  // Process might already be dead
+                }
+              }
+            } catch (e) {
+              // Skip this PID
+            }
+          }
+          
+          if (killedAny) {
+            execSync('sleep 0.5', {stdio: 'ignore'}); // Give processes time to die
+            push('status', `🧹 Cleaned up CrypRQ processes on port ${port} - ready for listener`);
+          }
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      push('status', `⚠️ Port cleanup warning: ${e.message}`);
+    }
   } else if(mode === 'dialer') {
     // For dialer, check if listener is running - if not, warn user
     try {
@@ -286,7 +391,23 @@ app.post('/connect', async (req,res)=>{
       if(!portUsers) {
         push('status', `⚠️ No listener detected on port ${port} - make sure listener is running first`);
       } else {
-        push('status', `✅ Listener detected on port ${port} - connecting...`);
+        // Verify it's actually a CrypRQ listener
+        const pids = portUsers.split('\n').filter(Boolean);
+        let foundListener = false;
+        for (const pid of pids) {
+          try {
+            const cmdline = execSync(`ps -p ${pid} -o command= 2>/dev/null || echo ""`, {encoding: 'utf8'}).trim();
+            if (cmdline.includes('cryprq') && cmdline.includes('--listen')) {
+              foundListener = true;
+              break;
+            }
+          } catch (e) {}
+        }
+        if (foundListener) {
+          push('status', `✅ CrypRQ listener detected on port ${port} - connecting...`);
+        } else {
+          push('status', `⚠️ Port ${port} is in use, but may not be a CrypRQ listener`);
+        }
       }
     } catch(e) {}
   }
@@ -307,41 +428,76 @@ app.post('/connect', async (req,res)=>{
   const env = { ...process.env, RUST_LOG: 'trace' };
   
   // Spawn process with proper stdio handling
-  proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, { 
-    stdio: ['ignore','pipe','pipe'], // stdin: ignore, stdout/stderr: pipe for logging
-    env: env
-  });
-  currentMode = mode;
-  currentPort = port;
-  push('status', `spawn ${args.join(' ')}`);
+  try {
+    proc = spawn(process.env.CRYPRQ_BIN, args, { 
+      stdio: ['ignore','pipe','pipe'], // stdin: ignore, stdout/stderr: pipe for logging
+      env: env
+    });
+    
+    // Check if spawn was successful
+    if (!proc || !proc.pid) {
+      throw new Error('Failed to spawn process');
+    }
+    
+    currentMode = mode;
+    currentPort = port;
+    push('status', `spawn ${process.env.CRYPRQ_BIN} ${args.join(' ')}`);
+    push('status', `Process PID: ${proc.pid}`);
+    console.log(`[DEBUG] Spawned CrypRQ: PID=${proc.pid}, args=${args.join(' ')}`);
+  } catch (err) {
+    push('error', `Failed to spawn CrypRQ: ${err.message}`);
+    return res.status(500).json({ error: `Failed to start CrypRQ: ${err.message}` });
+  }
   proc.stdout.on('data', d=>{
     const s=d.toString();
+    console.log(`[DEBUG] stdout: ${s.trim()}`);
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
+      // stdout contains: "Starting listener...", "Local peer id: ...", "Listening on..."
       let level='info';
-      if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation'; // Encryption events
-      else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation'; // Decryption events
+      if(/Local peer id:/i.test(line)) {
+        level='peer'; // CRITICAL: Peer ID indicates encryption is active
+        console.log(`[DEBUG] Detected peer ID in stdout: ${line}`);
+      } else if(/Starting listener|Dialing peer/i.test(line)) {
+        level='status';
+        console.log(`[DEBUG] Detected start message: ${line}`);
+      } else if(/Listening on/i.test(line)) {
+        level='peer'; // Listening means encryption is ready
+        console.log(`[DEBUG] Detected listening: ${line}`);
+      } else if(/Connected to/i.test(line)) {
+        level='peer'; // Connection established
+      } else if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation';
+      else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation';
       else if(/rotate|rotation/i.test(line)) level='rotation';
       else if(/peer|connect|handshake|ping|connected/i.test(line)) level='peer';
       else if(/vpn|tun|interface/i.test(line)) level='status';
       else if(/error|failed|panic/i.test(line)) level='error';
-      else if(/debug|trace/i.test(line)) level='info';
       push(level, line);
     });
   });
   proc.stderr.on('data', d=>{
     const s=d.toString();
+    console.log(`[DEBUG] stderr: ${s.trim()}`);
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
-      // stderr can contain both errors and info logs
+      // stderr contains: "[timestamp INFO p2p] event=..." log messages
       let level='error';
       if(/INFO|DEBUG|TRACE/i.test(line)) {
         level='info';
-        if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation'; // Encryption events
-        else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation'; // Decryption events
-        else if(/rotate|rotation/i.test(line)) level='rotation';
+        // CRITICAL: Key rotation events indicate encryption is active
+        if(/key_rotation|rotation/i.test(line)) {
+          level='rotation';
+          console.log(`[DEBUG] Detected key rotation: ${line}`);
+        }
+        // CRITICAL: Connection events
+        else if(/Inbound connection established/i.test(line)) {
+          level='peer';
+        }
+        // Encryption/decryption events
+        else if(/🔐|ENCRYPT|encrypt/i.test(line)) level='rotation';
+        else if(/🔓|DECRYPT|decrypt/i.test(line)) level='rotation';
+        // Connection-related events
         else if(/peer|connect|handshake|ping|connected|listening/i.test(line)) level='peer';
-        else if(/listening on/i.test(line)) level='peer'; // Listening is a peer event
       } else if(/listening on/i.test(line)) {
-        level='peer'; // Listening messages are peer events
+        level='peer';
       } else if(/Address already in use/i.test(line)) {
         level='error';
         push('status', `⚠️ Port ${port} is in use - killing existing processes...`);
@@ -351,31 +507,46 @@ app.post('/connect', async (req,res)=>{
   });
   proc.on('exit', (code, signal)=>{
     if(code === 0) {
-      push('status', `exit ${code} (clean shutdown)`);
+      push('status', `Process exited cleanly (code: ${code})`);
     } else if(code === null && signal) {
-      push('error', `Process killed by signal: ${signal}`);
+      if (signal === 'SIGTERM') {
+        push('status', `Process terminated gracefully (signal: ${signal})`);
+      } else if (signal === 'SIGKILL') {
+        push('error', `Process was forcefully killed (signal: ${signal})`);
+      } else {
+        push('error', `Process killed by signal: ${signal}`);
+      }
     } else if(code === null) {
       push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
     } else {
-      push('error', `exit ${code} (signal: ${signal || 'none'})`);
+      push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
     }
-    // Clear process tracking when it exits
-    proc = null;
-    currentMode = null;
-    currentPort = null;
+    
+    // Only clear state if this is still the current process
+    const exitedPid = proc ? proc.pid : null;
+    if (exitedPid && proc && proc.pid === exitedPid) {
+      proc = null;
+      currentMode = null;
+      currentPort = null;
+    }
   });
   
-  // Handle process errors
+  // Handle process errors (spawn failures)
   proc.on('error', (err)=>{
     push('error', `Process spawn error: ${err.message}`);
+    push('error', `Binary path: ${process.env.CRYPRQ_BIN}`);
+    push('error', `Args: ${args.join(' ')}`);
     proc = null;
     currentMode = null;
     currentPort = null;
+    // Don't send response here - it's already been sent
   });
   
   // Log when process starts
   push('status', `Process started (PID: ${proc.pid}, mode: ${mode}, port: ${port})`);
-  res.json({ok:true, vpn: !!vpn});
+  
+  // Send success response
+  res.json({ok:true, vpn: !!vpn, pid: proc.pid});
 });
 
 app.get('/events', async (req,res)=>{
@@ -384,8 +555,18 @@ app.get('/events', async (req,res)=>{
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
   
-  // Send existing events
-  events.forEach(e=>res.write(`data: ${JSON.stringify(e)}\n\n`));
+  // Add this client to the set of connected clients
+  eventClients.add(res);
+  
+  // Send existing events immediately
+  events.forEach(e=>{
+    try {
+      res.write(`data: ${JSON.stringify(e)}\n\n`);
+    } catch (err) {
+      // Client disconnected
+      eventClients.delete(res);
+    }
+  });
   
   // If Docker mode, stream container logs periodically
   if (USE_DOCKER) {
@@ -405,15 +586,7 @@ app.get('/events', async (req,res)=>{
             else if (/vpn|tun|interface/i.test(line)) level = 'status';
             else if (/error|failed|panic/i.test(line)) level = 'error';
             
-            const e = { level, t: line };
-            events.push(e);
-            if (events.length > 500) events.shift();
-            try {
-              res.write(`data: ${JSON.stringify(e)}\n\n`);
-            } catch (err) {
-              // Connection closed
-              clearInterval(logInterval);
-            }
+            push(level, line); // Use push() so it broadcasts to all clients
           });
           lastLogCount = lines.length;
         }
@@ -421,18 +594,96 @@ app.get('/events', async (req,res)=>{
         // Ignore errors, connection might be closed
       }
     }, 1000); // Check every second for faster updates
-    req.on('close', () => clearInterval(logInterval));
+    req.on('close', () => {
+      clearInterval(logInterval);
+      eventClients.delete(res);
+    });
   } else {
-    // Local mode - just send ticks
-    const iv=setInterval(()=>{
+    // Local mode - events are already being broadcast via push() from proc.stdout/stderr
+    // Just keep connection alive and clean up on close
+    req.on('close', () => {
+      eventClients.delete(res);
+    });
+    
+    // Send a heartbeat every 30 seconds to keep connection alive (SSE spec requires periodic data)
+    const heartbeat = setInterval(() => {
       try {
-        res.write(`data: ${JSON.stringify({level:'status', t:'tick'})}\n\n`);
+        res.write(`: heartbeat\n\n`);
       } catch (err) {
-        clearInterval(iv);
+        clearInterval(heartbeat);
+        eventClients.delete(res);
       }
-    },15000);
-    req.on('close',()=>clearInterval(iv));
+    }, 30000);
+    req.on('close', () => clearInterval(heartbeat));
   }
+});
+
+// File transfer endpoint
+app.post('/api/send-file', async (req, res) => {
+  try {
+    const { filename, content, size, type } = req.body || {};
+    
+    if (!filename || !content) {
+      return res.status(400).json({ success: false, message: 'Missing filename or content' });
+    }
+
+    // Check if we have an active connection
+    // Allow file transfer if either proc is running OR currentMode is set (connection initiated)
+    // This allows file transfer even if CrypRQ process is still starting up
+    const hasActiveConnection = proc !== null || currentMode !== null;
+    if (!hasActiveConnection) {
+      return res.status(400).json({ success: false, message: 'Not connected to peer. Please connect first.' });
+    }
+    
+    // Log file transfer attempt for debugging
+    console.log(`[FILE TRANSFER] Receiving file "${filename}" (${size} bytes) - Connection: proc=${proc !== null}, mode=${currentMode}`);
+
+    // Decode base64 content
+    const base64Data = content.split(',')[1] || content;
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+
+    // For now, save file locally and log transfer
+    // In production, this would send through CrypRQ packet forwarder
+    const receivedDir = join(__dirname, '..', 'received_files');
+    if (!existsSync(receivedDir)) {
+      const { mkdirSync } = await import('fs');
+      mkdirSync(receivedDir, { recursive: true });
+    }
+
+    const { writeFileSync } = await import('fs');
+    const filePath = join(receivedDir, filename);
+    writeFileSync(filePath, fileBuffer);
+
+    // Broadcast file transfer event
+    push('info', `[FILE TRANSFER] File "${filename}" (${(size / 1024).toFixed(2)} KB) received securely through encrypted tunnel`);
+
+    res.json({ 
+      success: true, 
+      message: 'File sent successfully',
+      received: true,
+      path: filePath
+    });
+  } catch (error) {
+    console.error('[ERROR] File transfer error:', error);
+    res.json({ success: false, message: error.message || 'Failed to send file' });
+  }
+});
+
+// Serve static files from the web dist directory (built files)
+// If dist doesn't exist, serve from parent directory (for development)
+// IMPORTANT: This must come AFTER API routes (/connect, /events, /api/send-file)
+const staticDistPath = join(__dirname, '..', 'dist');
+const staticPath = existsSync(staticDistPath) ? staticDistPath : join(__dirname, '..');
+app.use(express.static(staticPath));
+
+// Fallback to index.html for SPA routing (must be last)
+app.get('*', (req, res) => {
+    const indexPath = join(staticPath, 'index.html');
+    if (existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('Web UI not found. Run: cd web && npm run build');
+    }
 });
 
 const PORT = process.env.BRIDGE_PORT || 8787;

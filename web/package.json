@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:automated": "node test-automated.js",
+    "test:vpn": "node test-vpn.js"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -23,6 +25,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "puppeteer": "^23.11.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.3",
     "vite": "^7.2.2"

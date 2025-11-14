@@ -75,7 +75,34 @@ cat > "${APP_DIR}/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
+# Code sign the app bundle
+echo ""
+echo "=== Code Signing App Bundle ==="
+if [[ -n "${APPLE_SIGNING_IDENTITY:-}" ]]; then
+    echo "Signing with identity: ${APPLE_SIGNING_IDENTITY}"
+    codesign --force --deep --sign "${APPLE_SIGNING_IDENTITY}" "${APP_DIR}" || {
+        echo "⚠️  Warning: Code signing failed, trying ad-hoc signature..."
+        codesign --force --deep --sign - "${APP_DIR}"
+    }
+else
+    echo "No signing identity found, using ad-hoc signature..."
+    codesign --force --deep --sign - "${APP_DIR}"
+fi
+
+# Verify signature
+if codesign -vvv --deep --strict "${APP_DIR}" 2>&1 | grep -q "valid on disk"; then
+    echo "✅ App bundle signed and verified"
+else
+    echo "⚠️  Warning: Signature verification had issues, but app should still work"
+fi
+
+# Remove quarantine attribute if present (from downloads)
+xattr -d com.apple.quarantine "${APP_DIR}" 2>/dev/null || true
+
+echo ""
 echo "=== macOS App Bundle Created ==="
 echo "App: ${APP_DIR}"
 ls -lh "${APP_DIR}/Contents/MacOS/cryprq"
+echo ""
+echo "✅ App is ready to use!"
 

@@ -207,6 +207,27 @@ These workflows are referenced in project docs and status guidance. All tests an
 - VPN packet forwarding tests
 - Docker container tests
 
+### Testing
+
+**Quick Start**:
+```bash
+# Run unit tests locally
+cargo test --lib --all --no-fail-fast
+
+# Run tests in Docker (recommended)
+./scripts/test-docker.sh
+
+# Integration tests
+./scripts/test-docker.sh integration
+```
+
+**Test Layers**:
+- **Unit Tests**: Fast, isolated tests (~39 tests, < 30s)
+- **Integration Tests**: Docker-based VPN tests (~2 minutes)
+- **E2E Tests**: Browser-based tests (~10 minutes)
+
+See [TEST_REPORT.md](TEST_REPORT.md) for comprehensive testing documentation.
+
 ## Deploy
 ### Bare Metal
 - Linux or macOS with Rust 1.83.0.

@@ -28,24 +28,52 @@ services:
       timeout: 5s
       retries: 3
 
-  # Test runner service (uses Rust image for testing)
-  cryprq-test-runner:
-    image: rust:1.83
+  # Test runner service (uses test-specific Dockerfile)
+  # Unit tests don't require the listener service
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
     container_name: cryprq-test-runner
+    environment:
+      - RUST_LOG=info
+      - CARGO_HOME=/workspace/.cargo
+    volumes:
+      - .:/workspace
+      - cargo-cache:/workspace/.cargo/registry
+    working_dir: /workspace
+    # Default command runs unit tests
+    # Override with: docker compose -f docker-compose.test.yml run --rm test cargo test --lib --all
+    command: ["cargo", "test", "--lib", "--all", "--no-fail-fast"]
+    profiles:
+      - test
+
+  # Integration test service (requires listener)
+  test-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: cryprq-test-integration
     depends_on:
       cryprq-listener:
         condition: service_healthy
     environment:
       - RUST_LOG=info
+      - CARGO_HOME=/workspace/.cargo
     networks:
       - cryprq-network
     volumes:
       - .:/workspace
+      - cargo-cache:/workspace/.cargo/registry
     working_dir: /workspace
-    command: ["sleep", "infinity"]
+    # Run integration tests that require listener
+    command: ["./scripts/docker_vpn_test.sh"]
     profiles:
-      - test
-    entrypoint: ["/bin/bash"]
+      - test-integration
+
+volumes:
+  cargo-cache:
+    driver: local
 
 networks:
   cryprq-network:
