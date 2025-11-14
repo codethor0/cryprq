@@ -328,7 +328,8 @@ mod tests {
         assert_eq!(bytes[1], MSG_TYPE_DATA);
         assert_eq!(bytes[3], 0); // epoch
 
-        let deserialized = RecordHeader::from_bytes(&bytes).unwrap();
+        let deserialized = RecordHeader::from_bytes(&bytes)
+            .expect("Failed to deserialize header in test");
         assert_eq!(header, deserialized);
     }
 
