@@ -4,12 +4,6 @@
 
 set -e
 
-#!/bin/bash
-# Check for emojis in code files
-# Exit code 0 if no emojis found, 1 if emojis found
-
-set -e
-
 # Unicode emoji ranges (common emojis that can break builds)
 EMOJI_PATTERN='[\U0001F300-\U0001F9FF\U00002600-\U000027BF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002700-\U000027BF]'
 FOUND=0

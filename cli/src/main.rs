@@ -135,7 +135,7 @@ async fn main() -> Result<()> {
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
 
                         // Start packet forwarding loop
-                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        log::info!("Starting packet forwarding loop - routing system traffic through encrypted tunnel");
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
                             log::error!("Failed to start packet forwarding: {}", e);
                         } else {
@@ -181,7 +181,7 @@ async fn main() -> Result<()> {
                         let forwarder_arc = Arc::new(tokio::sync::Mutex::new(forwarder));
 
                         // Start packet forwarding loop
-                        log::info!("🚀 Starting packet forwarding loop - routing system traffic through encrypted tunnel");
+                        log::info!("Starting packet forwarding loop - routing system traffic through encrypted tunnel");
                         if let Err(e) = tun.start_forwarding(forwarder_arc).await {
                             log::error!("Failed to start packet forwarding: {}", e);
                         } else {
