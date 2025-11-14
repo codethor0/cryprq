@@ -39,7 +39,7 @@ jobs:
       group: qa-vnext-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Aggressive cleanup (10GB cap)
         run: bash scripts/ci-cleanup.sh || echo "Cleanup script completed with warnings"
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -120,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -151,7 +151,7 @@ jobs:
     needs: build
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
@@ -197,7 +197,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
@@ -229,7 +229,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
@@ -259,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -301,7 +301,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -348,7 +348,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
@@ -380,7 +380,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.83.0
