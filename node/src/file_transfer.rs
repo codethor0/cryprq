@@ -258,11 +258,7 @@ impl FileTransferManager {
             chunks_sent: 0,
             total_chunks,
         };
-        let mut outgoing = self
-            .outgoing
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut outgoing = self.outgoing.lock().expect("Outgoing transfers lock poisoned");
         outgoing.insert(stream_id, transfer);
-        Ok(())
     }
 }
