@@ -1,11 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! File transfer manager for CrypRQ record layer
-//!
-//! Manages file transfers using stream IDs and routes FILE_* records to appropriate handlers
+// License: MIT (see LICENSE file for details)
 
 use anyhow::{Context, Result};
 use std::collections::HashMap;

@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! DNS-over-HTTPS (DoH) and DNS-over-TLS (DoT) Support
-//!
-//! This module provides encrypted DNS resolution to protect DNS queries
-//! from surveillance and manipulation.
+// License: MIT (see LICENSE file for details)
 
 use std::net::IpAddr;
 use std::time::Duration;

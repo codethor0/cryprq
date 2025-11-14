@@ -1,48 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Post-quantum secure VPN tunnel implementation
-//!
-//! This crate provides authenticated, encrypted tunnel functionality with:
-//! - Ed25519 peer authentication (prevents MitM attacks)
-//! - ChaCha20-Poly1305 AEAD encryption
-//! - X25519 Diffie-Hellman key exchange
-//! - BLAKE3 key derivation
-//! - Replay attack protection (2048-nonce sliding window)
-//! - Rate limiting (token bucket algorithm)
-//! - Memory-efficient buffer pooling
-//!
-//! # Security Features
-//!
-//! - CWE-287 Prevention: Mandatory peer identity verification
-//! - CWE-294 Prevention: Anti-replay window with nonce tracking
-//! - CWE-400 Prevention: Configurable rate limiting (1000 pps default)
-//! - CWE-789 Prevention: Buffer pool prevents memory exhaustion
-//!
-//! # Example
-//!
-//! ```no_run
-//! use node::{create_tunnel, generate_handshake_auth};
-//!
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let local_sk = [1u8; 32];
-//! let peer_pk = [2u8; 32];
-//! let (_, peer_identity_key, peer_signature) = generate_handshake_auth(&peer_pk);
-//!
-//! let tunnel = create_tunnel(
-//!     &local_sk,
-//!     &peer_pk,
-//!     &peer_identity_key,
-//!     &peer_signature,
-//!     "0.0.0.0:51820"
-//! ).await?;
-//!
-//! tunnel.send_packet(b"Hello, secure world!").await?;
-//! # Ok(())
-//! # }
-//! ```
+// License: MIT (see LICENSE file for details)
 
 use bytes::BytesMut;
 use chacha20poly1305::{

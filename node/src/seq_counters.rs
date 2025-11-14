@@ -1,11 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Sequence counters for CrypRQ record layer
-//!
-//! Per-stream or per-message-type sequence number management
+// License: MIT (see LICENSE file for details)
 
 use std::sync::atomic::{AtomicU64, Ordering};
 

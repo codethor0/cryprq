@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Traffic Analysis Resistance
-//!
-//! This module provides padding and constant-rate traffic generation
-//! to resist traffic analysis attacks.
+// License: MIT (see LICENSE file for details)
 
 use rand::Rng;
 

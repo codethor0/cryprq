@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! TUN interface for system-wide VPN routing
-//!
-//! This module provides TUN interface creation and packet forwarding
-//! to enable routing all system traffic through the encrypted tunnel.
+// License: MIT (see LICENSE file for details)
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;

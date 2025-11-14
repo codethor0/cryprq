@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! CrypRQ record layer send/receive functions
-//!
-//! Implements the record boundary for sending and receiving CrypRQ records
-//! as specified in cryp-rq-protocol-v1.md Section 6
+// License: MIT (see LICENSE file for details)
 
 use cryprq_core::{Record, RecordHeader, PROTOCOL_VERSION};
 use std::io;

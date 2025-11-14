@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Packet forwarding over libp2p request-response protocol
-//!
-//! This module provides packet forwarding using libp2p's request-response protocol
-//! for bidirectional packet exchange over encrypted streams.
+// License: MIT (see LICENSE file for details)
 
 use anyhow::Result;
 use futures::{AsyncRead, AsyncWrite};

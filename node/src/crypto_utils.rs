@@ -1,11 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Cryptographic utilities for CrypRQ v1.0 protocol
-//!
-//! Implements nonce construction and epoch handling per cryp-rq-protocol-v1.md
+// License: MIT (see LICENSE file for details)
 
 use chacha20poly1305::Nonce;
 

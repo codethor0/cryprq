@@ -1,12 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! TLS 1.3 Support for Control Plane
-//!
-//! This module provides TLS 1.3 support for control plane communications,
-//! ensuring encrypted and authenticated control channel.
+// License: MIT (see LICENSE file for details)
 
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
