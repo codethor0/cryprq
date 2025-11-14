@@ -48,6 +48,11 @@ pub const LABEL_RI_IV: &[u8] = b"cryp-rq ri iv";
 ///
 /// * `hs_auth_key` - Handshake authentication key (32 bytes)
 /// * `master_secret` - Master secret (32 bytes)
+///
+/// # Note
+///
+/// HKDF expand is guaranteed not to fail for these sizes; expect is acceptable here.
+#[allow(clippy::expect_used)]
 pub fn derive_handshake_keys(ss_kem: &[u8; 32], ss_x: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
     // IKM = ss_kem || ss_x
     let mut ikm = [0u8; 64];
@@ -87,6 +92,11 @@ pub fn derive_handshake_keys(ss_kem: &[u8; 32], ss_x: &[u8; 32]) -> ([u8; 32], [
 /// # Returns
 ///
 /// * `(key_ir, iv_ir, key_ri, iv_ri)` - Traffic keys for both directions
+///
+/// # Note
+///
+/// HKDF expand is guaranteed not to fail for these sizes; expect is acceptable here.
+#[allow(clippy::expect_used)]
 pub fn derive_traffic_keys(
     master_secret: &[u8; 32],
     key_len: usize,
@@ -94,23 +104,19 @@ pub fn derive_traffic_keys(
 ) -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
     let (_, hk) = Hkdf::<Sha256>::extract(None, master_secret);
 
-    let mut key_ir = Vec::with_capacity(key_len);
-    key_ir.resize(key_len, 0u8);
+    let mut key_ir = vec![0u8; key_len];
     hk.expand(LABEL_IR_KEY, &mut key_ir)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ir = Vec::with_capacity(iv_len);
-    iv_ir.resize(iv_len, 0u8);
+    let mut iv_ir = vec![0u8; iv_len];
     hk.expand(LABEL_IR_IV, &mut iv_ir)
         .expect("HKDF expand should not fail");
 
-    let mut key_ri = Vec::with_capacity(key_len);
-    key_ri.resize(key_len, 0u8);
+    let mut key_ri = vec![0u8; key_len];
     hk.expand(LABEL_RI_KEY, &mut key_ri)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ri = Vec::with_capacity(iv_len);
-    iv_ri.resize(iv_len, 0u8);
+    let mut iv_ri = vec![0u8; iv_len];
     hk.expand(LABEL_RI_IV, &mut iv_ri)
         .expect("HKDF expand should not fail");
 
@@ -132,6 +138,11 @@ pub fn derive_traffic_keys(
 /// # Returns
 ///
 /// * `(key_ir, iv_ir, key_ri, iv_ri)` - Epoch-scoped traffic keys
+///
+/// # Note
+///
+/// HKDF expand is guaranteed not to fail for these sizes; expect is acceptable here.
+#[allow(clippy::expect_used)]
 pub fn derive_epoch_keys(
     master_secret: &[u8; 32],
     epoch: u8,
@@ -157,23 +168,19 @@ pub fn derive_epoch_keys(
     label_ri_iv.extend_from_slice(b" epoch=");
     label_ri_iv.push(epoch);
 
-    let mut key_ir = Vec::with_capacity(key_len);
-    key_ir.resize(key_len, 0u8);
+    let mut key_ir = vec![0u8; key_len];
     hk.expand(&label_ir_key, &mut key_ir)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ir = Vec::with_capacity(iv_len);
-    iv_ir.resize(iv_len, 0u8);
+    let mut iv_ir = vec![0u8; iv_len];
     hk.expand(&label_ir_iv, &mut iv_ir)
         .expect("HKDF expand should not fail");
 
-    let mut key_ri = Vec::with_capacity(key_len);
-    key_ri.resize(key_len, 0u8);
+    let mut key_ri = vec![0u8; key_len];
     hk.expand(&label_ri_key, &mut key_ri)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ri = Vec::with_capacity(iv_len);
-    iv_ri.resize(iv_len, 0u8);
+    let mut iv_ri = vec![0u8; iv_len];
     hk.expand(&label_ri_iv, &mut iv_ri)
         .expect("HKDF expand should not fail");
 
