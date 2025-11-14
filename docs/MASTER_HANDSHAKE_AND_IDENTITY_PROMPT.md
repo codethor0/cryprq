@@ -118,11 +118,11 @@ Be specific and implementation-oriented. Reference exact file paths and function
 1. **Copy the Master Prompt** above into your AI/dev-assistant tool when ready to implement the handshake.
 
 2. **Review the output** - The tool will provide:
-   - Current codebase mapping
-   - Handshake integration design
-   - Step-by-step implementation plan
-   - Test updates
-   - Security checklist
+ - Current codebase mapping
+ - Handshake integration design
+ - Step-by-step implementation plan
+ - Test updates
+ - Security checklist
 
 3. **Execute the plan** - Follow the step-by-step implementation plan systematically.
 

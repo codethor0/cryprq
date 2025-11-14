@@ -122,18 +122,18 @@ shasum -a 256 sample.bin
 - `event=dialer_starting` - Starting connection
 - `event=handshake_complete` - ML-KEM + X25519 handshake done
 - `event=connection_established` - Encrypted tunnel ready
-- `Sent file metadata to ...` - Metadata sent
-- `Sent chunk N to ...` - Chunk sent
-- `Sent end packet to ...` - Transfer complete
+- `Sent file metadata to...` - Metadata sent
+- `Sent chunk N to...` - Chunk sent
+- `Sent end packet to...` - Transfer complete
 - `File transfer completed successfully` - Success
 
 ### Receiver Logs
 
 - `event=listener_starting` - Listener starting
 - `event=listener_ready` - Ready for connections
-- `Receiving file: ...` - File transfer started
-- `Received chunk N from peer ...` - Chunk received
-- `File received successfully: ...` - Transfer complete, hash verified
+- `Receiving file:...` - File transfer started
+- `Received chunk N from peer...` - Chunk received
+- `File received successfully:...` - Transfer complete, hash verified
 
 ## Error Handling
 
@@ -153,7 +153,7 @@ If chunks are missing when the end packet arrives:
 ### Connection Errors
 
 If connection fails:
-- Sender: `Failed to connect: ...`
+- Sender: `Failed to connect:...`
 - Receiver: Connection errors logged
 
 ## Security

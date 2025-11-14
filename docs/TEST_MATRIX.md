@@ -37,9 +37,9 @@ sha256sum /tmp/testfile.bin /tmp/receive/testfile.bin
 ```
 
 ### Expected Results
-- ✅ Hashes match
-- ✅ Logs show FILE_META → FILE_CHUNK → completion
-- ✅ File appears in `/tmp/receive/` with correct name
+- Hashes match
+- Logs show FILE_META → FILE_CHUNK → completion
+- File appears in `/tmp/receive/` with correct name
 
 ---
 
@@ -60,10 +60,10 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/small.txt
 ```
 
 **Verify:**
-- ✅ Only 1-2 FILE_CHUNK records in logs
-- ✅ SHA-256 verification passes
-- ✅ No extra partial writes on receiver side
-- ✅ File size matches exactly
+- Only 1-2 FILE_CHUNK records in logs
+- SHA-256 verification passes
+- No extra partial writes on receiver side
+- File size matches exactly
 
 **Commands:**
 ```bash
@@ -86,10 +86,10 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/medium.bin
 ```
 
 **Verify:**
-- ✅ Sequence numbers increase monotonically per stream
-- ✅ No gaps or reordering in logs
-- ✅ Final hash matches
-- ✅ Logs show multiple FILE_CHUNK records with sequential seq numbers
+- Sequence numbers increase monotonically per stream
+- No gaps or reordering in logs
+- Final hash matches
+- Logs show multiple FILE_CHUNK records with sequential seq numbers
 
 **Commands:**
 ```bash
@@ -114,11 +114,11 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/large.bin
 ```
 
 **Verify:**
-- ✅ Epoch increments (from 0 → 1 → maybe 2) in logs during transfer
-- ✅ No decrypt/AAD errors at epoch boundaries
-- ✅ No stalls when keys rotate mid-transfer
-- ✅ Sequence counters reset on epoch change (seq starts at 0 for new epoch)
-- ✅ Final hash matches
+- Epoch increments (from 0 → 1 → maybe 2) in logs during transfer
+- No decrypt/AAD errors at epoch boundaries
+- No stalls when keys rotate mid-transfer
+- Sequence counters reset on epoch change (seq starts at 0 for new epoch)
+- Final hash matches
 
 **Commands:**
 ```bash
@@ -148,10 +148,10 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/file2.bin
 ```
 
 **Verify:**
-- ✅ Different Stream IDs (e.g., stream_id=2, stream_id=3) for each transfer
-- ✅ Records for each stream are independent and in-order
-- ✅ Both outputs in `/tmp/receive` match originals
-- ✅ Logs show interleaved FILE_META/FILE_CHUNK for different stream_ids
+- Different Stream IDs (e.g., stream_id=2, stream_id=3) for each transfer
+- Records for each stream are independent and in-order
+- Both outputs in `/tmp/receive` match originals
+- Logs show interleaved FILE_META/FILE_CHUNK for different stream_ids
 
 **Commands:**
 ```bash
@@ -179,10 +179,10 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/interrupt.b
 ```
 
 **Verify:**
-- ✅ Receiver does NOT claim completion
-- ✅ Partial file exists OR transfer marked incomplete in logs
-- ✅ No "transfer complete" log message
-- ✅ FileTransferManager logs show incomplete transfer state
+- Receiver does NOT claim completion
+- Partial file exists OR transfer marked incomplete in logs
+- No "transfer complete" log message
+- FileTransferManager logs show incomplete transfer state
 
 ---
 
@@ -208,10 +208,10 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/epoch_test.
 ```
 
 **Verify:**
-- ✅ Epoch in logs increments frequently (0, 1, 2, ...)
-- ✅ Sequence counters reset on epoch change
-- ✅ No AEAD decryption failures or "bad tag" errors
-- ✅ Transfer completes successfully despite multiple epoch changes
+- Epoch in logs increments frequently (0, 1, 2,...)
+- Sequence counters reset on epoch change
+- No AEAD decryption failures or "bad tag" errors
+- Transfer completes successfully despite multiple epoch changes
 
 **Revert:** Change rotation interval back to 300 seconds after test.
 
@@ -224,9 +224,9 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/epoch_test.
 **Setup:** Add debug mode to force epoch to 254 on startup (requires code modification).
 
 **Verify:**
-- ✅ Labels used in HKDF derived keys change with epoch, including wrapped value
-- ✅ Receiver happily decrypts across wrap (no misaligned keys)
-- ✅ Epoch transitions: 254 → 255 → 0 (mod 256)
+- Labels used in HKDF derived keys change with epoch, including wrapped value
+- Receiver happily decrypts across wrap (no misaligned keys)
+- Epoch transitions: 254 → 255 → 0 (mod 256)
 
 **Note:** This test requires code modification to force initial epoch.
 
@@ -239,9 +239,9 @@ cryprq send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 --file /tmp/epoch_test.
 **Enable Debug Logs:** Add logging for (epoch, stream_id, seq_number) in record layer.
 
 **Verify:**
-- ✅ For a given (key, epoch, direction), sequence numbers never repeat
-- ✅ No negative or decreasing sequence numbers
-- ✅ Nonce construction uses TLS 1.3-style XOR correctly
+- For a given (key, epoch, direction), sequence numbers never repeat
+- No negative or decreasing sequence numbers
+- Nonce construction uses TLS 1.3-style XOR correctly
 
 **Log Pattern to Check:**
 ```
@@ -262,9 +262,9 @@ docker compose -f docker-compose.vpn.yml up --build
 ```
 
 **Verify:**
-- ✅ TUN interface created
-- ✅ Tunnel established
-- ✅ Logs show VPN_PACKET message types
+- TUN interface created
+- Tunnel established
+- Logs show VPN_PACKET message types
 
 ---
 
@@ -279,9 +279,9 @@ ping <remote_vpn_ip>
 ```
 
 **Verify:**
-- ✅ Logs show MSG_TYPE_VPN_PACKET flow
-- ✅ TUN read → send_vpn_packet() → records → peer → TUN write
-- ✅ Ping packets successfully routed
+- Logs show MSG_TYPE_VPN_PACKET flow
+- TUN read → send_vpn_packet() → records → peer → TUN write
+- Ping packets successfully routed
 
 ---
 
@@ -294,9 +294,9 @@ curl http://example.com
 ```
 
 **Verify:**
-- ✅ No crash when under sustained traffic
-- ✅ Record layer doesn't become bottleneck
-- ✅ VPN_PACKET records flowing correctly
+- No crash when under sustained traffic
+- Record layer doesn't become bottleneck
+- VPN_PACKET records flowing correctly
 
 ---
 
@@ -321,10 +321,10 @@ docker compose -f docker-compose.web.yml up --build
 3. Use UI file upload to send a file
 
 **Verify:**
-- ✅ Backend logs show `send_file_meta` / `send_file_chunk` calls
-- ✅ Record layer logs show FILE_META / FILE_CHUNK for that stream
-- ✅ File lands in output directory
-- ✅ Hashes match
+- Backend logs show `send_file_meta` / `send_file_chunk` calls
+- Record layer logs show FILE_META / FILE_CHUNK for that stream
+- File lands in output directory
+- Hashes match
 
 **Reference:** See `WEB_VALIDATION_RUN.md` WEB-1 (Minimal Web Loopback File Transfer) for detailed steps and acceptance criteria.
 
@@ -333,9 +333,9 @@ docker compose -f docker-compose.web.yml up --build
 ### 5.3. Real-Time Logs
 
 **Verify:**
-- ✅ Log streaming in UI works with record-based tunnel
-- ✅ Doesn't depend on old libp2p behavior
-- ✅ Shows FILE_META, FILE_CHUNK, epoch changes, etc.
+- Log streaming in UI works with record-based tunnel
+- Doesn't depend on old libp2p behavior
+- Shows FILE_META, FILE_CHUNK, epoch changes, etc.
 
 **Reference:** See `WEB_VALIDATION_RUN.md` WEB-5 (Web Log Streaming / Events) for detailed validation steps.
 
@@ -364,9 +364,9 @@ See also: `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for release summary and security po
 **Check:** `core/src/record.rs`
 
 **Verify:**
-- ✅ 20-byte header exactly
-- ✅ Field sizes: Version (u8), MsgType (u8), Flags (u8), Epoch (u8), StreamID (u32), Seq (u64), CiphertextLen (u32)
-- ✅ Byte order: big-endian for multi-byte fields
+- 20-byte header exactly
+- Field sizes: Version (u8), MsgType (u8), Flags (u8), Epoch (u8), StreamID (u32), Seq (u64), CiphertextLen (u32)
+- Byte order: big-endian for multi-byte fields
 
 ---
 
@@ -375,9 +375,9 @@ See also: `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for release summary and security po
 **Check:** `crypto/src/kdf.rs`
 
 **Verify:**
-- ✅ Uses salt `"cryp-rq v1.0 hs"` for handshake keys
-- ✅ Epoch-scoped keys use labels like `"cryp-rq epoch N ir key"`
-- ✅ Key derivation uses HKDF-SHA256
+- Uses salt `"cryp-rq v1.0 hs"` for handshake keys
+- Epoch-scoped keys use labels like `"cryp-rq epoch N ir key"`
+- Key derivation uses HKDF-SHA256
 
 ---
 
@@ -386,9 +386,9 @@ See also: `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for release summary and security po
 **Check:** `node/src/crypto_utils.rs` or `core/src/record.rs`
 
 **Verify:**
-- ✅ Nonce = static_IV XOR seq_be (TLS 1.3 style)
-- ✅ Not simple counter
-- ✅ 96-bit nonce (12 bytes)
+- Nonce = static_IV XOR seq_be (TLS 1.3 style)
+- Not simple counter
+- 96-bit nonce (12 bytes)
 
 ---
 
@@ -397,27 +397,27 @@ See also: `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for release summary and security po
 **Check:** `node/src/seq_counters.rs`
 
 **Verify:**
-- ✅ Per-message-type counters (VPN, data, file)
-- ✅ Monotonic and per-direction
-- ✅ Reset on epoch change
+- Per-message-type counters (VPN, data, file)
+- Monotonic and per-direction
+- Reset on epoch change
 
 ---
 
 ## 7. Security Warnings
 
-### ⚠️ Current Limitations
+### Current Limitations
 
 1. **Hardcoded Test Keys:** CLI uses `[0x01; 32]` etc. for testing
-   - **MUST FIX:** Replace with real ML-KEM + X25519 handshake
-   - **MUST FIX:** Use Ed25519 peer identity verification
+ - **MUST FIX:** Replace with real ML-KEM + X25519 handshake
+ - **MUST FIX:** Use Ed25519 peer identity verification
 
 2. **No Real Handshake:** Currently uses placeholder handshake
-   - **MUST FIX:** Implement CRYPRQ_CLIENT_HELLO / SERVER_HELLO / CLIENT_FINISH
+ - **MUST FIX:** Implement CRYPRQ_CLIENT_HELLO / SERVER_HELLO / CLIENT_FINISH
 
 3. **No Peer Authentication:** Peer identity not verified
-   - **MUST FIX:** Wire Ed25519 signature verification
+ - **MUST FIX:** Wire Ed25519 signature verification
 
-### ✅ Safe for Testing
+### Safe for Testing
 - Record layer structure
 - File transfer correctness
 - Epoch rotation behavior

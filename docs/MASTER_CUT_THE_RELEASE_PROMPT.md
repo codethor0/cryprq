@@ -74,15 +74,15 @@ Using `docs/WEB_VALIDATION_RUN.md` and `docs/TEST_MATRIX.md`:
 
 - Summarize the expected steps and expected result.
 - If the doc already has results:
-  - Record the status (PASS/WARN/FAIL) and any notes.
+ - Record the status (PASS/WARN/FAIL) and any notes.
 - If not yet executed:
-  - Propose the exact commands / steps a human would run (e.g., `docker compose …`, URL to open, what to check in the UI).
-  - Update `WEB_VALIDATION_RUN.md` in-place (if you are allowed to modify files) with a simple table or bullet list:
-    - Test ID
-    - Date
-    - Executor
-    - Result
-    - Notes
+ - Propose the exact commands / steps a human would run (e.g., `docker compose …`, URL to open, what to check in the UI).
+ - Update `WEB_VALIDATION_RUN.md` in-place (if you are allowed to modify files) with a simple table or bullet list:
+ - Test ID
+ - Date
+ - Executor
+ - Result
+ - Notes
 
 ### 1.4 Docs Coherence
 
@@ -211,10 +211,10 @@ List:
 - **Branch:** `feature/handshake-and-identity`
 - **Driver doc:** `docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md`
 - **Core goals:**
-  - Replace static keys with real CrypRQ handshake.
-  - Add peer identity (Ed25519 / peer IDs / PSK).
-  - Remove test-mode hacks.
-  - Prepare for a "non-test-mode" release line.
+ - Replace static keys with real CrypRQ handshake.
+ - Add peer identity (Ed25519 / peer IDs / PSK).
+ - Remove test-mode hacks.
+ - Prepare for a "non-test-mode" release line.
 
 **Return everything as a well-structured markdown report** so I can read it and decide whether to cut the release right now.
 

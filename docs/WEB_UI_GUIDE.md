@@ -1,10 +1,10 @@
 # CrypRQ v1.0.1 — Web UI Guide
 
-**File:** docs/WEB_UI_GUIDE.md  
-**Scope:** Using the web UI to exercise the CrypRQ v1.0.1 stack (test mode)  
+**File:** docs/WEB_UI_GUIDE.md 
+**Scope:** Using the web UI to exercise the CrypRQ v1.0.1 stack (test mode) 
 **Audience:** Developers, testers, and demo users.
 
-> ⚠️ **Important:** The web UI currently drives a **test-mode** backend:
+> **Important:** The web UI currently drives a **test-mode** backend:
 > - Static test keys
 > - No handshake or peer authentication
 > - NOT suitable for production use
@@ -18,13 +18,13 @@ See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` and `SECURITY_NOTES.md` for the security 
 The CrypRQ Web UI is a thin control and visibility layer over the v1.0.1 record-based backend. It provides:
 
 - A **File Transfer** panel for:
-  - Selecting a file.
-  - Entering/choosing a peer or endpoint.
-  - Starting a CrypRQ-based file transfer.
-  - Observing progress and completion status.
+ - Selecting a file.
+ - Entering/choosing a peer or endpoint.
+ - Starting a CrypRQ-based file transfer.
+ - Observing progress and completion status.
 - A **Status / Logs** section for:
-  - Real-time updates from the backend (via `/events` or WebSocket).
-  - Displaying high-level events: transfers starting/completing, errors, warnings.
+ - Real-time updates from the backend (via `/events` or WebSocket).
+ - Displaying high-level events: transfers starting/completing, errors, warnings.
 
 The UI is intentionally minimal and focused on protocol validation and demos.
 
@@ -96,8 +96,8 @@ sha256sum test-web-minimal.bin
 **Configure the peer/endpoint**
 
 4. Enter the backend's CrypRQ target (depending on how the backend is set up).
-   - In a simple loopback test, the backend may be configured to treat itself as both sender and receiver over `udp://127.0.0.1:20440` or similar.
-   - Use whatever peer format the UI expects (`/ip4/.../udp/.../quic-v1` or simple `udp://host:port`), as documented in the UI/placeholder help text.
+ - In a simple loopback test, the backend may be configured to treat itself as both sender and receiver over `udp://127.0.0.1:20440` or similar.
+ - Use whatever peer format the UI expects (`/ip4/.../udp/.../quic-v1` or simple `udp://host:port`), as documented in the UI/placeholder help text.
 
 **Start the transfer**
 
@@ -106,10 +106,10 @@ sha256sum test-web-minimal.bin
 **Watch the status panel**
 
 6. You should see events like:
-   - "Transfer started"
-   - "Sending file: test-web-minimal.bin"
-   - "Transfer complete" (or similar wording)
-   - If an error occurs, you should see an error message.
+ - "Transfer started"
+ - "Sending file: test-web-minimal.bin"
+ - "Transfer complete" (or similar wording)
+ - If an error occurs, you should see an error message.
 
 **Verify on disk**
 
@@ -118,7 +118,7 @@ sha256sum test-web-minimal.bin
    ```bash
    sha256sum test-web-minimal.bin /path/to/received/test-web-minimal.bin
    ```
-   They should be identical.
+ They should be identical.
 
 ---
 
@@ -129,13 +129,13 @@ The UI should expose a log or status area that reflects backend events arriving 
 **Typical events** (sanitized):
 
 - `file_transfer_started`
-  - Fields: `filename`, `size`, `stream_id`
+ - Fields: `filename`, `size`, `stream_id`
 - `file_chunk_sent` or `file_chunk_received`
-  - Optional, for detailed progress.
+ - Optional, for detailed progress.
 - `file_transfer_complete`
-  - Fields: `filename`, `size`, `duration`, `stream_id`
+ - Fields: `filename`, `size`, `duration`, `stream_id`
 - `error`
-  - Fields: `type`, `message` (non-sensitive), possibly `stream_id`
+ - Fields: `type`, `message` (non-sensitive), possibly `stream_id`
 
 **Notes:**
 
@@ -226,15 +226,15 @@ The UI can show this information in a status bar or "connection info" section.
 ## 7. Limitations (Web UI in v1.0.1)
 
 - **Test mode only**
-  - No real handshake.
-  - No peer identity validation.
-  - Static keys and a key-direction hack on the receiver.
+ - No real handshake.
+ - No peer identity validation.
+ - Static keys and a key-direction hack on the receiver.
 - **Single-node / lab use**
-  - Designed for loopback or small lab environments.
-  - Not tested or hardened for multi-tenant or Internet-wide use.
+ - Designed for loopback or small lab environments.
+ - Not tested or hardened for multi-tenant or Internet-wide use.
 - **Focus on file transfer**
-  - VPN/TUN flows are validated by CLI and backend, not exposed as a polished web UX yet.
-  - Web UI currently treats everything as "file transfer use case."
+ - VPN/TUN flows are validated by CLI and backend, not exposed as a polished web UX yet.
+ - Web UI currently treats everything as "file transfer use case."
 
 See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for a full rundown of MUST-FIX items before production.
 
@@ -250,8 +250,8 @@ See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for a full rundown of MUST-FIX items befo
    docker compose -f docker-compose.web.yml up --build
    ```
 3. Use the Web UI to send:
-   - A small file.
-   - A medium file (~10 MB).
+ - A small file.
+ - A medium file (~10 MB).
 4. Verify hashes and check logs.
 5. Update `WEB_VALIDATION_RUN.md` as needed (WEB-1, WEB-2 tests).
 
@@ -259,11 +259,11 @@ See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for a full rundown of MUST-FIX items befo
 
 1. Start the stack ahead of time.
 2. Show:
-   - A small file transfer (fast).
-   - Status panel updates in real time.
+ - A small file transfer (fast).
+ - Status panel updates in real time.
 3. Optionally show:
-   - `tcpdump` on the UDP port to prove encrypted traffic.
-   - Mapping from UI action → backend events.
+ - `tcpdump` on the UDP port to prove encrypted traffic.
+ - Mapping from UI action → backend events.
 
 ---
 

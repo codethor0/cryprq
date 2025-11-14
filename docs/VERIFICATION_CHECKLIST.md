@@ -19,14 +19,14 @@ This checklist helps verify that all components of CrypRQ are working correctly.
 ## Phase 2: Local Encrypted Tunnel
 
 ### Listener Setup
-- [ ] Start listener: `RUST_LOG=info ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1`
+- [ ] Start listener: `RUST_LOG=info./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1`
 - [ ] See `event=listener_starting` in logs
 - [ ] See `Local peer id: 12D3KooW...` in output
 - [ ] See `event=listener_ready` in logs
 - [ ] See `event=rotation_task_started interval_secs=300` in logs
 
 ### Dialer Connection
-- [ ] Start dialer: `RUST_LOG=info ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1`
+- [ ] Start dialer: `RUST_LOG=info./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1`
 - [ ] See `event=dialer_starting` in logs
 - [ ] See `event=handshake_complete` in logs (both sides)
 - [ ] See `event=connection_established` in logs (both sides)
@@ -40,10 +40,10 @@ This checklist helps verify that all components of CrypRQ are working correctly.
 
 ## Phase 3: File Transfer (CLI)
 
-**Status: ✅ PASS** - File transfer is fully functional end-to-end over encrypted tunnel.
+**Status: PASS** - File transfer is fully functional end-to-end over encrypted tunnel.
 
 ### Receiver Setup
-- [ ] Start receiver: `./target/release/cryprq receive-file --listen /ip4/0.0.0.0/udp/9999/quic-v1 --output-dir ./received`
+- [ ] Start receiver: `./target/release/cryprq receive-file --listen /ip4/0.0.0.0/udp/9999/quic-v1 --output-dir./received`
 - [ ] See `Local peer id: 12D3KooW...` in output
 - [ ] See `Receiving files on: /ip4/0.0.0.0/udp/9999/quic-v1` in logs
 - [ ] Note the peer ID for sender
@@ -62,7 +62,7 @@ This checklist helps verify that all components of CrypRQ are working correctly.
 - [ ] See `End packet received from peer <PEER_ID>` in receiver logs (debug level)
 - [ ] See `File received successfully: test.txt (<size> bytes) from peer <PEER_ID>` in receiver logs
 - [ ] File appears in output directory: `./received/test.txt`
-- [ ] Verify file integrity: `shasum -a 256 test.txt` matches `shasum -a 256 ./received/test.txt`
+- [ ] Verify file integrity: `shasum -a 256 test.txt` matches `shasum -a 256./received/test.txt`
 
 ### Expected Log Patterns
 
@@ -104,9 +104,9 @@ INFO  cryprq File received successfully: test.txt (15 bytes) from peer 12D3KooW.
 - [ ] Establish connection (listener + dialer)
 - [ ] Upload file via web UI "Send File Securely" button
 - [ ] See file transfer progress in logs:
-  - `Sent file metadata to <PEER_ID>: <filename> (<size> bytes)`
-  - `Received response for request OutboundRequestId(1): 2 bytes`
-  - `File received successfully: <filename> (<size> bytes) from peer <PEER_ID>`
+ - `Sent file metadata to <PEER_ID>: <filename> (<size> bytes)`
+ - `Received response for request OutboundRequestId(1): 2 bytes`
+ - `File received successfully: <filename> (<size> bytes) from peer <PEER_ID>`
 - [ ] File transfer completes successfully
 - [ ] Web UI shows success message
 
@@ -141,20 +141,20 @@ INFO  cryprq File received successfully: test.txt (15 bytes) from peer 12D3KooW.
 
 ### Listener Verification
 - [ ] `docker compose -f docker-compose.vpn.yml logs cryprq-listener` shows:
-  - `event=listener_starting`
-  - `Local peer id: 12D3KooW...`
-  - `event=listener_ready`
-  - `VPN MODE ENABLED`
-  - `TUN interface cryprq0 configured`
+ - `event=listener_starting`
+ - `Local peer id: 12D3KooW...`
+ - `event=listener_ready`
+ - `VPN MODE ENABLED`
+ - `TUN interface cryprq0 configured`
 
 ### Dialer Verification
 - [ ] `docker compose -f docker-compose.vpn.yml logs cryprq-dialer` shows:
-  - `event=dialer_starting`
-  - `event=handshake_complete`
-  - `event=connection_established`
-  - `VPN MODE ENABLED`
-  - `TUN interface cryprq1 configured`
-  - `Packet forwarding loop started successfully`
+ - `event=dialer_starting`
+ - `event=handshake_complete`
+ - `event=connection_established`
+ - `VPN MODE ENABLED`
+ - `TUN interface cryprq1 configured`
+ - `Packet forwarding loop started successfully`
 
 ### Key Rotation
 - [ ] Both containers show `event=rotation_task_started`
@@ -209,7 +209,7 @@ INFO  cryprq::p2p event=key_rotation status=success epoch=<N> duration_ms=<MS> i
 ### Docker Issues
 - Ensure Docker daemon is running
 - Check container logs: `docker compose -f docker-compose.web.yml logs`
-- Verify ports are not in use: `lsof -i :8787`
+- Verify ports are not in use: `lsof -i:8787`
 - Try rebuilding: `docker compose -f docker-compose.web.yml build --no-cache`
 
 ### VPN Mode Issues

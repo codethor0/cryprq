@@ -1,10 +1,10 @@
 # CrypRQ v1.0.1 — Docker Web Deployment Guide
 
-**File:** docs/DOCKER_WEB_GUIDE.md  
-**Scope:** Web-only CrypRQ v1.0.1 stack (frontend + backend, test mode)  
+**File:** docs/DOCKER_WEB_GUIDE.md 
+**Scope:** Web-only CrypRQ v1.0.1 stack (frontend + backend, test mode) 
 **Audience:** Developers / operators running the web stack locally or in a lab.
 
-> ⚠️ **Important:** This guide describes the **test-mode** web stack.  
+> **Important:** This guide describes the **test-mode** web stack. 
 > It is **not** a production deployment guide. See `SECURITY_NOTES.md` and `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for details.
 
 ---
@@ -47,11 +47,11 @@ docker push your-registry/cryprq-web:latest
 The web-only CrypRQ stack runs via Docker Compose and includes:
 
 - A **backend** service:
-  - Rust binary using the v1.0.1 record layer (20-byte header, epoch, nonce, HKDF).
-  - UDP-based CrypRQ tunnel for file transfer.
+ - Rust binary using the v1.0.1 record layer (20-byte header, epoch, nonce, HKDF).
+ - UDP-based CrypRQ tunnel for file transfer.
 - A **frontend** service:
-  - React + TypeScript web UI.
-  - Talks to the backend over HTTP/WebSocket/SSE (depending on implementation).
+ - React + TypeScript web UI.
+ - Talks to the backend over HTTP/WebSocket/SSE (depending on implementation).
 
 The entrypoint is `docker-compose.web.yml`.
 
@@ -70,14 +70,14 @@ The entrypoint is `docker-compose.web.yml`.
 
 Key files involved in the web deployment:
 
-- `docker-compose.web.yml`  
-  Defines the frontend and backend services for the web stack.
-- `Dockerfile` / `Dockerfile.*`  
-  Backend and/or frontend Docker build configuration (names may vary; check actual repo).
-- `docs/WEB_ONLY_RELEASE_NOTES_v1.0.1.md`  
-  Security posture and scope for this web-only release.
-- `docs/WEB_VALIDATION_RUN.md`  
-  Validation tracker for the web stack.
+- `docker-compose.web.yml` 
+ Defines the frontend and backend services for the web stack.
+- `Dockerfile` / `Dockerfile.*` 
+ Backend and/or frontend Docker build configuration (names may vary; check actual repo).
+- `docs/WEB_ONLY_RELEASE_NOTES_v1.0.1.md` 
+ Security posture and scope for this web-only release.
+- `docs/WEB_VALIDATION_RUN.md` 
+ Validation tracker for the web stack.
 
 If service names differ from this guide (e.g., `web-backend` / `web-frontend`), update commands accordingly.
 
@@ -123,14 +123,14 @@ This stops and removes the containers (but not images or volumes).
 Typical (example) mapping — update this to match the actual compose file:
 
 - **Frontend HTTP port:**
-  - Host: `http://localhost:3000`
-  - Container: `3000` (React dev server or static web server)
+ - Host: `http://localhost:3000`
+ - Container: `3000` (React dev server or static web server)
 - **Backend HTTP/API port:**
-  - Host: `http://localhost:8080`
-  - Container: `8080`
+ - Host: `http://localhost:8080`
+ - Container: `8080`
 - **Backend UDP port for CrypRQ tunnel:**
-  - Host: `20440` (example used in CLI tests)
-  - Container: `20440/udp`
+ - Host: `20440` (example used in CLI tests)
+ - Container: `20440/udp`
 
 Check `docker-compose.web.yml` and adjust the values here if they differ.
 
@@ -141,9 +141,9 @@ Common environment variables (names may vary; adjust to your actual config):
 - `CRYPRQ_WEB_BACKEND_PORT` — HTTP port the backend listens on inside the container.
 - `CRYPRQ_UDP_BIND_ADDR` — UDP bind address, e.g. `0.0.0.0:20440`.
 - `CRYPRQ_TEST_MODE` — When set (e.g. `1`), enables:
-  - Static test keys.
-  - No handshake / peer auth.
-  - Test-mode key-direction hack.
+ - Static test keys.
+ - No handshake / peer auth.
+ - Test-mode key-direction hack.
 
 If `.env` is used, it will typically be automatically loaded by Docker Compose. Check `docker-compose.web.yml` for `env_file:` lines.
 
@@ -195,7 +195,7 @@ docker compose -f docker-compose.web.yml exec web-backend /bin/sh
 
 ## 7. End-to-End Web Test (Short Version)
 
-End-to-end detailed validation lives in `WEB_VALIDATION_RUN.md`.  
+End-to-end detailed validation lives in `WEB_VALIDATION_RUN.md`. 
 Here is the short "smoke test" variant.
 
 1. Start the stack:
@@ -203,13 +203,13 @@ Here is the short "smoke test" variant.
    docker compose -f docker-compose.web.yml up --build
    ```
 2. Open the frontend in your browser:
-   - `http://localhost:<frontend_port>`
-   - (e.g. `http://localhost:3000`)
+ - `http://localhost:<frontend_port>`
+ - (e.g. `http://localhost:3000`)
 3. Use the UI to send a small test file (e.g., `test-web-minimal.bin`).
 4. Confirm:
-   - The UI shows the transfer starting and completing.
-   - Backend logs show `FILE_META` / `FILE_CHUNK` activity.
-   - The received file exists at the configured output location and matches the original via SHA-256.
+ - The UI shows the transfer starting and completing.
+ - Backend logs show `FILE_META` / `FILE_CHUNK` activity.
+ - The received file exists at the configured output location and matches the original via SHA-256.
 
 For full steps and fields to capture, see `WEB_VALIDATION_RUN.md` (WEB-1).
 
@@ -239,10 +239,10 @@ For full steps and fields to capture, see `WEB_VALIDATION_RUN.md` (WEB-1).
 ### 8.3 No File Appearing on Receiver Side
 
 - Confirm UDP port mapping in the compose file:
-  - Host UDP port matches what the backend expects.
+ - Host UDP port matches what the backend expects.
 - Check backend logs for:
-  - Record decryption errors.
-  - File transfer errors (e.g. invalid metadata).
+ - Record decryption errors.
+ - File transfer errors (e.g. invalid metadata).
 - Make sure you're running in test mode and that the test-mode keys are consistent with docs.
 
 ### 8.4 Port Conflicts
@@ -262,8 +262,8 @@ If ports like `3000`, `8080`, or `20440` are already in use:
 
 This Docker setup is:
 
-- ✅ For local testing, lab demos, and protocol exploration.
-- ❌ Not hardened for production, multi-tenant, or hostile network environments.
+- For local testing, lab demos, and protocol exploration.
+- Not hardened for production, multi-tenant, or hostile network environments.
 
 Before any production deployment, you must:
 

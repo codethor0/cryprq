@@ -12,9 +12,9 @@
 
 Open `docs/PRE_TAG_CHECKLIST.md` and work through each section:
 
-1. **CLI Sanity** (should already be ✅)
-   - Confirm `VALIDATION_RUN.md` shows minimal sanity test: PASS
-   - Verify CLI file transfer still works: `cryprq send-file` / `receive-file`
+1. **CLI Sanity** (should already be )
+ - Confirm `VALIDATION_RUN.md` shows minimal sanity test: PASS
+ - Verify CLI file transfer still works: `cryprq send-file` / `receive-file`
 
 2. **Web Path Sanity**
    ```bash
@@ -28,22 +28,22 @@ Open `docs/PRE_TAG_CHECKLIST.md` and work through each section:
    
    # Run WEB-2 (medium file) if time permits
    ```
-   - Update `WEB_VALIDATION_RUN.md` with PASS/WARN/BLOCK status
+ - Update `WEB_VALIDATION_RUN.md` with PASS/WARN/BLOCK status
 
 3. **Docs Coherence**
-   - [ ] Test `WEB_STACK_QUICK_START.md` from fresh clone → web UI working
-   - [ ] Verify `DOCKER_WEB_GUIDE.md` ports match `docker-compose.web.yml`
-   - [ ] Verify `WEB_UI_GUIDE.md` endpoints match actual backend
+ - [ ] Test `WEB_STACK_QUICK_START.md` from fresh clone → web UI working
+ - [ ] Verify `DOCKER_WEB_GUIDE.md` ports match `docker-compose.web.yml`
+ - [ ] Verify `WEB_UI_GUIDE.md` endpoints match actual backend
 
 4. **Security Disclaimers**
-   - [ ] Check `README.md` has "testing/lab use only" warning
-   - [ ] Check `WEB_STACK_QUICK_START.md` has disclaimer
-   - [ ] Check `SECURITY_NOTES.md` clearly states test-mode limitations
-   - [ ] Check `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` has explicit warnings
+ - [ ] Check `README.md` has "testing/lab use only" warning
+ - [ ] Check `WEB_STACK_QUICK_START.md` has disclaimer
+ - [ ] Check `SECURITY_NOTES.md` clearly states test-mode limitations
+ - [ ] Check `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` has explicit warnings
 
 5. **Release Metadata**
-   - [ ] `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` is up to date
-   - [ ] Prompt names resolved (no duplicates)
+ - [ ] `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` is up to date
+ - [ ] Prompt names resolved (no duplicates)
 
 **Output:** Updated `PRE_TAG_CHECKLIST.md` with all items checked.
 
@@ -134,11 +134,11 @@ CrypRQ v1.0.1 web-only preview (test mode)
    ```
 
 5. **Release Type:** 
-   - ☑ Pre-release (recommended for preview/test-mode releases)
+ - Pre-release (recommended for preview/test-mode releases)
 
 6. **Attach Assets** (optional):
-   - If you have pre-built binaries, attach them here
-   - Otherwise, users build from source
+ - If you have pre-built binaries, attach them here
+ - Otherwise, users build from source
 
 ### Step 3.2: Review and Publish
 
@@ -169,9 +169,9 @@ If announcing:
 **Preview Line (v1.0.1-web-preview):**
 - Keep `main` branch stable
 - Only allow:
-  - Doc fixes
-  - Small bugfixes
-  - Tiny DX improvements
+ - Doc fixes
+ - Small bugfixes
+ - Tiny DX improvements
 - No big changes
 
 **Next Phase (Handshake/Identity):**
@@ -211,7 +211,7 @@ git checkout -b feature/handshake-and-identity
 - **Don't:** Override the verdict without justification
 
 **Issue:** Tag already exists
-- **Fix:** Delete old tag: `git tag -d v1.0.1-web-preview && git push origin :refs/tags/v1.0.1-web-preview`
+- **Fix:** Delete old tag: `git tag -d v1.0.1-web-preview && git push origin:refs/tags/v1.0.1-web-preview`
 - **Then:** Re-run tag creation
 
 **Issue:** GitHub release fails
@@ -222,11 +222,11 @@ git checkout -b feature/handshake-and-identity
 
 ## Success Criteria
 
-✅ All PRE_TAG_CHECKLIST items pass  
-✅ MASTER_WEB_RELEASE_PROMPT returns APPROVE  
-✅ Tag `v1.0.1-web-preview` created and pushed  
-✅ GitHub release published with correct body  
-✅ Release is clearly marked as test-mode / not production  
+ All PRE_TAG_CHECKLIST items pass 
+ MASTER_WEB_RELEASE_PROMPT returns APPROVE 
+ Tag `v1.0.1-web-preview` created and pushed 
+ GitHub release published with correct body 
+ Release is clearly marked as test-mode / not production 
 
 **At this point:** You have a coherent, documented, reproducible web-only preview release that someone else could pick up and run.
 

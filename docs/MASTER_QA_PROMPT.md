@@ -68,16 +68,16 @@ When you answer:
 1. **Copy the Master Prompt** above into your AI/dev-assistant tool.
 
 2. **Run the analysis** - The tool will:
-   - Scan the codebase for protocol implementation
-   - Verify alignment with the v1.0.1 spec
-   - Generate test plans
-   - Identify security issues
+ - Scan the codebase for protocol implementation
+ - Verify alignment with the v1.0.1 spec
+ - Generate test plans
+ - Identify security issues
 
 3. **Review the output** organized into:
-   - **PROTOCOL ALIGNMENT:** Code matches spec
-   - **FUNCTIONAL TESTS:** Test commands and expected results
-   - **SECURITY WARNINGS:** Issues that must be fixed
-   - **TODOs:** Future improvements
+ - **PROTOCOL ALIGNMENT:** Code matches spec
+ - **FUNCTIONAL TESTS:** Test commands and expected results
+ - **SECURITY WARNINGS:** Issues that must be fixed
+ - **TODOs:** Future improvements
 
 4. **Execute tests** using the generated test plan.
 
@@ -93,17 +93,17 @@ The QA tool should produce:
 
 **Record Header:**
 - File: `core/src/record.rs`
-- Status: ✅ / ❌
+- Status: / 
 - Details: [specific findings]
 
 **HKDF Key Schedule:**
 - File: `crypto/src/kdf.rs`
-- Status: ✅ / ❌
+- Status: / 
 - Details: [specific findings]
 
 **Nonce Construction:**
 - File: `node/src/crypto_utils.rs`
-- Status: ✅ / ❌
+- Status: / 
 - Details: [specific findings]
 
 ### FUNCTIONAL TESTS

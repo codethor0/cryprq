@@ -1,7 +1,7 @@
 # CrypRQ v1.0.1 — Web-Only Preview (Test Mode)
 
-> ⚠️ **Security Notice**  
-> This is a **web-only, test-mode preview** of CrypRQ v1.0.1.  
+> **Security Notice** 
+> This is a **web-only, test-mode preview** of CrypRQ v1.0.1. 
 > It is intended for **development and lab testing only** and MUST NOT be used in production.
 
 ---
@@ -31,36 +31,36 @@ The goal of this release is to make it easy to **stand up the web stack, run tes
 ### Protocol / Engine
 
 - CrypRQ v1.0.1 **record layer**:
-  - 20-byte header (version, type, flags, epoch, stream ID, sequence number, ciphertext length)
-  - TLS 1.3–style nonce construction (static IV XOR sequence number)
-  - HKDF-based key schedule with epoch-scoped keys
+ - 20-byte header (version, type, flags, epoch, stream ID, sequence number, ciphertext length)
+ - TLS 1.3–style nonce construction (static IV XOR sequence number)
+ - HKDF-based key schedule with epoch-scoped keys
 
 - Message types wired for file transfer:
-  - `FILE_META`, `FILE_CHUNK`, `FILE_ACK`
-  - `CONTROL` hooks in place for future key updates / control flows
+ - `FILE_META`, `FILE_CHUNK`, `FILE_ACK`
+ - `CONTROL` hooks in place for future key updates / control flows
 
 - Epoch management:
-  - `u8` epoch (0–255, wraps modulo 256)
-  - Key rotation logic implemented (test-mode wiring)
+ - `u8` epoch (0–255, wraps modulo 256)
+ - Key rotation logic implemented (test-mode wiring)
 
 ### CLI
 
 - `cryprq send-file` / `cryprq receive-file`:
-  - File transfer over CrypRQ records
-  - Chunked transfer with final SHA-256 verification
-  - Validated in `VALIDATION_RUN.md` (minimal sanity test: PASS)
+ - File transfer over CrypRQ records
+ - Chunked transfer with final SHA-256 verification
+ - Validated in `VALIDATION_RUN.md` (minimal sanity test: PASS)
 
 ### Web Stack
 
 - **Backend**:
-  - Web stack integrated with CrypRQ record layer
-  - Endpoints for initiating file transfers and streaming logs
-  - Dockerized web deployment (`docker-compose.web.yml`)
+ - Web stack integrated with CrypRQ record layer
+ - Endpoints for initiating file transfers and streaming logs
+ - Dockerized web deployment (`docker-compose.web.yml`)
 
 - **Frontend**:
-  - React/TypeScript Web UI
-  - File selection + peer/endpoint configuration
-  - Real-time status / log streaming panel
+ - React/TypeScript Web UI
+ - File selection + peer/endpoint configuration
+ - Real-time status / log streaming panel
 
 ### Documentation
 
@@ -86,22 +86,22 @@ The goal of this release is to make it easy to **stand up the web stack, run tes
 
 This release is explicitly **NOT** production-ready. Key limitations include:
 
-- **No real handshake yet**  
-  - No CRYPRQ-defined `CLIENT_HELLO` / `SERVER_HELLO` / `CLIENT_FINISH` path implemented.
-  - No transcript-bound authentication.
+- **No real handshake yet** 
+ - No CRYPRQ-defined `CLIENT_HELLO` / `SERVER_HELLO` / `CLIENT_FINISH` path implemented.
+ - No transcript-bound authentication.
 
-- **No peer identity / authentication**  
-  - No Ed25519/X.509/libp2p ID integration.
-  - Peers are not cryptographically authenticated.
+- **No peer identity / authentication** 
+ - No Ed25519/X.509/libp2p ID integration.
+ - Peers are not cryptographically authenticated.
 
-- **Static / test-mode keys**  
-  - Keys are currently fixed / test-mode derived.
-  - A direction "hack" is used in test mode so both sides can decrypt with the same key material.
+- **Static / test-mode keys** 
+ - Keys are currently fixed / test-mode derived.
+ - A direction "hack" is used in test mode so both sides can decrypt with the same key material.
 
-- **Not hardened for hostile environments**  
-  - No systematic HTTP/Web API hardening.
-  - No rate-limiting, authz, or multi-tenant isolation.
-  - Intended to run in controlled lab/dev environments only.
+- **Not hardened for hostile environments** 
+ - No systematic HTTP/Web API hardening.
+ - No rate-limiting, authz, or multi-tenant isolation.
+ - Intended to run in controlled lab/dev environments only.
 
 See `docs/SECURITY_NOTES.md` for the full security posture and a clear list of **MUST-FIX** items before any production deployment.
 
@@ -129,27 +129,27 @@ Check `docs/DOCKER_WEB_GUIDE.md` for ports, environment variables, and troublesh
 
 - Open the Web UI in your browser (see port in `DOCKER_WEB_GUIDE.md` / `docker-compose.web.yml`).
 - Follow `docs/WEB_UI_GUIDE.md` for:
-  - Selecting a file
-  - Configuring the peer/endpoint
-  - Starting a transfer and watching logs
+ - Selecting a file
+ - Configuring the peer/endpoint
+ - Starting a transfer and watching logs
 
 ### 4. Validation
 
 **Recommended:**
 
 - Run the minimal web sanity test from `docs/WEB_VALIDATION_RUN.md`:
-  - Send a small file via the Web UI
-  - Verify it is received correctly and the SHA-256 hash matches
+ - Send a small file via the Web UI
+ - Verify it is received correctly and the SHA-256 hash matches
 - Confirm CLI validation in `docs/VALIDATION_RUN.md`.
 
 ---
 
 ## Validation & Status
 
-- **CLI path:** ✅ Minimal sanity test PASS
-- **Web path:** 🔄 Validation matrix defined in `WEB_VALIDATION_RUN.md`
+- **CLI path:** Minimal sanity test PASS
+- **Web path:** Validation matrix defined in `WEB_VALIDATION_RUN.md`
 
-Use `docs/MASTER_WEB_RELEASE_PROMPT.md` to guide a systematic validation run.  
+Use `docs/MASTER_WEB_RELEASE_PROMPT.md` to guide a systematic validation run. 
 Update `WEB_VALIDATION_RUN.md` with PASS/WARN/BLOCK for each test ID.
 
 ---
@@ -171,9 +171,9 @@ Planned future work (tracked via docs and issue templates):
 - Replace static test keys with dynamic, negotiated keys.
 - Harden the web stack (auth, rate limiting, logging hygiene, secure deployment guidance).
 - Expand validation:
-  - Multi-file / concurrent transfers
-  - VPN/TUN integration tests
-  - Interop and fuzzing
+ - Multi-file / concurrent transfers
+ - VPN/TUN integration tests
+ - Interop and fuzzing
 
 ---
 

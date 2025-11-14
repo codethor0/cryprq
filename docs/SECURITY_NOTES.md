@@ -1,6 +1,6 @@
 # Security Notes for CrypRQ v1.0.1 Testing
 
-## ⚠️ IMPORTANT: Current Implementation Status
+## IMPORTANT: Current Implementation Status
 
 ### Testing vs Production
 
@@ -91,22 +91,22 @@ let shared_secret = EphemeralSecret::random_from_rng(OsRng).diffie_hellman(&peer
 
 The following components are **safe to test** and **correctly implemented**:
 
-### ✅ Record Layer Structure
+### Record Layer Structure
 - 20-byte header with correct field sizes
 - Proper encoding/decoding
 - Message type routing
 
-### ✅ Cryptographic Primitives
+### Cryptographic Primitives
 - HKDF key derivation (correct salt and labels)
 - ChaCha20-Poly1305 AEAD encryption
 - TLS 1.3-style nonce construction
 
-### ✅ Epoch Management
+### Epoch Management
 - u8 epoch with modulo 256 wrapping
 - Epoch-scoped key derivation
 - Sequence counter reset on epoch change
 
-### ✅ File Transfer Protocol
+### File Transfer Protocol
 - Stream ID allocation
 - File metadata and chunk handling
 - SHA-256 hash verification
@@ -116,7 +116,7 @@ The following components are **safe to test** and **correctly implemented**:
 ## Testing Recommendations
 
 ### Functional Testing
-✅ **Safe to test:**
+ **Safe to test:**
 - File transfer correctness
 - Record layer behavior
 - Epoch rotation
@@ -125,13 +125,13 @@ The following components are **safe to test** and **correctly implemented**:
 - Large file handling
 
 ### Security Testing
-⚠️ **Limited value until fixes:**
+ **Limited value until fixes:**
 - Key exchange (uses placeholder)
 - Peer authentication (uses placeholder)
 - MitM resistance (not implemented)
 
 ### Performance Testing
-✅ **Safe to test:**
+ **Safe to test:**
 - Throughput
 - Latency
 - Resource usage
@@ -168,12 +168,12 @@ The following components are **safe to test** and **correctly implemented**:
 
 | Component | Status | Risk Level |
 |-----------|--------|------------|
-| Record Layer | ✅ Correct | Low |
-| Encryption (AEAD) | ✅ Correct | Low |
-| Key Derivation (HKDF) | ✅ Correct | Low |
-| Handshake | ❌ Placeholder | **HIGH** |
-| Peer Auth | ❌ Placeholder | **HIGH** |
-| Key Management | ❌ Hardcoded | **HIGH** |
+| Record Layer | Correct | Low |
+| Encryption (AEAD) | Correct | Low |
+| Key Derivation (HKDF) | Correct | Low |
+| Handshake | Placeholder | **HIGH** |
+| Peer Auth | Placeholder | **HIGH** |
+| Key Management | Hardcoded | **HIGH** |
 
 ---
 

@@ -1,10 +1,10 @@
 # CrypRQ v1.0.1 — Web-Only Stack (Test Mode Preview)
 
-**Release Type:** Technical Preview / Test-Only  
-**Date:** 2025-11-14  
+**Release Type:** Technical Preview / Test-Only 
+**Date:** 2025-11-14 
 **Scope:** Web-only CrypRQ v1.0.1 stack (frontend + backend + record layer, test mode)
 
-> ⚠️ **IMPORTANT:** This web-only stack is for **local testing, demos, and protocol exploration only.**  
+> **IMPORTANT:** This web-only stack is for **local testing, demos, and protocol exploration only.** 
 > It is **NOT** a production-ready VPN or secure file transfer solution.
 
 ---
@@ -15,8 +15,8 @@ This release packages the **CrypRQ v1.0.1** protocol implementation into a **web
 
 - Rust backend using the v1.0.1 record layer (20-byte header, epoch, nonce, HKDF).
 - Web UI (React + TypeScript) for:
-  - Initiating file transfers.
-  - Observing real-time status/logs.
+ - Initiating file transfers.
+ - Observing real-time status/logs.
 - Docker-based deployment for easy local bring-up.
 
 The web stack reuses the same core **record layer + file transfer** implementation that has been validated via the CLI, but runs in a simplified **test mode** using static keys and no handshake.
@@ -28,52 +28,52 @@ The web stack reuses the same core **record layer + file transfer** implementati
 ### 2.1 Protocol-Level Features (Shared with CLI)
 
 - **Record Layer**
-  - 20-byte header:
-    - Version (1 byte)
-    - Message Type (1 byte)
-    - Flags (1 byte)
-    - Epoch (1 byte, `u8` modulo 256)
-    - Stream ID (4 bytes)
-    - Sequence Number (8 bytes)
-    - Ciphertext Length (4 bytes)
-  - AEAD with:
-    - TLS 1.3–style nonce: `nonce = static_iv XOR seq_number`
-    - Header as AAD.
+ - 20-byte header:
+ - Version (1 byte)
+ - Message Type (1 byte)
+ - Flags (1 byte)
+ - Epoch (1 byte, `u8` modulo 256)
+ - Stream ID (4 bytes)
+ - Sequence Number (8 bytes)
+ - Ciphertext Length (4 bytes)
+ - AEAD with:
+ - TLS 1.3–style nonce: `nonce = static_iv XOR seq_number`
+ - Header as AAD.
 
 - **Key Schedule & Rotation**
-  - HKDF-based derivation with v1.0.1 labels:
-    - `salt_hs = "cryp-rq v1.0 hs"`
-    - Labeled `ir` / `ri` keys and IVs.
-  - Epoch-scoped traffic keys:
-    - Each epoch derives fresh directional keys.
-    - Epoch is `u8`, wrapping at 256.
+ - HKDF-based derivation with v1.0.1 labels:
+ - `salt_hs = "cryp-rq v1.0 hs"`
+ - Labeled `ir` / `ri` keys and IVs.
+ - Epoch-scoped traffic keys:
+ - Each epoch derives fresh directional keys.
+ - Epoch is `u8`, wrapping at 256.
 
 - **File Transfer**
-  - `FILE_META`, `FILE_CHUNK`, `FILE_ACK` message types.
-  - `FileTransferManager` with:
-    - Stream ID allocation (VPN on 1, files ≥ 2).
-    - Incoming transfer tracking.
-    - Final SHA-256 verification.
+ - `FILE_META`, `FILE_CHUNK`, `FILE_ACK` message types.
+ - `FileTransferManager` with:
+ - Stream ID allocation (VPN on 1, files ≥ 2).
+ - Incoming transfer tracking.
+ - Final SHA-256 verification.
 
 ---
 
 ### 2.2 Web Stack Features
 
 - **Web UI**
-  - File selection and send controls.
-  - Progress / status view (wired to backend events).
-  - Intended for local loopback testing (single host).
+ - File selection and send controls.
+ - Progress / status view (wired to backend events).
+ - Intended for local loopback testing (single host).
 
 - **Web Backend**
-  - Adapters that route web-originated file transfers through:
-    - `Tunnel` → record layer → UDP.
-  - Event/log streaming endpoint (SSE/WebSocket/HTTP polling; implementation-dependent).
+ - Adapters that route web-originated file transfers through:
+ - `Tunnel` → record layer → UDP.
+ - Event/log streaming endpoint (SSE/WebSocket/HTTP polling; implementation-dependent).
 
 - **Docker Compose**
-  - `docker-compose.web.yml` for:
-    - Backend container.
-    - Frontend container.
-  - Local-only configuration for test/demo.
+ - `docker-compose.web.yml` for:
+ - Backend container.
+ - Frontend container.
+ - Local-only configuration for test/demo.
 
 ---
 
@@ -88,10 +88,10 @@ The web stack reuses the same core **record layer + file transfer** implementati
 
 **Current Status (Intended Use)**
 
-- ✅ Local testing and demos.
-- ✅ Protocol exploration and tooling integration.
-- ❌ Not suitable for use on hostile or untrusted networks.
-- ❌ Not a production VPN or secure file-transfer product.
+- Local testing and demos.
+- Protocol exploration and tooling integration.
+- Not suitable for use on hostile or untrusted networks.
+- Not a production VPN or secure file-transfer product.
 
 Refer to `WEB_VALIDATION_RUN.md` for detailed PASS/FAIL status of:
 
@@ -110,32 +110,32 @@ The web-only stack **intentionally runs in a weakened security configuration** t
 ### 4.1 Current Behavior (Test Mode)
 
 - **Static Test Keys**
-  - Shared symmetric keys are hardcoded / config-driven for test only.
-  - No real key exchange occurs over the network.
+ - Shared symmetric keys are hardcoded / config-driven for test only.
+ - No real key exchange occurs over the network.
 
 - **No Handshake / No Peer Authentication**
-  - The v1.0.1 handshake (`CRYPRQ_CLIENT_HELLO`, `CRYPRQ_SERVER_HELLO`, `CRYPRQ_CLIENT_FINISH`) is **not yet implemented** in this stack.
-  - No cryptographic authentication of the remote peer.
-  - No certificate / identity checking.
+ - The v1.0.1 handshake (`CRYPRQ_CLIENT_HELLO`, `CRYPRQ_SERVER_HELLO`, `CRYPRQ_CLIENT_FINISH`) is **not yet implemented** in this stack.
+ - No cryptographic authentication of the remote peer.
+ - No certificate / identity checking.
 
 - **Key Direction Hack (Test Mode Only)**
-  - For local testing, both peers effectively act as "initiator," and the receiver uses the same directional keys as the sender (`keys_outbound`) for decryption.
-  - This is explicitly documented in `SECURITY_NOTES.md` and must be removed for production.
+ - For local testing, both peers effectively act as "initiator," and the receiver uses the same directional keys as the sender (`keys_outbound`) for decryption.
+ - This is explicitly documented in `SECURITY_NOTES.md` and must be removed for production.
 
 - **Logging**
-  - Logs are designed **not** to include:
-    - Private keys.
-    - Raw traffic keys.
-    - Nonces.
-    - Plaintext data.
-  - Logs may include high-level events (stream IDs, message types, file names, sizes, statuses).
+ - Logs are designed **not** to include:
+ - Private keys.
+ - Raw traffic keys.
+ - Nonces.
+ - Plaintext data.
+ - Logs may include high-level events (stream IDs, message types, file names, sizes, statuses).
 
 ### 4.2 Explicit Non-Goals for This Release
 
-- ❌ No anonymity.
-- ❌ No censorship resistance.
-- ❌ No protection against active MITM in real-world networks.
-- ❌ No guarantee of correct identity binding or multi-peer trust model.
+- No anonymity.
+- No censorship resistance.
+- No protection against active MITM in real-world networks.
+- No guarantee of correct identity binding or multi-peer trust model.
 
 ---
 
@@ -144,43 +144,43 @@ The web-only stack **intentionally runs in a weakened security configuration** t
 These items **must be addressed** before any production or high-risk deployment:
 
 1. **Full Handshake Implementation**
-   - Implement:
-     - `CRYPRQ_CLIENT_HELLO`
-     - `CRYPRQ_SERVER_HELLO`
-     - `CRYPRQ_CLIENT_FINISH`
-   - Use ML-KEM + X25519 hybrid key exchange as specified in v1.0.1.
-   - Derive handshake keys and traffic keys from the negotiated secrets.
+ - Implement:
+ - `CRYPRQ_CLIENT_HELLO`
+ - `CRYPRQ_SERVER_HELLO`
+ - `CRYPRQ_CLIENT_FINISH`
+ - Use ML-KEM + X25519 hybrid key exchange as specified in v1.0.1.
+ - Derive handshake keys and traffic keys from the negotiated secrets.
 
 2. **Peer Identity & Authentication**
-   - Choose and implement identity schemes (e.g., Ed25519, X.509, libp2p-style peer IDs, or PSK).
-   - Validate identity during handshake.
-   - Bind identity to session keys.
+ - Choose and implement identity schemes (e.g., Ed25519, X.509, libp2p-style peer IDs, or PSK).
+ - Validate identity during handshake.
+ - Bind identity to session keys.
 
 3. **Directional Keys (Correct Initiator/Responder Model)**
-   - Remove test-mode key-direction hack.
-   - Enforce proper use of:
-     - `key_ir` / `iv_ir` (initiator → responder).
-     - `key_ri` / `iv_ri` (responder → initiator).
+ - Remove test-mode key-direction hack.
+ - Enforce proper use of:
+ - `key_ir` / `iv_ir` (initiator → responder).
+ - `key_ri` / `iv_ri` (responder → initiator).
 
 4. **Configurable Key Management**
-   - Replace static test keys with:
-     - Proper key derivation from handshake.
-     - Configurable identity material (keys, certs).
+ - Replace static test keys with:
+ - Proper key derivation from handshake.
+ - Configurable identity material (keys, certs).
 
 5. **Hardening & Defense-in-Depth**
-   - Strict error handling and protocol validation.
-   - Rate limiting, timeouts, and resource caps.
-   - Additional validation for web inputs (file size limits, path handling, etc.).
+ - Strict error handling and protocol validation.
+ - Rate limiting, timeouts, and resource caps.
+ - Additional validation for web inputs (file size limits, path handling, etc.).
 
 6. **Security Review & Threat Modeling**
-   - Re-run a full threat modeling exercise for the web stack.
-   - Perform internal security review and, ideally, external audit.
+ - Re-run a full threat modeling exercise for the web stack.
+ - Perform internal security review and, ideally, external audit.
 
 ---
 
 ## 6. Quick Start (Web-Only, Test Mode)
 
-> ⚠️ This is for **local testing only**, with the assumptions and limitations above.
+> This is for **local testing only**, with the assumptions and limitations above.
 
 ### 6.1 Build
 
@@ -225,13 +225,13 @@ When moving from this test-mode web stack to a more secure or production-ready b
 
 - Do not reuse the static keys or test-mode config in production.
 - Plan a migration path that includes:
-  - Handshake-based key establishment.
-  - Stable identity scheme (keys/certs, rotation, storage).
-  - Updated web UI flows for authenticated peer selection (if needed).
+ - Handshake-based key establishment.
+ - Stable identity scheme (keys/certs, rotation, storage).
+ - Updated web UI flows for authenticated peer selection (if needed).
 - Re-run:
-  - `VALIDATION_RUN.md`
-  - `WEB_VALIDATION_RUN.md`
-  - Any additional penetration testing.
+ - `VALIDATION_RUN.md`
+ - `WEB_VALIDATION_RUN.md`
+ - Any additional penetration testing.
 
 ---
 

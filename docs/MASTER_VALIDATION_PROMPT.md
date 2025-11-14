@@ -288,25 +288,25 @@ After that first PASS, you've got your anchor, and you can let the master valida
 1. **Copy the Master Prompt** above into your AI/dev-assistant tool that has repository access.
 
 2. **The tool will:**
-   - Scan the codebase and documentation
-   - Run the test matrix systematically
-   - Check protocol alignment
-   - Validate security posture
-   - Update VALIDATION_RUN.md
-   - Produce a structured QA report
+ - Scan the codebase and documentation
+ - Run the test matrix systematically
+ - Check protocol alignment
+ - Validate security posture
+ - Update VALIDATION_RUN.md
+ - Produce a structured QA report
 
 3. **Review the output** organized into 6 sections:
-   - Implementation Map
-   - Minimal Sanity Test Result
-   - Test Matrix Summary
-   - Protocol Alignment Findings
-   - Security Posture Validation
-   - Verdict & Recommended Next Steps
+ - Implementation Map
+ - Minimal Sanity Test Result
+ - Test Matrix Summary
+ - Protocol Alignment Findings
+ - Security Posture Validation
+ - Verdict & Recommended Next Steps
 
 4. **Use the verdict** to determine:
-   - Whether the stack is ready for internal testing/deployment
-   - What must be fixed before production
-   - What the next phase should focus on
+ - Whether the stack is ready for internal testing/deployment
+ - What must be fixed before production
+ - What the next phase should focus on
 
 ---
 
@@ -320,20 +320,20 @@ After that first PASS, you've got your anchor, and you can let the master valida
 
 ### SECTION 2: Minimal Sanity Test Result
 - Status: PASS / FAIL
-- SHA-256 Match: ✅ / ❌
+- SHA-256 Match: / 
 - Logs: [file paths]
 - Observations: [key findings]
 
 ### SECTION 3: Test Matrix Summary
 | Test Name | Status | Notes |
 |-----------|--------|-------|
-| Tiny file | PASS/FAIL | ... |
-| Medium file | PASS/FAIL | ... |
-| Large file | PASS/FAIL | ... |
-| Concurrent | PASS/FAIL | ... |
-| Interrupted | PASS/FAIL | ... |
-| VPN/TUN | PASS/FAIL | ... |
-| Web UI | PASS/FAIL | ... |
+| Tiny file | PASS/FAIL |... |
+| Medium file | PASS/FAIL |... |
+| Large file | PASS/FAIL |... |
+| Concurrent | PASS/FAIL |... |
+| Interrupted | PASS/FAIL |... |
+| VPN/TUN | PASS/FAIL |... |
+| Web UI | PASS/FAIL |... |
 
 ### SECTION 4: Protocol Alignment Findings
 - Record header: MATCHES SPEC / DEVIATION [details]

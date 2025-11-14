@@ -1,7 +1,7 @@
 # CrypRQ: A Post-Quantum-Aware Encrypted Record and File Transfer Layer (Web-Only Preview v1.0.1)
 
-**Version:** v1.0.1-web-preview  
-**Code commit:** db0903f (implementation baseline)  
+**Version:** v1.0.1-web-preview 
+**Code commit:** db0903f (implementation baseline) 
 **Status:** Web-only, test-mode preview (static keys, no handshake, no peer authentication)
 
 ---
@@ -207,11 +207,11 @@ The nonce strategy is:
 
 1. Start from a static IV (per direction, derived from HKDF).
 2. Mix in:
-   - `epoch`
-   - `sequence_number`
+ - `epoch`
+ - `sequence_number`
 3. Construct a 96-bit AEAD nonce such that:
-   - For all valid epoch, seq combinations in a deployment, no nonce repeats under the same key.
-   - Overflow behavior is explicit and tested (e.g., when sequence counters reach their maximum).
+ - For all valid epoch, seq combinations in a deployment, no nonce repeats under the same key.
+ - Overflow behavior is explicit and tested (e.g., when sequence counters reach their maximum).
 
 This is implemented using `generic-array` types from `chacha20poly1305`, with deprecation warnings around `as_slice()` handled in code and tests.
 
@@ -227,11 +227,11 @@ Each function:
 
 - Accepts a base secret (`master_secret` or KEM output), plus context (e.g., role, direction).
 - Uses HKDF with distinct labels:
-  - Example: `"handshake_keys"`, `"traffic_keys"`, `LABEL_RI_KEY`, `LABEL_RI_IV`, etc.
+ - Example: `"handshake_keys"`, `"traffic_keys"`, `LABEL_RI_KEY`, `LABEL_RI_IV`, etc.
 - Produces:
-  - AEAD keys (for both directions).
-  - IVs or static IV components.
-  - Epoch-specific key material.
+ - AEAD keys (for both directions).
+ - IVs or static IV components.
+ - Epoch-specific key material.
 
 Tests in this module ensure:
 
@@ -282,12 +282,12 @@ The record header has a fixed size and is designed for:
 
 - Efficient parsing.
 - Clear separation of:
-  - `epoch`
-  - `stream_id`
-  - `sequence_number`
-  - `message_type`
-  - `flags`
-  - `length`
+ - `epoch`
+ - `stream_id`
+ - `sequence_number`
+ - `message_type`
+ - `flags`
+ - `length`
 
 Unit tests:
 
@@ -390,8 +390,8 @@ The `node` and `p2p` crates use:
 In v1.0.1-web-preview:
 
 - The topology is intentionally simple:
-  - Local node plus web UI.
-  - No public bootstrap network.
+ - Local node plus web UI.
+ - No public bootstrap network.
 - The VPN/TUN features are present but not fully exercised in the web preview.
 
 ### 5.2 Web Stack Architecture
@@ -496,9 +496,9 @@ Given the limitations, the preview is only appropriate for:
 
 - Localhost / lab environments.
 - Single-operator demos and testing of:
-  - Record format and encryption.
-  - End-to-end file transfer behavior.
-  - Web stack UX and operational flow.
+ - Record format and encryption.
+ - End-to-end file transfer behavior.
+ - Web stack UX and operational flow.
 
 It is **not appropriate for**:
 
@@ -539,11 +539,11 @@ All tests are wired into a unified `cargo test` invocation, and CI ensures they 
 The CI pipeline enforces:
 
 - `cargo clippy --all-targets --all-features -- -D warnings` for:
-  - `core`
-  - `crypto`
-  - `node`
-  - `p2p`
-  - `cli`
+ - `core`
+ - `crypto`
+ - `node`
+ - `p2p`
+ - `cli`
 - `cargo fmt --all -- --check` for consistent formatting.
 
 **Specific clippy rules that were addressed:**
@@ -551,10 +551,10 @@ The CI pipeline enforces:
 - `too_many_arguments` for record encryption APIs (suppressed where semantically justified).
 - `disallowed-methods` to remove `unwrap()` from library code and tests where inappropriate.
 - `expect_used` and `slow_vector_initialization` in `crypto::kdf` refactored to:
-  - Use `vec![0; len]` allocations.
-  - Replace `expect` with either:
-    - Clearly labeled failure messages, or
-    - Pattern matches with explicit error propagation.
+ - Use `vec![0; len]` allocations.
+ - Replace `expect` with either:
+ - Clearly labeled failure messages, or
+ - Pattern matches with explicit error propagation.
 
 Warnings in third-party crates are not treated as fatal; the focus is on keeping project code clippy-clean or explicitly justified via `#[allow(...)]` annotations.
 
@@ -675,15 +675,15 @@ Handshake and identity work is staged on:
 CrypRQ is not intended to "replace" TLS or QUIC. Instead, it:
 
 - **Treats the record layer as a first-class object**, enabling:
-  - Custom tunnels.
-  - Specialized file transfer.
-  - Integration in contexts where standard TLS/QUIC stacks are heavy or inflexible.
+ - Custom tunnels.
+ - Specialized file transfer.
+ - Integration in contexts where standard TLS/QUIC stacks are heavy or inflexible.
 
 - **Emphasizes post-quantum preparedness:**
-  - ML-KEM hybridization is part of the design from the beginning.
+ - ML-KEM hybridization is part of the design from the beginning.
 
 - **Embraces Rust safety and tooling:**
-  - Clippy, rustfmt, proptest, and KATs are core to how correctness and security properties are enforced.
+ - Clippy, rustfmt, proptest, and KATs are core to how correctness and security properties are enforced.
 
 The project can be seen as:
 
@@ -744,6 +744,6 @@ The v1.0.1 preview is the first public snapshot of this architecture. It demonst
 
 ---
 
-**License:** MIT  
-**Repository:** https://github.com/codethor0/cryprq  
+**License:** MIT 
+**Repository:** https://github.com/codethor0/cryprq 
 **Contact:** codethor@gmail.com

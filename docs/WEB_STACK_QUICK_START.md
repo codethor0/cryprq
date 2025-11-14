@@ -1,7 +1,7 @@
 # CrypRQ Web Stack — Quick Start for New Contributors
 
-**File:** docs/WEB_STACK_QUICK_START.md  
-**Audience:** New contributors who want to focus on the web-only stack  
+**File:** docs/WEB_STACK_QUICK_START.md 
+**Audience:** New contributors who want to focus on the web-only stack 
 **Goal:** Get you productive quickly without reconstructing the entire project history
 
 > **TL;DR:** If you only care about the web stack, read these four docs in this order:
@@ -11,20 +11,20 @@
 ## Reading Order (Web Stack Focus)
 
 ### 1. **`WEB_ONLY_RELEASE_NOTES_v1.0.1.md`** (5 min read)
-   - **Why:** Understand what the web stack is, what it includes, and what it's NOT (test mode only).
-   - **Key takeaway:** This is a test-mode preview, not production-ready.
+ - **Why:** Understand what the web stack is, what it includes, and what it's NOT (test mode only).
+ - **Key takeaway:** This is a test-mode preview, not production-ready.
 
 ### 2. **`DOCKER_WEB_GUIDE.md`** (10 min read)
-   - **Why:** Learn how to bring up the web stack with one command.
-   - **Key takeaway:** `docker compose -f docker-compose.web.yml up --build` → open browser → test file transfer.
+ - **Why:** Learn how to bring up the web stack with one command.
+ - **Key takeaway:** `docker compose -f docker-compose.web.yml up --build` → open browser → test file transfer.
 
 ### 3. **`WEB_UI_GUIDE.md`** (10 min read)
-   - **Why:** Understand how to use the web UI and what the API endpoints do.
-   - **Key takeaway:** File transfer workflow, event streaming, API contract.
+ - **Why:** Understand how to use the web UI and what the API endpoints do.
+ - **Key takeaway:** File transfer workflow, event streaming, API contract.
 
 ### 4. **`WEB_VALIDATION_RUN.md`** (15 min read)
-   - **Why:** See the test matrix and validation status for the web stack.
-   - **Key takeaway:** What tests exist, what's passing, what needs work.
+ - **Why:** See the test matrix and validation status for the web stack.
+ - **Key takeaway:** What tests exist, what's passing, what needs work.
 
 ---
 
@@ -54,11 +54,11 @@ If you want to contribute code:
 2. **Open UI:** `http://localhost:3000` (or whatever port is configured)
 
 3. **Send a test file:**
-   - Create: `echo "test" > test.bin`
-   - Use UI to send it
-   - Verify hash matches
+ - Create: `echo "test" > test.bin`
+ - Use UI to send it
+ - Verify hash matches
 
-4. **If it works:** ✅ You're ready to contribute!
+4. **If it works:** You're ready to contribute!
 
 5. **If it doesn't:** Check `DOCKER_WEB_GUIDE.md` troubleshooting section.
 

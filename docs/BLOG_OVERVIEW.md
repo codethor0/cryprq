@@ -9,11 +9,11 @@
 CrypRQ is a post-quantum-ready encrypted communication protocol that provides secure tunnels and file transfer capabilities over peer-to-peer connections. Built with modern cryptographic primitives and designed for the web, CrypRQ combines classical and post-quantum algorithms to ensure security against both current and future threats.
 
 **Key Features:**
-- 🔐 **Hybrid Post-Quantum Security**: ML-KEM (Kyber768) + X25519 key exchange
-- 🔄 **Automatic Key Rotation**: Ephemeral keys refresh every 5 minutes
-- 📦 **Stream Multiplexing**: Multiple concurrent data streams over a single session
-- 🌐 **Web-First Architecture**: React + TypeScript frontend, Docker deployment
-- 📁 **Secure File Transfer**: End-to-end encrypted file transfer with integrity verification
+- **Hybrid Post-Quantum Security**: ML-KEM (Kyber768) + X25519 key exchange
+- **Automatic Key Rotation**: Ephemeral keys refresh every 5 minutes
+- **Stream Multiplexing**: Multiple concurrent data streams over a single session
+- **Web-First Architecture**: React + TypeScript frontend, Docker deployment
+- **Secure File Transfer**: End-to-end encrypted file transfer with integrity verification
 
 ---
 
@@ -22,9 +22,9 @@ CrypRQ is a post-quantum-ready encrypted communication protocol that provides se
 The cryptographic algorithms we rely on today—like RSA and elliptic curve cryptography—are vulnerable to attacks from quantum computers. While practical quantum computers don't exist yet, the threat is real enough that organizations like NIST are already standardizing post-quantum algorithms.
 
 CrypRQ takes a **hybrid approach**: it combines classical cryptography (X25519) with post-quantum cryptography (ML-KEM/Kyber768). This means:
-- ✅ Security against classical attacks (via X25519)
-- ✅ Security against quantum attacks (via ML-KEM)
-- ✅ Defense-in-depth: both algorithms must be broken for the session to be compromised
+- Security against classical attacks (via X25519)
+- Security against quantum attacks (via ML-KEM)
+- Defense-in-depth: both algorithms must be broken for the session to be compromised
 
 ---
 
@@ -105,20 +105,20 @@ All transfer happens over encrypted records, ensuring confidentiality and integr
 ## Current Status: v1.0.1-web-preview
 
 **What's Working:**
-- ✅ Record layer with 20-byte header format
-- ✅ Epoch-based key rotation (8-bit epoch counter)
-- ✅ TLS 1.3-style nonce construction
-- ✅ HKDF-based key derivation
-- ✅ File transfer protocol (FILE_META, FILE_CHUNK, FILE_ACK)
-- ✅ Web UI for connection management
-- ✅ Docker-based deployment
+- Record layer with 20-byte header format
+- Epoch-based key rotation (8-bit epoch counter)
+- TLS 1.3-style nonce construction
+- HKDF-based key derivation
+- File transfer protocol (FILE_META, FILE_CHUNK, FILE_ACK)
+- Web UI for connection management
+- Docker-based deployment
 
 **What's Coming:**
-- 🔄 Hybrid handshake (ML-KEM + X25519)
-- 🔄 Peer identity and authentication
-- 🔄 Proper role-based key directions
-- 🔄 Replay protection window
-- 🔄 Production hardening
+- Hybrid handshake (ML-KEM + X25519)
+- Peer identity and authentication
+- Proper role-based key directions
+- Replay protection window
+- Production hardening
 
 **Important:** The current preview uses **test mode** (static keys, no handshake, no authentication). It's suitable for testing and protocol exploration, but **not for production use**.
 
@@ -227,7 +227,7 @@ CrypRQ is licensed under the [MIT License](LICENSE).
 
 ---
 
-**Repository:** https://github.com/codethor0/cryprq  
-**Contact:** codethor@gmail.com  
+**Repository:** https://github.com/codethor0/cryprq 
+**Contact:** codethor@gmail.com 
 **Version:** v1.0.1-web-preview (Test Mode)
 

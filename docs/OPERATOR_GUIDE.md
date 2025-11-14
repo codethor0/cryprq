@@ -12,7 +12,7 @@
 
 From `docs/PRE_TAG_CHECKLIST.md`, confirm:
 
-#### 1.1 CLI Sanity ✅
+#### 1.1 CLI Sanity 
 - Check `docs/VALIDATION_RUN.md` → minimal sanity test is marked **PASS** (hash-verified file transfer).
 - If that's still true, engine is good.
 
@@ -47,7 +47,7 @@ Files to check:
 - `WEB_ONLY_RELEASE_NOTES_v1.0.1.md`
 - `SECURITY_NOTES.md`
 
-**If all checks pass → PRE_TAG_CHECKLIST is ✅**
+**If all checks pass → PRE_TAG_CHECKLIST is **
 
 ---
 
@@ -92,9 +92,9 @@ git tag | grep v1.0.1
    ```
 
 5. **Double-check** that the very first lines clearly state:
-   - Test mode
-   - Static keys
-   - Not for production
+ - Test mode
+ - Static keys
+ - Not for production
 
 6. **Publish the release**
 
@@ -133,8 +133,8 @@ Use `docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md` as the driver for:
 - Remove static keys
 - Remove any "bypass handshake" logic
 - Tighten `SECURITY_NOTES.md` to split:
-  - web-preview line (test mode)
-  - future non-test-mode line
+ - web-preview line (test mode)
+ - future non-test-mode line
 
 **Note:** You already have the protocol spec and KDF/record layer aligned — this phase is mostly: "Make the running system behave exactly like the spec, instead of spec emulating the test harness."
 
@@ -142,16 +142,16 @@ Use `docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md` as the driver for:
 
 ## Current Status Summary
 
-### ✅ Complete
+### Complete
 - **Engine & record layer:** Implemented and validated (CLI file transfer with SHA-256 verification)
 - **Web stack docs:** Ready (web guides, Docker guide, validation docs, release notes)
 - **Release infrastructure:** All in place:
-  - `CUT_THE_RELEASE.md`
-  - `PRE_TAG_CHECKLIST.md`
-  - `GITHUB_RELEASE_BODY_v1.0.1-web-preview.md`
-  - `MASTER_CUT_THE_RELEASE_PROMPT.md`
+ - `CUT_THE_RELEASE.md`
+ - `PRE_TAG_CHECKLIST.md`
+ - `GITHUB_RELEASE_BODY_v1.0.1-web-preview.md`
+ - `MASTER_CUT_THE_RELEASE_PROMPT.md`
 
-### ⚠️ Security Posture
+### Security Posture
 - Clearly labeled **test-mode only** (static keys, no handshake, no peer auth)
 
 ---
@@ -172,10 +172,10 @@ Branch and start the handshake/identity phase.
 
 ## Quick Reference
 
-**Release Runbook:** `docs/CUT_THE_RELEASE.md`  
-**Pre-Tag Checklist:** `docs/PRE_TAG_CHECKLIST.md`  
-**Release Body:** `docs/GITHUB_RELEASE_BODY_v1.0.1-web-preview.md`  
-**Master Release Prompt:** `docs/MASTER_CUT_THE_RELEASE_PROMPT.md`  
+**Release Runbook:** `docs/CUT_THE_RELEASE.md` 
+**Pre-Tag Checklist:** `docs/PRE_TAG_CHECKLIST.md` 
+**Release Body:** `docs/GITHUB_RELEASE_BODY_v1.0.1-web-preview.md` 
+**Master Release Prompt:** `docs/MASTER_CUT_THE_RELEASE_PROMPT.md` 
 **Next Phase Prompt:** `docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md`
 
 ---

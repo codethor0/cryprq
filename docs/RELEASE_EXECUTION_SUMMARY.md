@@ -21,9 +21,9 @@ docker compose -f docker-compose.web.yml up --build
 
 - **URL:** `http://localhost:8787` (backend API) or `http://localhost:5173` (Vite dev server)
 - **Ports:** See `docker-compose.web.yml`:
-  - Backend API: `8787`
-  - Vite dev: `5173`
-  - UDP: `9999`
+ - Backend API: `8787`
+ - Vite dev: `5173`
+ - UDP: `9999`
 
 ### 1.3 Perform File Transfer
 
@@ -41,8 +41,8 @@ sha256sum /path/to/source-file /path/to/received-file
 
 Edit `docs/WEB_VALIDATION_RUN.md`:
 
-- **WEB-1:** Mark as ✅ PASS (or ⚠️ WARN with notes)
-- **WEB-2:** Mark as ✅ PASS (or ⚠️ WARN with notes)
+- **WEB-1:** Mark as PASS (or WARN with notes)
+- **WEB-2:** Mark as PASS (or WARN with notes)
 - Add date, executor name, and one-line note
 
 **Example:**
@@ -62,10 +62,10 @@ Edit `docs/WEB_VALIDATION_RUN.md`:
 ```
 
 **Expected output:**
-- ✅ CLI validation: PASS
-- ⚠️ Web validation: TODO (if not done yet) or PASS
-- ✅ Security disclaimers: All present
-- ✅ Git status: Clean
+- CLI validation: PASS
+- Web validation: TODO (if not done yet) or PASS
+- Security disclaimers: All present
+- Git status: Clean
 - Preview of tag creation
 
 ### 2.2 Execute (Creates Tag)
@@ -75,7 +75,7 @@ Edit `docs/WEB_VALIDATION_RUN.md`:
 ```
 
 **What it does:**
-1. Confirms CLI validation ✅
+1. Confirms CLI validation 
 2. Warns if WEB-1/WEB-2 still TODO (allows override)
 3. Verifies all test-mode / NOT FOR PRODUCTION disclaimers
 4. Ensures git is clean
@@ -106,10 +106,10 @@ Edit `docs/WEB_VALIDATION_RUN.md`:
 ### 3.4 Double-Check Security Warnings
 
 Verify the top of the body clearly states:
-- ✅ static keys
-- ✅ no handshake
-- ✅ no peer auth
-- ✅ **NOT FOR PRODUCTION**
+- static keys
+- no handshake
+- no peer auth
+- **NOT FOR PRODUCTION**
 
 ### 3.5 Publish
 
@@ -148,8 +148,8 @@ Use `docs/MASTER_HANDSHAKE_AND_IDENTITY_PROMPT.md` to guide:
 - Remove static keys
 - Remove "bypass handshake" logic
 - Tighten `SECURITY_NOTES.md` to differentiate:
-  - `v1.0.1-web-preview` (test-mode)
-  - Future secure builds (with real handshake + auth)
+ - `v1.0.1-web-preview` (test-mode)
+ - Future secure builds (with real handshake + auth)
 
 ---
 
@@ -181,11 +181,11 @@ git checkout -b feature/handshake-and-identity
 
 ## Success Criteria
 
-✅ Web smoke test completed (WEB-1/WEB-2 marked PASS)  
-✅ Preflight script passes all checks  
-✅ Tag `v1.0.1-web-preview` created and pushed  
-✅ GitHub release published with correct body  
-✅ Feature branch `feature/handshake-and-identity` created  
+ Web smoke test completed (WEB-1/WEB-2 marked PASS) 
+ Preflight script passes all checks 
+ Tag `v1.0.1-web-preview` created and pushed 
+ GitHub release published with correct body 
+ Feature branch `feature/handshake-and-identity` created 
 
 **At this point:** Preview release is live, and next-phase work can begin.
 

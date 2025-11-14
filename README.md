@@ -4,17 +4,17 @@
 # CrypRQ: Post-Quantum, Zero-Trust VPN
 
 <p align="center">
-  <img src="./cryprq-logo.png" alt="Black dragon logo holding a glowing orb" width="180">
+ <img src="./cryprq-logo.png" alt="Black dragon logo holding a glowing orb" width="180">
 </p>
 
 ## Logo
 
-The project logo features a black dragon coiled around a glowing orb.  
+The project logo features a black dragon coiled around a glowing orb. 
 
 It represents **power, protection, and control over hidden knowledge** – a nod to the project's focus on security/cryptography.
 
-> **Logo usage:** The logo is © 2025 Thor Thor.  
-> It is **not** covered by the open-source code license.  
+> **Logo usage:** The logo is © 2025 Thor Thor. 
+> It is **not** covered by the open-source code license. 
 > You may reference or display it when talking about this project, but please do not reuse or modify it for other products or brands without permission.
 
 ---
@@ -27,7 +27,7 @@ CrypRQ is a post-quantum VPN built for the web. It provides secure peer-to-peer 
 
 **Web-First Architecture**: Modern React + TypeScript frontend with Node.js backend, deployable via Docker Compose.
 
-> ⚠️ **Important:** The current v1.0.1 web-only preview uses **test-mode** configuration (static keys, no handshake, no peer authentication). This configuration is for **testing/lab use only** and MUST NOT be used in production. See [`docs/SECURITY_NOTES.md`](docs/SECURITY_NOTES.md) for details.
+> **Important:** The current v1.0.1 web-only preview uses **test-mode** configuration (static keys, no handshake, no peer authentication). This configuration is for **testing/lab use only** and MUST NOT be used in production. See [`docs/SECURITY_NOTES.md`](docs/SECURITY_NOTES.md) for details.
 
 ## Features
 
@@ -281,19 +281,19 @@ cargo test --all
 **CI Pipeline:** All pushes to `main` and `feature/**` branches are automatically validated via GitHub Actions:
 
 **Quick Check Job** (runs in parallel for faster feedback):
-- ✅ `cargo fmt --all -- --check`
-- ✅ `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
 
 **Full Build Job**:
-- ✅ `cargo build --release --workspace`
-- ✅ `cargo test --workspace`
-- ✅ `cargo clippy --all-targets --all-features -- -D warnings`
-- ✅ `cargo fmt --all -- --check`
+- `cargo build --release --workspace`
+- `cargo test --workspace`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo fmt --all -- --check`
 
 **Nightly Job** (runs daily at 2 AM UTC):
-- ✅ Documentation generation (`cargo doc`)
-- ✅ Build and test with all features enabled
-- ✅ Documentation warning checks
+- Documentation generation (`cargo doc`)
+- Build and test with all features enabled
+- Documentation warning checks
 
 Branch protection ensures these checks must pass before merging to `main`.
 
@@ -321,7 +321,7 @@ CrypRQ is licensed under the [MIT License](LICENSE).
 
 If this project helps you, consider supporting ongoing maintenance:
 
-- **One-time tip:** https://buy.stripe.com/00w6oA7kM4wc4co5RB3Nm01  
+- **One-time tip:** https://buy.stripe.com/00w6oA7kM4wc4co5RB3Nm01 
 - **Monthly support:** https://buy.stripe.com/7sY3cobB2bYEdMYa7R3Nm00
 
 **What you fund:** maintenance, docs, roadmap experiments, and new features.
