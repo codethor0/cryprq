@@ -3,9 +3,21 @@
 
 # CrypRQ: Post-Quantum, Zero-Trust VPN
 
-<div align="center">
-  <img width="512" height="512" alt="CrypRQ Logo" src="logo.png" />
-</div>
+<p align="center">
+  <img src="docs/cryprq-logo.png" alt="Black dragon logo holding a glowing orb" width="180">
+</p>
+
+## Logo
+
+The project logo features a black dragon coiled around a glowing orb.  
+
+It represents **power, protection, and control over hidden knowledge** – a nod to the project's focus on security/cryptography.
+
+> **Logo usage:** The logo is © 2025 Thor Thor.  
+> It is **not** covered by the open-source code license.  
+> You may reference or display it when talking about this project, but please do not reuse or modify it for other products or brands without permission.
+
+---
 
 > Post-quantum, zero-trust VPN with five-minute ephemeral key rotation.
 
