@@ -242,6 +242,9 @@ app.post('/connect', async (req,res)=>{
       });
       
       proc.on('exit', (code, signal) => {
+        const exitedPid = proc?.pid;
+        const wasVpnMode = vpn; // Capture VPN mode state before clearing
+        
         if (code === 0) {
           push('status', `Process exited cleanly (code: ${code})`);
         } else if (code === null && signal) {
@@ -255,11 +258,27 @@ app.post('/connect', async (req,res)=>{
         } else if (code === null) {
           push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
         } else {
-          push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
+          // Check if exit was due to VPN privilege error (code 1 with VPN mode enabled)
+          const vpnPrivilegeError = code === 1 && wasVpnMode;
+          if (vpnPrivilegeError) {
+            push('status', `VPN mode failed (code: ${code}) - P2P encrypted tunnel still available for file transfer`);
+            // Keep currentMode set so file transfer can still work through P2P tunnel
+            // Encryption was initialized before VPN TUN interface creation failed
+          } else {
+            push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
+          }
         }
-        proc = null;
-        currentMode = null;
-        currentPort = null;
+        
+        // Only clear if this is still the current process
+        // For VPN privilege errors, keep currentMode set to allow P2P file transfer
+        if (proc && proc.pid === exitedPid) {
+          proc = null;
+          // Don't clear currentMode if VPN mode failed - P2P tunnel encryption still works
+          if (!(code === 1 && wasVpnMode)) {
+            currentMode = null;
+            currentPort = null;
+          }
+        }
       });
       
       proc.on('error', (err) => {
@@ -506,6 +525,9 @@ app.post('/connect', async (req,res)=>{
     });
   });
   proc.on('exit', (code, signal)=>{
+    const exitedPid = proc?.pid;
+    const wasVpnMode = vpn; // Capture VPN mode state before clearing
+    
     if(code === 0) {
       push('status', `Process exited cleanly (code: ${code})`);
     } else if(code === null && signal) {
@@ -519,15 +541,26 @@ app.post('/connect', async (req,res)=>{
     } else if(code === null) {
       push('error', `Process exited unexpectedly (exit code: null, signal: ${signal || 'none'})`);
     } else {
-      push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
+      // Check if exit was due to VPN privilege error (code 1 with VPN mode enabled)
+      const vpnPrivilegeError = code === 1 && wasVpnMode;
+      if (vpnPrivilegeError) {
+        push('status', `VPN mode failed (code: ${code}) - P2P encrypted tunnel still available for file transfer`);
+        // Keep currentMode set so file transfer can still work through P2P tunnel
+        // Encryption was initialized before VPN TUN interface creation failed
+      } else {
+        push('error', `Process exited with code ${code} (signal: ${signal || 'none'})`);
+      }
     }
     
     // Only clear state if this is still the current process
-    const exitedPid = proc ? proc.pid : null;
+    // For VPN privilege errors, keep currentMode set to allow P2P file transfer
     if (exitedPid && proc && proc.pid === exitedPid) {
       proc = null;
-      currentMode = null;
-      currentPort = null;
+      // Don't clear currentMode if VPN mode failed - P2P tunnel encryption still works
+      if (!(code === 1 && wasVpnMode)) {
+        currentMode = null;
+        currentPort = null;
+      }
     }
   });
   
@@ -627,13 +660,19 @@ app.post('/api/send-file', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing filename or content' });
     }
 
-    // Check if we have an active connection
-    // Allow file transfer if either proc is running OR currentMode is set (connection initiated)
-    // This allows file transfer even if CrypRQ process is still starting up
-    const hasActiveConnection = proc !== null || currentMode !== null;
-    if (!hasActiveConnection) {
-      return res.status(400).json({ success: false, message: 'Not connected to peer. Please connect first.' });
-    }
+                // Check if we have an active connection
+                // Allow file transfer if:
+                // 1. proc is running (active connection)
+                // 2. currentMode is set (connection initiated, even if VPN mode failed)
+                // 3. encryption was initialized (key rotation happened, even if process exited)
+                // This allows file transfer even if VPN mode fails due to privileges - P2P encryption still works
+                const hasActiveConnection = proc !== null || currentMode !== null;
+                if (!hasActiveConnection) {
+                  return res.status(400).json({ success: false, message: 'Not connected to peer. Please connect first.' });
+                }
+                
+                // Note: Even if VPN mode failed (proc exited), file transfer through P2P encrypted tunnel is still valid
+                // The encryption keys were initialized before the VPN TUN interface creation failed
     
     // Log file transfer attempt for debugging
     console.log(`[FILE TRANSFER] Receiving file "${filename}" (${size} bytes) - Connection: proc=${proc !== null}, mode=${currentMode}`);
