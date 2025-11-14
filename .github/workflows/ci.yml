@@ -23,6 +23,9 @@ jobs:
       with:
         components: clippy, rustfmt
     
+    - name: Install clippy (if not already installed)
+      run: rustup component add clippy || true
+    
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:
