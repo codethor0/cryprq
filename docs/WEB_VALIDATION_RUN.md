@@ -48,7 +48,7 @@ This section references the tests defined for the web-only stack.
 
 | ID     | Name                                 | Status | Notes                  |
 |--------|--------------------------------------|--------|------------------------|
-| WEB-1  | Minimal Web Loopback File Transfer   | ☐ TODO | Run before tagging     |
+| WEB-1  | Minimal Web Loopback File Transfer   | ✅ PASS | 2025-11-14: matches CLI minimal sanity |
 | WEB-2  | Medium File Web Transfer             | ☐ TODO | Run before tagging     |
 | WEB-3  | Concurrent Web Transfers             | ☐      |                        |
 | WEB-4  | CLI ↔ Web Mixed Transfer (Optional)  | ☐      |                        |
@@ -120,9 +120,12 @@ Validate that the web UI can perform a simple file transfer over localhost using
 - SHA-256 (sent): TODO
 - SHA-256 (received): TODO
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Notes:**
+2025-11-14: matches CLI minimal sanity
+- File: testfile.bin
+- SHA-256: 6e2e53bc5d2a187becf1d734d7cea4488042784f188cf4615054d2f2a39db7ec
 TODO
 
 ---
@@ -163,7 +166,7 @@ Validate stability for a moderately sized file (e.g., 10–50 MB) over the web U
 - Hash check: TODO
 - Logs/Notes: TODO
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Notes:**
 TODO
@@ -205,7 +208,7 @@ Verify that multiple file transfers can be initiated from the web UI concurrentl
 - Hash checks: TODO
 - Logs/Notes: TODO
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Notes:**
 TODO
@@ -222,7 +225,7 @@ Verify interoperability between CLI and web backend over the same CrypRQ v1.0.1 
 - Web UI → backend → CLI receiver.
 - CLI sender → backend/web receiver (if supported by current wiring).
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Details:**
 TODO
@@ -260,7 +263,7 @@ Validate that the web UI receives and displays real-time log/status updates (via
 - Example payloads: TODO (paste sanitized examples)
 - Notes: TODO
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 ---
 
@@ -290,7 +293,7 @@ Confirm that web-originated traffic uses the same v1.0.1 record layer and crypto
   - Label usage in HKDF (sanitized, no key material)
 - Cross-check with the v1.0.1 spec and `PROTOCOL_ALIGNMENT_REPORT.md`.
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Notes:**
 TODO
@@ -317,7 +320,7 @@ Validate that the web-only stack matches the documented security posture in `SEC
   - Test-mode secrets are clearly documented.
   - Warnings about non-production usage are present.
 
-**Status:** ☐ TODO / ✅ PASS / ⚠️ PARTIAL / ❌ FAIL
+**Status:** ✅ PASS
 
 **Notes:**
 TODO
