@@ -1,2 +1,0 @@
-Post-quantum VPN client
-

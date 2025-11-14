@@ -1,2 +1,0 @@
-Post-quantum VPN with zero-trust peer connections and automatic key rotation.
-
