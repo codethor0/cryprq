@@ -104,19 +104,19 @@ pub fn derive_traffic_keys(
 ) -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
     let (_, hk) = Hkdf::<Sha256>::extract(None, master_secret);
 
-    let mut key_ir = vec![0u8; key_len];
+    let mut key_ir = alloc::vec![0u8; key_len];
     hk.expand(LABEL_IR_KEY, &mut key_ir)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ir = vec![0u8; iv_len];
+    let mut iv_ir = alloc::vec![0u8; iv_len];
     hk.expand(LABEL_IR_IV, &mut iv_ir)
         .expect("HKDF expand should not fail");
 
-    let mut key_ri = vec![0u8; key_len];
+    let mut key_ri = alloc::vec![0u8; key_len];
     hk.expand(LABEL_RI_KEY, &mut key_ri)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ri = vec![0u8; iv_len];
+    let mut iv_ri = alloc::vec![0u8; iv_len];
     hk.expand(LABEL_RI_IV, &mut iv_ri)
         .expect("HKDF expand should not fail");
 
@@ -168,19 +168,19 @@ pub fn derive_epoch_keys(
     label_ri_iv.extend_from_slice(b" epoch=");
     label_ri_iv.push(epoch);
 
-    let mut key_ir = vec![0u8; key_len];
+    let mut key_ir = alloc::vec![0u8; key_len];
     hk.expand(&label_ir_key, &mut key_ir)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ir = vec![0u8; iv_len];
+    let mut iv_ir = alloc::vec![0u8; iv_len];
     hk.expand(&label_ir_iv, &mut iv_ir)
         .expect("HKDF expand should not fail");
 
-    let mut key_ri = vec![0u8; key_len];
+    let mut key_ri = alloc::vec![0u8; key_len];
     hk.expand(&label_ri_key, &mut key_ri)
         .expect("HKDF expand should not fail");
 
-    let mut iv_ri = vec![0u8; iv_len];
+    let mut iv_ri = alloc::vec![0u8; iv_len];
     hk.expand(&label_ri_iv, &mut iv_ri)
         .expect("HKDF expand should not fail");
 
