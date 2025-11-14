@@ -120,6 +120,7 @@ pub fn alloc_stream_id() -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cryprq_core::MSG_TYPE_DATA;
 
     #[test]
     fn test_send_recv_record_roundtrip() {
