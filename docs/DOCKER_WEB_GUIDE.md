@@ -118,7 +118,7 @@ This stops and removes the containers (but not images or volumes).
 
 ## 6. Configuration
 
-### 5.1 Ports
+### 6.1 Ports
 
 Typical (example) mapping — update this to match the actual compose file:
 
@@ -134,7 +134,7 @@ Typical (example) mapping — update this to match the actual compose file:
 
 Check `docker-compose.web.yml` and adjust the values here if they differ.
 
-### 5.2 Environment Variables
+### 6.2 Environment Variables
 
 Common environment variables (names may vary; adjust to your actual config):
 
@@ -151,7 +151,7 @@ If `.env` is used, it will typically be automatically loaded by Docker Compose. 
 
 ## 7. Common Workflows
 
-### 6.1 Fresh Rebuild
+### 7.1 Fresh Rebuild
 
 When you've changed backend or frontend code and want a clean rebuild:
 
@@ -166,7 +166,7 @@ or in one line:
 docker compose -f docker-compose.web.yml up --build
 ```
 
-### 6.2 View Logs
+### 7.2 View Logs
 
 All logs:
 
@@ -181,7 +181,7 @@ docker compose -f docker-compose.web.yml logs -f web-backend
 docker compose -f docker-compose.web.yml logs -f web-frontend
 ```
 
-### 6.3 Shell into the Backend Container
+### 7.3 Shell into the Backend Container
 
 Useful for debugging, checking files, or running `tcpdump` inside the container:
 
