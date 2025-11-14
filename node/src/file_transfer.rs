@@ -160,6 +160,8 @@ impl FileTransferManager {
     /// Start an incoming file transfer
     pub fn start_incoming_transfer(&self, stream_id: u32, metadata: FileMetadata) -> Result<()> {
         let output_path = self.output_dir.join(&metadata.filename);
+        let filename = metadata.filename.clone();
+        let size = metadata.size;
 
         // Create file for writing
         let file = File::create(&output_path)
@@ -177,8 +179,6 @@ impl FileTransferManager {
             .incoming
             .lock()
             .map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
-        let filename = meta.filename.clone();
-        let size = meta.size;
         incoming.insert(stream_id, transfer);
 
         log::info!(
