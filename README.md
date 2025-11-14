@@ -216,50 +216,6 @@ shasum -a 256 ./received/sample.txt
 
 **Supply-chain checks**: `cargo audit`, `cargo deny`, `CodeQL`.
 
-## Development
-
-### Prerequisites
-
-- Rust 1.83.0+
-- Node.js 18+
-- Docker and Docker Compose (for Docker deployment)
-
-### Build
-
-```bash
-# Build Rust backend
-cargo build --release -p cryprq
-
-# Build web frontend
-cd web
-npm install
-npm run build
-```
-
-### Testing
-
-```bash
-# Run unit tests
-cargo test --lib --all --no-fail-fast
-
-# Format code
-cargo fmt --all
-
-# Lint code
-cargo clippy --all-targets --all-features -- -D warnings
-
-# Security audits
-cargo audit --deny warnings
-cargo deny check
-```
-
-### Code Quality
-
-- **Format**: `cargo fmt --all`
-- **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
-- **Tests**: `cargo test --lib --all --no-fail-fast`
-- **Security**: `cargo audit --deny warnings && cargo deny check`
-
 ## Protocol Specification
 
 The complete CrypRQ v1.0 protocol specification is available in [`cryp-rq-protocol-v1.md`](cryp-rq-protocol-v1.md). This document provides:
