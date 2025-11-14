@@ -30,7 +30,7 @@ mod test {
         for len in 0..OUTER_LEN {
             let data: Vec<u8> = (0..len).map(|_| rng.gen_range(1..=255)).collect();
             let padded = pad_to_1480(&data);
-            let unpadded = unpad(&padded).unwrap();
+            let unpadded = unpad(&padded).expect("Unpadding should not fail in test");
             assert_eq!(data, unpadded, "Failed at len={}", len);
         }
     }

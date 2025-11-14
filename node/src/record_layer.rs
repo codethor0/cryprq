@@ -8,10 +8,7 @@
 //! Implements the record boundary for sending and receiving CrypRQ records
 //! as specified in cryp-rq-protocol-v1.md Section 6
 
-use cryprq_core::{
-    Record, RecordHeader, MSG_TYPE_CONTROL, MSG_TYPE_DATA, MSG_TYPE_FILE_ACK, MSG_TYPE_FILE_CHUNK,
-    MSG_TYPE_FILE_META, MSG_TYPE_VPN_PACKET, PROTOCOL_VERSION,
-};
+use cryprq_core::{Record, RecordHeader, PROTOCOL_VERSION};
 use std::io;
 use zeroize::Zeroize;
 
@@ -136,11 +133,12 @@ mod tests {
         };
 
         // Send
-        let encoded =
-            send_record(epoch, stream_id, seq, MSG_TYPE_DATA, 0, plaintext, &keys).unwrap();
+        let encoded = send_record(epoch, stream_id, seq, MSG_TYPE_DATA, 0, plaintext, &keys)
+            .expect("send_record should not fail in test");
 
         // Receive
-        let (header, decrypted) = recv_record(&encoded, &keys).unwrap();
+        let (header, decrypted) =
+            recv_record(&encoded, &keys).expect("recv_record should not fail in test");
 
         assert_eq!(header.message_type, MSG_TYPE_DATA);
         assert_eq!(header.stream_id, stream_id);

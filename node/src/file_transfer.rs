@@ -11,10 +11,9 @@ use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
-use tokio::sync::mpsc;
 
 /// File metadata (duplicated from p2p to avoid dependency cycle)
 #[derive(Debug, Clone)]
@@ -113,18 +112,24 @@ impl FileMetadata {
 #[derive(Debug)]
 struct IncomingTransfer {
     metadata: FileMetadata,
+    #[allow(dead_code)]
     output_path: PathBuf,
     file: Option<File>,
     bytes_received: u64,
+    #[allow(dead_code)]
     chunks_received: Vec<u32>,
 }
 
 /// Outgoing file transfer state
 #[derive(Debug)]
 struct OutgoingTransfer {
+    #[allow(dead_code)]
     metadata: FileMetadata,
+    #[allow(dead_code)]
     file_path: PathBuf,
+    #[allow(dead_code)]
     chunks_sent: u32,
+    #[allow(dead_code)]
     total_chunks: u32,
 }
 
@@ -168,14 +173,19 @@ impl FileTransferManager {
             chunks_received: Vec::new(),
         };
 
-        let mut incoming = self.incoming.lock().unwrap();
+        let mut incoming = self
+            .incoming
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let filename = meta.filename.clone();
+        let size = meta.size;
         incoming.insert(stream_id, transfer);
 
         log::info!(
             "Started incoming file transfer: stream_id={}, filename={}, size={}",
             stream_id,
-            incoming.get(&stream_id).unwrap().metadata.filename,
-            incoming.get(&stream_id).unwrap().metadata.size
+            filename,
+            size
         );
 
         Ok(())
@@ -183,7 +193,10 @@ impl FileTransferManager {
 
     /// Write a chunk to an incoming transfer
     pub fn write_chunk(&self, stream_id: u32, chunk_data: &[u8]) -> Result<()> {
-        let mut incoming = self.incoming.lock().unwrap();
+        let mut incoming = self
+            .incoming
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
         let transfer = incoming
             .get_mut(&stream_id)
             .ok_or_else(|| anyhow::anyhow!("No incoming transfer for stream_id {}", stream_id))?;
@@ -245,7 +258,11 @@ impl FileTransferManager {
             chunks_sent: 0,
             total_chunks,
         };
-        let mut outgoing = self.outgoing.lock().unwrap();
+        let mut outgoing = self
+            .outgoing
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
         outgoing.insert(stream_id, transfer);
+        Ok(())
     }
 }

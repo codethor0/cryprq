@@ -1013,13 +1013,17 @@ pub async fn create_tunnel_with_output_dir(
 
             // Increment epoch and derive epoch-scoped keys
             let (new_epoch, new_keys_outbound, new_keys_inbound) = {
-                let mut epoch_guard = epoch_clone.write().unwrap();
+                let mut epoch_guard = epoch_clone
+                    .write()
+                    .expect("Epoch lock poisoned in key rotation");
                 let old_epoch = *epoch_guard;
                 *epoch_guard = old_epoch.next();
                 let new_epoch = *epoch_guard;
 
                 // Derive epoch-scoped keys using HKDF
-                let master_secret = *master_secret_clone.read().unwrap();
+                let master_secret = *master_secret_clone
+                    .read()
+                    .expect("Master secret lock poisoned in key rotation");
                 let (key_ir, iv_ir, key_ri, iv_ri) =
                     cryprq_crypto::derive_epoch_keys(&master_secret, new_epoch.value(), 32, 12);
 

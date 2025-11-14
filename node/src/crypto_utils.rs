@@ -96,14 +96,14 @@ mod tests {
 
         // Same IV + same seq = same nonce
         let nonce1_again = make_nonce(static_iv, seq1);
-        assert_eq!(nonce1.as_slice(), nonce1_again.as_slice());
+        assert_eq!(&nonce1[..], &nonce1_again[..]);
 
         // Same IV + different seq = different nonce
-        assert_ne!(nonce1.as_slice(), nonce2.as_slice());
+        assert_ne!(&nonce1[..], &nonce2[..]);
 
         // First 4 bytes should be unchanged (not XORed)
-        assert_eq!(nonce1.as_slice()[0..4], static_iv[0..4]);
-        assert_eq!(nonce2.as_slice()[0..4], static_iv[0..4]);
+        assert_eq!(&nonce1[0..4], &static_iv[0..4]);
+        assert_eq!(&nonce2[0..4], &static_iv[0..4]);
     }
 
     #[test]
@@ -114,6 +114,6 @@ mod tests {
         let nonce1 = make_nonce(static_iv, seq);
         let nonce2 = make_nonce(static_iv, seq);
 
-        assert_eq!(nonce1.as_slice(), nonce2.as_slice());
+        assert_eq!(&nonce1[..], &nonce2[..]);
     }
 }

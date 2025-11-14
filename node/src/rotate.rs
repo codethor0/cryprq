@@ -9,7 +9,10 @@ use crate::device_id::AnonId;
 use zeroize::Zeroize;
 
 pub fn keyburn_proof(old_pk: &[u8], anon_id: &AnonId) -> String {
-    let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32;
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("System time should be after UNIX_EPOCH")
+        .as_secs() as u32;
     let mut input = Vec::with_capacity(old_pk.len() + 4);
     input.extend_from_slice(old_pk);
     input.extend_from_slice(&ts.to_le_bytes());
