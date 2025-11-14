@@ -10,7 +10,7 @@ edition = "2021"
 license = "MIT"
 
 [dependencies]
-rand = "0.8"
+rand = "0.9"
 blake3 = "1.0"
 zeroize = { version = "1.7", features = ["zeroize_derive"] }
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }
