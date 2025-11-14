@@ -190,7 +190,7 @@ app.post('/connect', async (req,res)=>{
       
       proc = spawn(process.env.CRYPRQ_BIN || 'cryprq', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, RUST_LOG: 'trace' },
+        env: { ...process.env, RUST_LOG: process.env.RUST_LOG || 'info' },
         detached: false // Keep attached so we can capture output
       });
       
@@ -210,7 +210,16 @@ app.post('/connect', async (req,res)=>{
         
         lines.filter(Boolean).forEach(line => {
           let level = 'info';
-          if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+          // Parse structured event= logs
+          if (/event=listener_starting|event=dialer_starting|event=listener_ready/i.test(line)) {
+            level = 'peer';
+          } else if (/event=handshake_complete|event=connection_established/i.test(line)) {
+            level = 'peer'; // Handshake/connection events are critical peer events
+          } else if (/event=rotation_task_started|event=key_rotation/i.test(line)) {
+            level = 'rotation';
+          } else if (/event=ppk_derived/i.test(line)) {
+            level = 'rotation';
+          } else if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
           else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
           else if (/rotate|rotation/i.test(line)) level = 'rotation';
           else if (/peer|connect|handshake|ping|connected|Dialing/i.test(line)) level = 'peer';
@@ -229,7 +238,16 @@ app.post('/connect', async (req,res)=>{
           let level = 'error';
           if (/INFO|DEBUG|TRACE/i.test(line)) {
             level = 'info';
-            if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
+            // Parse structured event= logs from stderr (Rust logs go to stderr)
+            if (/event=listener_starting|event=dialer_starting|event=listener_ready/i.test(line)) {
+              level = 'peer';
+            } else if (/event=handshake_complete|event=connection_established/i.test(line)) {
+              level = 'peer'; // Handshake/connection events are critical peer events
+            } else if (/event=rotation_task_started|event=key_rotation/i.test(line)) {
+              level = 'rotation';
+            } else if (/event=ppk_derived/i.test(line)) {
+              level = 'rotation';
+            } else if (/🔐|ENCRYPT|encrypt/i.test(line)) level = 'rotation';
             else if (/🔓|DECRYPT|decrypt/i.test(line)) level = 'rotation';
             else if (/rotate|rotation/i.test(line)) level = 'rotation';
             else if (/peer|connect|handshake|ping|connected|Dialing/i.test(line)) level = 'peer';
@@ -443,8 +461,8 @@ app.post('/connect', async (req,res)=>{
     push('status', '✅ P2P encrypted tunnel is active - all peer traffic is encrypted');
   }
 
-  // Set maximum verbosity
-  const env = { ...process.env, RUST_LOG: 'trace' };
+  // Set log level (info shows structured events, debug/trace for detailed debugging)
+  const env = { ...process.env, RUST_LOG: process.env.RUST_LOG || 'info' };
   
   // Spawn process with proper stdio handling
   try {
@@ -473,7 +491,19 @@ app.post('/connect', async (req,res)=>{
     s.split(/\r?\n/).filter(Boolean).forEach(line=>{
       // stdout contains: "Starting listener...", "Local peer id: ...", "Listening on..."
       let level='info';
-      if(/Local peer id:/i.test(line)) {
+      // Parse structured event= logs
+      if (/event=listener_starting|event=dialer_starting|event=listener_ready/i.test(line)) {
+        level = 'peer';
+        console.log(`[DEBUG] Detected structured event in stdout: ${line}`);
+      } else if (/event=handshake_complete|event=connection_established/i.test(line)) {
+        level = 'peer'; // Handshake/connection events are critical peer events
+        console.log(`[DEBUG] Detected handshake/connection event: ${line}`);
+      } else if (/event=rotation_task_started|event=key_rotation/i.test(line)) {
+        level = 'rotation';
+        console.log(`[DEBUG] Detected rotation event: ${line}`);
+      } else if (/event=ppk_derived/i.test(line)) {
+        level = 'rotation';
+      } else if(/Local peer id:/i.test(line)) {
         level='peer'; // CRITICAL: Peer ID indicates encryption is active
         console.log(`[DEBUG] Detected peer ID in stdout: ${line}`);
       } else if(/Starting listener|Dialing peer/i.test(line)) {

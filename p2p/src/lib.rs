@@ -305,6 +305,12 @@ pub async fn start_listener(addr: &str) -> Result<()> {
         .await
         .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
     let local_peer_id = *swarm.local_peer_id();
+
+    // Log listener startup with structured format
+    info!(
+        "event=listener_starting peer_id={} listen_addr={} transport=QUIC/libp2p",
+        local_peer_id, addr
+    );
     println!("Local peer id: {local_peer_id}");
 
     let listen_addr: Multiaddr = addr.parse()?;
@@ -325,6 +331,10 @@ pub async fn start_listener(addr: &str) -> Result<()> {
 
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
+                info!(
+                    "event=listener_ready peer_id={} listen_addr={} status=accepting_connections",
+                    local_peer_id, address
+                );
                 println!("Listening on {address}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -342,7 +352,17 @@ pub async fn start_listener(addr: &str) -> Result<()> {
                     metrics::record_handshake_success();
                     metrics::inc_active_peers();
                     clear_backoff_for(endpoint.get_remote_address());
-                    println!("Inbound connection established with {peer_id} via {endpoint:?}");
+
+                    // Log handshake completion with encryption details
+                    info!(
+                        "event=handshake_complete peer_id={} direction=inbound endpoint={:?} encryption=ML-KEM+X25519 status=ready",
+                        peer_id,
+                        endpoint
+                    );
+                    info!(
+                        "event=connection_established peer_id={} transport=QUIC/libp2p encryption_active=true",
+                        peer_id
+                    );
 
                     // Call connection callback if set (for VPN packet forwarding)
                     if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
@@ -455,6 +475,12 @@ pub async fn dial_peer(addr: String) -> Result<()> {
         .await
         .map_err(|e| anyhow::anyhow!("Failed to init swarm: {}", e))?;
     let local_peer_id = *swarm.local_peer_id();
+
+    // Log dialer startup with structured format
+    info!(
+        "event=dialer_starting peer_id={} target_addr={} transport=QUIC/libp2p",
+        local_peer_id, addr
+    );
     println!("Local peer id: {local_peer_id}");
 
     let mut dial_addr: Multiaddr = addr.parse()?;
@@ -510,7 +536,17 @@ pub async fn dial_peer(addr: String) -> Result<()> {
                 } else {
                     metrics::record_handshake_success();
                     clear_backoff_for(endpoint.get_remote_address());
-                    println!("Connected to {remote} via {endpoint:?}");
+
+                    // Log handshake completion with encryption details
+                    info!(
+                        "event=handshake_complete peer_id={} direction=outbound endpoint={:?} encryption=ML-KEM+X25519 status=ready",
+                        remote,
+                        endpoint
+                    );
+                    info!(
+                        "event=connection_established peer_id={} transport=QUIC/libp2p encryption_active=true",
+                        remote
+                    );
 
                     // Call connection callback if set (for VPN packet forwarding)
                     if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {

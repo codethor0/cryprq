@@ -18,6 +18,12 @@ SHIP=true RUN_POST=true ./scripts/one-shot.sh --ship --post
 
 
 
+# 4) Test CLI logging (verify observability)
+
+./scripts/test-cli-logs.sh
+
+
+
 Quick sanity before ship (30s)
 
 ./scripts/quick-smoke.sh || ./scripts/local-validate.sh
@@ -25,6 +31,10 @@ Quick sanity before ship (30s)
 ./scripts/observability-checks.sh
 
 ./scripts/sanity-checks.sh
+
+# Verify logging is observable
+RUST_LOG=info ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1 &
+# Check for: event=listener_starting, event=handshake_complete, event=key_rotation
 
 
 
@@ -71,4 +81,12 @@ tail -f ~/.cryprq/telemetry/events-$(date +%Y-%m-%d).jsonl
 
 
 You're set. Run the one-shot, watch CI publish, and go live. 🚀
+
+## Log Reference
+
+See `docs/OPERATOR_LOGS.md` for complete log event reference:
+- Listener startup: `event=listener_starting`, `event=listener_ready`
+- Handshake: `event=handshake_complete`, `event=connection_established`
+- Key rotation: `event=rotation_task_started`, `event=key_rotation`
+- Docker logs: See `docs/DOCKER_VPN_LOGS.md`
 

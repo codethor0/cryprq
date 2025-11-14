@@ -5,14 +5,15 @@
 
 [workspace]
 members = [
-        "crypto",
-        "p2p",
-        "node",
-        "cli",
+    "crypto",
+    "p2p",
+    "node",
+    "cli",
     "core",
+    # fuzz and benches kept but de-emphasized for web-only
     "fuzz",
     "benches",
-    ]
+]
 resolver = "2"
 
 [workspace.package]

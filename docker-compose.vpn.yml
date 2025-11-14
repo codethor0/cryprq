@@ -28,7 +28,7 @@ services:
       - SYS_MODULE
     # Environment variables
     environment:
-      - RUST_LOG=trace
+      - RUST_LOG=info
       - CRYPRQ_ROTATE_SECS=300
     # Volume for persistent state (optional)
     volumes:

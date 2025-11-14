@@ -1,3 +1,0 @@
-json_key_file("") # Path to your service account JSON key file
-package_name("com.cryprq.mobile")
-

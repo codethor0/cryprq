@@ -1,0 +1,56 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Docker Compose for CrypRQ Web-Only Stack
+# This brings up the web frontend + backend for local development
+
+services:
+  # Backend: Rust CrypRQ binary (spawned by web server)
+  # Note: The web server spawns this, so this service is optional for direct testing
+  cryprq-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-backend
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
+    ports:
+      - "9999:9999/udp"
+    environment:
+      - RUST_LOG=info
+      - CRYPRQ_ROTATE_SECS=300
+    networks:
+      - cryprq-web-network
+    restart: unless-stopped
+    profiles:
+      - backend-only  # Use this profile if you want backend without web server
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Web server: Node.js Express backend + Vite frontend
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: cryprq-web
+    ports:
+      - "8787:8787"  # Backend API
+      - "5173:5173"   # Vite dev server (or serve built assets)
+    environment:
+      - NODE_ENV=production
+      - RUST_LOG=info
+      - CRYPRQ_BIN=/usr/local/bin/cryprq
+    networks:
+      - cryprq-web-network
+    restart: unless-stopped
+    command: ["node", "web/server/server.mjs"]
+
+networks:
+  cryprq-web-network:
+    driver: bridge
+

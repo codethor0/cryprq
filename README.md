@@ -32,14 +32,16 @@
 ---
 
 ## Features
-- Hybrid ML-KEM (Kyber768-compatible) + X25519 handshake over libp2p QUIC.
-- Five-minute key rotation with secure zeroization of prior keys.
-- Userspace WireGuard prototype using ChaCha20-Poly1305 and BLAKE3 KDF.
-- Dedicated crates: `crypto` (`no_std` ML-KEM), `p2p` (libp2p swarm), `node` (tunnel), `cli`.
-- Supply-chain hardening: vendored dependencies, `cargo audit`, `cargo deny`, `CodeQL`.
-- Release pipeline emits SPDX SBOMs (Syft) and Grype vulnerability reports for container images.
-- Reproducible build scripts for Linux (musl), macOS, Nix, and Docker.
-- Platform hosts underway: Android `VpnService` module (`android/`), Apple Network Extension, Windows MSIX, F-Droid packaging. See `/docs` for plans and status.
+- **Web-First Architecture**: Modern React + TypeScript frontend with Node.js backend
+- **Hybrid ML-KEM (Kyber768-compatible) + X25519** handshake over libp2p QUIC
+- **Five-minute key rotation** with secure zeroization of prior keys
+- **Userspace WireGuard prototype** using ChaCha20-Poly1305 and BLAKE3 KDF
+- **Docker-ready**: Single-command deployment with `docker compose`
+- **Real-time observability**: Structured logs for handshake, rotation, and connection events
+- **Core Rust crates**: `crypto` (`no_std` ML-KEM), `p2p` (libp2p swarm), `node` (tunnel), `cli`
+- **Supply-chain hardening**: Vendored dependencies, `cargo audit`, `cargo deny`, `CodeQL`
+
+> **Note**: This repository is focused on the **web experience**. Other platforms (mobile, desktop, native CLI packaging) have been archived. See `pre-web-split-20251113` tag for previous multi-platform code.
 
 ## Recent Updates
 
@@ -71,28 +73,76 @@
 
 ## Quickstart
 
-### Local
+### Web UI (Recommended)
+
+**Option 1: Docker Compose (Easiest)**
 
 ```bash
 git clone https://github.com/codethor0/cryprq.git
 cd cryprq
-rustup toolchain install 1.83.0
-cargo fmt && cargo clippy --all-targets --all-features -- -D warnings
-cargo build --release -p cryprq
-cargo test --all
+
+# Build and start web stack
+docker compose -f docker-compose.web.yml up --build
+
+# Open http://localhost:5173 in your browser
 ```
 
-**Run: listener and dialer (QUIC/libp2p)**
+**Option 2: Local Development**
 
 ```bash
-## Listener
-./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+# Terminal 1: Build Rust backend
+cargo build --release -p cryprq
 
-## Dialer (in another shell or host)
-./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
+# Terminal 2: Start web server
+cd web
+npm install
+node server/server.mjs
+
+# Terminal 3: Start frontend dev server
+cd web
+npm run dev
+
+# Open http://localhost:5173 in your browser
 ```
 
-Expect listener to log its local peer ID; dialer logs a successful connection; libp2p ping events confirm liveness.
+### CLI (For Testing/Development)
+
+```bash
+# Build
+cargo build --release -p cryprq
+
+# Listener (Terminal 1)
+RUST_LOG=info ./target/release/cryprq --listen /ip4/0.0.0.0/udp/9999/quic-v1
+
+# Dialer (Terminal 2)
+RUST_LOG=info ./target/release/cryprq --peer /ip4/127.0.0.1/udp/9999/quic-v1
+```
+
+**Expected Logs:**
+
+Listener should show:
+```
+event=listener_starting peer_id=12D3KooW... listen_addr=/ip4/0.0.0.0/udp/9999/quic-v1 transport=QUIC/libp2p
+Local peer id: 12D3KooW...
+event=listener_ready peer_id=12D3KooW... listen_addr=/ip4/0.0.0.0/udp/9999/quic-v1 status=accepting_connections
+event=rotation_task_started interval_secs=300
+event=handshake_complete peer_id=... direction=inbound encryption=ML-KEM+X25519 status=ready
+event=connection_established peer_id=... transport=QUIC/libp2p encryption_active=true
+```
+
+Dialer should show:
+```
+event=dialer_starting peer_id=12D3KooW... target_addr=/ip4/127.0.0.1/udp/9999/quic-v1 transport=QUIC/libp2p
+event=handshake_complete peer_id=... direction=outbound encryption=ML-KEM+X25519 status=ready
+event=connection_established peer_id=... transport=QUIC/libp2p encryption_active=true
+```
+
+**Key Rotation:** Every 5 minutes (or `CRYPRQ_ROTATE_SECS`), you'll see:
+```
+event=key_rotation status=success epoch=<N> duration_ms=<MS> interval_secs=300
+```
+
+See `docs/OPERATOR_LOGS.md` for complete log reference.
 
 ### Docker
 
