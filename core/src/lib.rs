@@ -1,11 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! CrypRQ core FFI layer.
-//!
-//! Exposes a stable C ABI for host platforms (Android, iOS, macOS, Windows).
+// License: MIT (see LICENSE file for details)
 
 mod error;
 mod ffi;

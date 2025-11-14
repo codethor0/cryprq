@@ -1,11 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! CrypRQ v1.0 Record Layer
-//!
-//! Implements the record structure as specified in cryp-rq-protocol-v1.md Section 6.1
+// License: MIT (see LICENSE file for details)
 
 use chacha20poly1305::{
     aead::{Aead, KeyInit, Payload},

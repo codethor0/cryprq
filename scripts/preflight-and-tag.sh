@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
 # Preflight and Tag Script for v1.0.1-web-preview Release
 # Usage: ./scripts/preflight-and-tag.sh [--dry-run]
 

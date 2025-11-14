@@ -1,16 +1,9 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
+// License: MIT (see LICENSE file for details)
 
-//! Post-Quantum Cryptography Algorithm Suite
-//!
-//! This module provides a unified interface for selecting and using
-//! different post-quantum algorithms. Currently supports ML-KEM (Kyber768),
-//! with plans for Dilithium (signatures) and SPHINCS+ (hash-based signatures).
-
-// Note: Kyber types are imported via cryprq-crypto::hybrid module
-// These imports are kept for potential future use but currently unused
 #[allow(unused_imports)]
 use pqcrypto_mlkem::mlkem768::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,

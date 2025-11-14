@@ -1,10 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-// ML-KEM (Kyber768) Known-Answer Tests
-// Based on FIPS-203 test vectors and independent KAT repositories
+// License: MIT (see LICENSE file for details)
 
 #[cfg(test)]
 #[allow(clippy::module_inception)]

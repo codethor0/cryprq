@@ -1,14 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! File transfer over libp2p request-response protocol
-//!
-//! Simple chunked file transfer protocol:
-//! - Metadata packet: [4 bytes: type=0] [4 bytes: filename_len] [filename] [8 bytes: file_size] [32 bytes: sha256_hash]
-//! - Data packet: [4 bytes: type=1] [4 bytes: chunk_id] [4 bytes: data_len] [data]
-//! - End packet: [4 bytes: type=2]
+// License: MIT (see LICENSE file for details)
 
 use anyhow::{Context, Result};
 use futures::{AsyncRead, AsyncWrite};

@@ -1,10 +1,8 @@
-# © 2025 Thor Thor
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
 # Contact: codethor@gmail.com
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
-# SPDX-License-Identifier: MIT
-
-# Docker Compose for CrypRQ Web-Only Stack
-# This brings up the web frontend + backend for local development
+# License: MIT (see LICENSE file for details)
 
 services:
   # Backend: Rust CrypRQ binary (spawned by web server)

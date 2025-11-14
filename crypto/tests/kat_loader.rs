@@ -1,10 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-// KAT (Known Answer Test) vector loader for FIPS-203 ML-KEM test vectors
-// Loads vectors from files and provides utilities for KAT verification
+// License: MIT (see LICENSE file for details)
 
 #[cfg(test)]
 extern crate alloc;

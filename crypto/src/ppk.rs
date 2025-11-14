@@ -1,13 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Post-Quantum Pre-Shared Keys (PPKs)
-//!
-//! This module implements PPK derivation using ML-KEM shared secrets.
-//! PPKs provide enhanced security for peer authentication and can be
-//! rotated independently of session keys.
+// License: MIT (see LICENSE file for details)
 
 use alloc::vec::Vec;
 use blake3::Hasher;

@@ -1,5 +1,8 @@
-// © 2025 Thor Thor
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// License: MIT (see LICENSE file for details)
 
 use std::ffi::NulError;
 use std::str::Utf8Error;

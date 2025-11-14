@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
 # Helper script to update WEB_VALIDATION_RUN.md after web smoke test
 # Usage: ./scripts/update-web-validation.sh WEB-1 PASS "2025-11-14" "testfile.bin" "abc123..." "matches CLI minimal sanity"
 

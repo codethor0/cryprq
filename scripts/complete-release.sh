@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
 # Complete Release Script for v1.0.1-web-preview
 # This script automates Steps 2-4 after web smoke test is complete
 # Usage: ./scripts/complete-release.sh

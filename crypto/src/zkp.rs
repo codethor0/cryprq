@@ -1,15 +1,8 @@
-// © 2025 Thor Thor
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
 // Contact: codethor@gmail.com
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
-// SPDX-License-Identifier: MIT
-
-//! Zero-Knowledge Proofs for Peer Authentication
-//!
-//! This module provides zero-knowledge proof implementations for
-//! authenticating peers without revealing sensitive information.
-//!
-//! Note: This is a placeholder framework. Full ZKP implementation
-//! requires specialized libraries (e.g., arkworks, bellman).
+// License: MIT (see LICENSE file for details)
 
 use blake3::Hasher;
 
