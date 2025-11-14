@@ -4,7 +4,7 @@
 **Version:** v1.0.1-web-preview (Web-only, Test Mode)  
 **Reference implementation:** Git tag `v1.0.1-web-preview`  
 **Validated demo build:** `main` @ `db0903f`  
-**Date:** 2025-01-14
+**Date:** 2025-11-14
 
 ---
 
