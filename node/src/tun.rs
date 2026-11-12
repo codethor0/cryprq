@@ -243,7 +243,7 @@ impl TunInterface {
 
     #[cfg(target_os = "linux")]
     fn create_device(config: &TunConfig, name: &str) -> Result<tun::platform::linux::Device> {
-        log::info!("Creating TUN interface {} for VPN mode", name);
+        log::info!("Creating TUN interface {name} for VPN mode");
 
         let mut config_builder = tun::Configuration::default();
         let addr: std::net::Ipv4Addr = config
@@ -265,7 +265,7 @@ impl TunInterface {
         let device = tun::platform::linux::create(&config_builder)
             .context("Failed to create TUN device (requires root/admin privileges)")?;
 
-        log::info!("TUN interface {} created successfully", name);
+        log::info!("TUN interface {name} created successfully");
         Ok(device)
     }
 
@@ -363,7 +363,7 @@ impl TunInterface {
             ));
         }
 
-        log::info!("Configured TUN interface {} with IP {}", name, addr);
+        log::info!("Configured TUN interface {name} with IP {addr}");
         Ok(())
     }
 
