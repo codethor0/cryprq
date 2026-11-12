@@ -54,6 +54,8 @@ IMAGE_ID=""
 CONTAINERS=()
 PULLED=()
 CTX=""
+EVIDENCE_HELPER="$ROOT/scripts/tun_test_evidence.py"
+DOCKER_BRIDGE_MAC=""
 
 say() { printf '%s\n' "$*"; }
 pass() {
@@ -112,12 +114,17 @@ host_state() {
     elif command -v ip >/dev/null 2>&1; then
         # Linux. Lifetimes and carrier state change on their own.
         ip -4 route show | sed -E 's/ expires [0-9]+sec//; s/ linkdown//' | sort >"$E/host-routes4.$tag"
-        ip -6 route show | sed -E 's/ expires [0-9]+sec//; s/ linkdown//' | sort >"$E/host-routes6.$tag"
+        ip -6 route show | sed -E 's/ expires [0-9]+sec//; s/ linkdown//' | sort >"$E/host-routes6.raw.$tag"
+        python3 "$EVIDENCE_HELPER" normalize-host routes6 --bridge-mac "$DOCKER_BRIDGE_MAC" \
+            <"$E/host-routes6.raw.$tag" >"$E/host-routes6.$tag" || return 1
         cat /etc/resolv.conf >"$E/host-dns.$tag" 2>/dev/null || : >"$E/host-dns.$tag"
         # No VPN service list on Linux; tunnel devices show up as interfaces.
         ip -o link show | awk -F': ' '$2 ~ /^(tun|tap|wg|ppp|utun)/ {print $2}' | sort >"$E/host-vpn.$tag"
-        ip -o addr show | awk '{print $2, $3, $4}' | sort >"$E/host-addresses.$tag"
+        ip -o addr show | awk '{print $2, $3, $4}' | sort >"$E/host-addresses.raw.$tag"
+        python3 "$EVIDENCE_HELPER" normalize-host addresses --bridge-mac "$DOCKER_BRIDGE_MAC" \
+            <"$E/host-addresses.raw.$tag" >"$E/host-addresses.$tag" || return 1
         ip -o link show | awk -F': ' '{print $2}' | sed 's/@.*//' | sort >"$E/host-interfaces.$tag"
+        ip -d -j link show | python3 "$EVIDENCE_HELPER" link-inventory >"$E/host-links.$tag.json" || return 1
     else
         return 1
     fi
@@ -164,7 +171,18 @@ cleanup() {
     check "nothing labelled $LABEL is left in Docker" [ -z "$left" ]
 
     if [ -f "$E/host-routes4.before" ]; then
-        host_state after
+        # Retry transient interface changes, without accepting any new name.
+        # Persistent differences still fail and retain link/driver diagnostics.
+        local attempt
+        for attempt in 0 1 2 3 4 5; do
+            if ! host_state after; then
+                fail "the final host state can be recorded"
+                break
+            fi
+            cmp -s "$E/host-interfaces.before" "$E/host-interfaces.after" && break
+            cp "$E/host-interfaces.after" "$E/host-interfaces.retry-$attempt"
+            [ "$attempt" = 5 ] || sleep 1
+        done
         check "host IPv4 routes are unchanged" unchanged host-routes4
         check "host IPv6 routes are unchanged" unchanged host-routes6
         check "host DNS configuration is unchanged" unchanged host-dns
@@ -199,6 +217,7 @@ cleanup() {
 mkdir -p "$E"
 say "== preconditions (run $ID)"
 command -v timeout >/dev/null || { say "ABORT: timeout(1) is required"; exit 2; }
+command -v python3 >/dev/null || { say "ABORT: python3 is required"; exit 2; }
 timeout 30 docker info >/dev/null 2>&1 || { say "ABORT: Docker is not available"; exit 2; }
 [ "$(docker info --format '{{.OSType}}')" = linux ] || { say "ABORT: Docker does not run Linux containers"; exit 2; }
 docker info --format '{{.OperatingSystem}} {{.ServerVersion}} {{.Architecture}}' >"$E/docker-info.txt"
@@ -221,6 +240,17 @@ if docker ps -a --format '{{.Names}}' | grep -q "^$P" || docker network ls --for
 fi
 
 trap cleanup EXIT
+if [ "$(uname -s)" = Linux ]; then
+    # Wait for queued runner device events; do not alter any host device.
+    if command -v udevadm >/dev/null 2>&1; then
+        timeout 12 udevadm settle --timeout=10 || abort "runner device events did not settle"
+    fi
+    if [ "$(docker network inspect bridge --format '{{.Driver}} {{index .Options "com.docker.network.bridge.name"}}')" = "bridge docker0" ]; then
+        DOCKER_BRIDGE_MAC="$(ip -d -j link show dev docker0 | python3 "$EVIDENCE_HELPER" bridge-mac)" ||
+            abort "the default Docker bridge cannot be identified"
+        printf '%s\n' "$DOCKER_BRIDGE_MAC" >"$E/docker-bridge-mac.txt"
+    fi
+fi
 if ! host_state before || [ ! -s "$E/host-routes4.before" ] || [ ! -s "$E/host-interfaces.before" ]; then
     rm -f "$E"/host-*.before
     abort "the host's network state cannot be recorded, so it could not be compared afterwards"
@@ -407,10 +437,18 @@ say "== what is on the wire"
 wire_udp="$(dx 30 "$BOB" "tcpdump -nr /wire.pcap 'udp port $PORT' 2>/dev/null | wc -l" | tr -d ' ')"
 wire_icmp="$(dx 30 "$BOB" "tcpdump -nr /wire.pcap 'icmp' 2>/dev/null | wc -l" | tr -d ' ')"
 wire_other="$(dx 30 "$BOB" "tcpdump -nr /wire.pcap 'not udp port $PORT and not arp' 2>/dev/null | wc -l" | tr -d ' ')"
+# Keep the raw capture. Exclude only checksum-validated, fixed-format router
+# solicitations: no IPv6 echo, application data, fragments or arbitrary ND.
+timeout 30 docker cp "$BOB:/wire.pcap" "$E/wire.pcap" >/dev/null 2>&1 || abort "wire capture cannot be read"
+wire_nd="$(python3 "$EVIDENCE_HELPER" count-router-solicitations "$E/wire.pcap")" ||
+    abort "wire capture is invalid"
+case "$wire_other:$wire_nd" in *[!0-9:]* | :* | *:) abort "wire packet counts are invalid" ;; esac
+[ "$wire_other" -ge "$wire_nd" ] || abort "wire packet counters disagree"
+wire_other=$((wire_other - wire_nd))
 tun_icmp="$(dx 30 "$BOB" "tcpdump -nr /tun.pcap 'icmp' 2>/dev/null | wc -l" | tr -d ' ')"
 check "the wire carries the link's UDP datagrams ($wire_udp captured)" [ "${wire_udp:-0}" -gt 20 ]
 check "no ICMP packet is on the wire ($wire_icmp)" [ "${wire_icmp:-1}" = 0 ]
-check "nothing but the link's datagrams and ARP is on the wire ($wire_other other packets)" [ "${wire_other:-1}" = 0 ]
+check "only link datagrams, ARP and validated router solicitations are on the wire ($wire_other other, $wire_nd solicitations)" [ "${wire_other:-1}" = 0 ]
 check "the ping payload does not occur in the wire capture" [ "$(hex_hits "$BOB" /wire.pcap)" = 0 ]
 wire_tunnel="$(dx 30 "$BOB" "tcpdump -nr /wire.pcap 'net $TUN_SUBNET' 2>/dev/null | wc -l" | tr -d ' ')"
 check "no packet with a tunnel address is on the wire ($wire_tunnel)" [ "${wire_tunnel:-1}" = 0 ]

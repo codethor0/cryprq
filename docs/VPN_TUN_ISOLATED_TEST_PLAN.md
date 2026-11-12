@@ -62,6 +62,21 @@ Safeguards the script enforces, and checks rather than assumes:
   addresses, and Docker's containers, networks, volumes and images, are
   recorded before and compared after. Any difference fails the run.
 
+On a Linux host, raw IPv6 route and address snapshots are also retained.
+The comparison omits only the default Docker bridge's kernel link-local
+prefix route and the EUI-64 address derived from its verified MAC. Global
+IPv6 addresses, other interfaces, custom link-local addresses, IPv4 routes,
+DNS and VPN state remain part of the comparison. Queued device events settle
+before the baseline; a final interface mismatch is retried for five seconds.
+An unexplained persistent interface change still fails, with link and device
+driver details retained in the evidence. No interface name is exempted.
+
+The wire check recognizes only fixed-format IPv6 router solicitations with
+hop limit 255, a matching EUI-64 source/SLLA option, and a valid checksum.
+Other IPv6 traffic, including echo packets and arbitrary neighbor-discovery
+messages, remains unexpected. Missing or truncated captures fail closed.
+The plaintext payload and tunnel-address checks still examine the full capture.
+
 Addresses: the link between the containers is `172.31.251.0/29`, the tunnel
 is `172.31.250.0/30` (`.1` listener, `.2` dialer). Both exist only inside the
 VM. The containers run as root, which is not root on the host; the image
