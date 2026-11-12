@@ -58,7 +58,7 @@ Defines the record format, constants (e.g., `MSG_TYPE_DATA`), header parsing/ser
 ### cryp-rq-crypto (crypto crate)
 
 - Implements the key derivation functions (KDFs), use of HKDF, and integration with AEAD (e.g., `chacha20poly1305`).
-- Hosts post-quantum ML-KEM (Kyber-768-class) primitives via `pqcrypto-mlkem`.
+- Hosts post-quantum ML-KEM (Kyber-768-class) primitives via the RustCrypto `ml-kem` crate.
 - Provides property and KAT tests for handshake-related key derivations.
 
 ### node crate
@@ -137,7 +137,7 @@ HKDF-Extract and HKDF-Expand with context-specific labels:
 - `LABEL_RI_KEY`, `LABEL_RI_IV`, etc. for derived traffic keys and IVs.
 - Dedicated labels for epoch keys and handshake keys.
 
-**Post-quantum KEM: `pqcrypto-mlkem` (ML-KEM-768-class)**
+**Post-quantum KEM: RustCrypto `ml-kem` (ML-KEM-768)**
 
 - Used in tests to validate round-trip encapsulation/decapsulation and deterministic KAT behavior.
 - Forms the PQ half of a hybrid handshake in future work.

@@ -30,7 +30,7 @@ Snapshot: **November 2026**.
 | Authenticated VPN link (`--vpn`) | Implemented as a **point-to-point link** | Tested between two processes and between Linux TUN devices in containers. Installs no routes, no DNS settings and no leak protection. macOS TUN devices are **untested** |
 | Web UI and Docker lab stack | **Test-mode preview** | Runs the legacy libp2p path without the CrypRQ handshake and without peer authentication |
 | Legacy libp2p/QUIC listener and dialer | Prototype transport | A connection is **not** an authenticated hybrid tunnel and carries no tunnel traffic |
-| Dependency and CI gates | In place, **not green** | `cargo deny` and `cargo audit` report open advisories that are left visible; see [Security Notes](docs/SECURITY_NOTES.md). Routine Dependabot version updates are paused, see [deferred updates](docs/DEFERRED_DEPENDENCY_UPDATES.md) |
+| Dependency and CI gates | In place | `cargo deny`, `cargo audit` and `npm audit` report no findings on the locked dependencies and no advisory is ignored; see [Security Notes](docs/SECURITY_NOTES.md). Routine Dependabot version updates are paused, see [deferred updates](docs/DEFERRED_DEPENDENCY_UPDATES.md) |
 
 **Verification boundary:** the results quoted in this repository were obtained on developer machines (macOS and Linux containers) with the scripts listed under "Validation and CI". Check the workflow runs for what hosted CI has actually executed. Do not use these results as a production assurance statement.
 
@@ -109,8 +109,8 @@ The exact wire layout, key schedule, identity-file format, test-mode rules, and 
 | Record protection | The protocol work tests nonce exhaustion, direction-specific keys, replay rejection and epoch handling. Host-level routing and leak behavior require separate tests. |
 | Quantum-security scope | **Ed25519 authentication is classical**, not post-quantum. Hybrid confidentiality does not make the entire system post-quantum secure against every threat. |
 | Test mode | The historical web preview and explicit fixed-key CLI test paths are for isolated labs only. They do not establish peer authentication. |
-| Local discovery | None. mDNS is not compiled: its events were never used and its DNS parser has open advisories. Peers are given explicit addresses. |
-| Supply chain | `cargo deny` and `cargo audit` report advisories in existing dependencies (unmaintained `pqcrypto-*`; `hickory-proto` in the lockfile, not compiled). They are left visible, not suppressed; see [Security Notes](docs/SECURITY_NOTES.md). |
+| Local discovery | None. mDNS is not compiled and peers are given explicit addresses. |
+| Supply chain | ML-KEM-768 comes from the RustCrypto `ml-kem` crate and is checked against NIST ACVP vectors. `cargo deny`, `cargo audit` and `npm audit` run in CI without exceptions. A clean scan covers known advisories only; the dependencies have not been audited by this project. |
 
 Do not treat this project as independently audited or production-approved. For reporting a potential vulnerability, contact **codethor@gmail.com**. Avoid submitting real private keys, credentials or sensitive packet captures in issues or logs.
 
