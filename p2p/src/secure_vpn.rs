@@ -46,12 +46,12 @@
 //! * If the handshake fails at any message, the existing session stays as it
 //!   was on the side that rejected it.
 
+use crate::libp2p::futures::StreamExt;
+use crate::libp2p::request_response::{self, OutboundRequestId, ProtocolSupport};
+use crate::libp2p::swarm::{dial_opts::DialOpts, ConnectionId, DialError, SwarmEvent};
+use crate::libp2p::{identity, Multiaddr, PeerId, StreamProtocol, Swarm};
 use anyhow::{anyhow, bail, Context, Result};
 use futures::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-use libp2p::futures::StreamExt;
-use libp2p::request_response::{self, OutboundRequestId, ProtocolSupport};
-use libp2p::swarm::{dial_opts::DialOpts, ConnectionId, DialError, SwarmEvent};
-use libp2p::{identity, noise, tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm, SwarmBuilder};
 use node::auth_handshake::{self, HandshakeError, Initiator, Responder, MSG_FINISH, MSG_INIT};
 use node::{
     NodeIdentity, PeerPublicKey, Session, TrustedPeers, TunnelConfig, TunnelError, TunnelRole,
@@ -640,30 +640,19 @@ pub struct PacketIo {
 }
 
 fn build_swarm(identity: &NodeIdentity) -> Result<Swarm<VpnBehaviour>> {
-    let swarm = SwarmBuilder::with_existing_identity(transport_keypair(identity)?)
-        .with_tokio()
-        .with_tcp(
-            tcp::Config::default(),
-            noise::Config::new,
-            yamux::Config::default,
-        )
-        .map_err(|e| anyhow!("failed to set up the TCP transport: {e}"))?
-        .with_quic()
-        .with_behaviour(|_| {
-            request_response::Behaviour::with_codec(
-                VpnCodec,
-                [(VPN_PROTOCOL, ProtocolSupport::Full)],
-                request_response::Config::default()
-                    .with_request_timeout(Duration::from_secs(10))
-                    .with_max_concurrent_streams(256),
-            )
-        })
-        .map_err(|e| anyhow!("failed to set up the VPN protocol: {e}"))?
-        // The link stays up while it is idle; a dead peer is noticed by the
-        // transport's own keep-alive.
-        .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(u32::MAX as u64)))
-        .build();
-    Ok(swarm)
+    let behaviour = request_response::Behaviour::with_codec(
+        VpnCodec,
+        [(VPN_PROTOCOL, ProtocolSupport::Full)],
+        request_response::Config::default()
+            .with_request_timeout(Duration::from_secs(10))
+            .with_max_concurrent_streams(256),
+    );
+    // The link stays up while it is idle; a dead peer is noticed by the
+    // transport's own keep-alive.
+    crate::libp2p::build_swarm(transport_keypair(identity)?, behaviour, |c| {
+        c.with_idle_connection_timeout(Duration::from_secs(u32::MAX as u64))
+    })
+    .map_err(|e| anyhow!("failed to set up the transport: {e}"))
 }
 
 struct DialTarget {

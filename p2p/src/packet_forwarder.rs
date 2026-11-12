@@ -4,9 +4,9 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // License: MIT (see LICENSE file for details)
 
+use crate::libp2p::{request_response::Codec, swarm::Swarm, PeerId, StreamProtocol};
 use anyhow::Result;
 use futures::{AsyncRead, AsyncWrite};
-use libp2p::{request_response::Codec, swarm::Swarm, PeerId, StreamProtocol};
 use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;

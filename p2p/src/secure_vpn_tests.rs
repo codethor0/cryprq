@@ -1681,7 +1681,7 @@ impl Relay {
         let port = listener
             .iter()
             .find_map(|part| match part {
-                libp2p::multiaddr::Protocol::Udp(port) => Some(port),
+                crate::libp2p::multiaddr::Protocol::Udp(port) => Some(port),
                 _ => None,
             })
             .expect("a UDP listener address");

@@ -4,16 +4,16 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // License: MIT (see LICENSE file for details)
 
-use anyhow::{Context, Result};
-use libp2p::{
+use crate::libp2p::{
     connection_limits::{Behaviour as ConnectionLimitBehaviour, ConnectionLimits},
     identity,
     multiaddr::Protocol,
-    noise, ping,
+    ping,
     request_response::{self, ProtocolSupport},
     swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
-    tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
+    Multiaddr, PeerId, Swarm,
 };
+use anyhow::{Context, Result};
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use std::{
@@ -35,6 +35,7 @@ use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, Pos
 mod metrics;
 pub use metrics::start_metrics_server;
 
+pub mod libp2p;
 pub mod packet_forwarder;
 
 // Authenticated VPN link: CrypRQ handshake and records over libp2p
@@ -214,7 +215,10 @@ static BACKOFF: Lazy<Mutex<HashMap<String, BackoffState>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 #[derive(NetworkBehaviour)]
-#[behaviour(to_swarm = "MyBehaviourEvent")]
+#[behaviour(
+    to_swarm = "MyBehaviourEvent",
+    prelude = "libp2p_swarm::derive_prelude"
+)]
 pub struct MyBehaviour {
     ping: ping::Behaviour,
     limits: ConnectionLimitBehaviour,
@@ -388,40 +392,29 @@ pub async fn get_ppk_for_peer(peer_id_bytes: &[u8; 32]) -> Option<PostQuantumPSK
 pub async fn init_swarm(
 ) -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error + Send + Sync + 'static>> {
     let local_key = identity::Keypair::generate_ed25519();
-    let swarm = SwarmBuilder::with_existing_identity(local_key)
-        .with_tokio()
-        .with_tcp(
-            tcp::Config::default(),
-            noise::Config::new,
-            yamux::Config::default,
-        )?
-        .with_quic()
-        .with_behaviour(|_key| {
-            // mDNS discovery is not compiled in. Its events were never used,
-            // and libp2p-mdns 0.48 depends on a hickory-proto release with open
-            // advisories that libp2p 0.56 cannot move past. A node that was
-            // started with the former opt-in is told so instead of silently
-            // running without discovery.
-            if std::env::var("CRYPRQ_ENABLE_MDNS").as_deref() == Ok("1") {
-                warn!("event=mdns_unavailable reason=\"mDNS discovery is not part of this build; CRYPRQ_ENABLE_MDNS is ignored\"");
-            }
+    // mDNS discovery is not compiled in. Its events were never used,
+    // and libp2p-mdns 0.48 depends on a hickory-proto release with open
+    // advisories that libp2p 0.56 cannot move past. A node that was
+    // started with the former opt-in is told so instead of silently
+    // running without discovery.
+    if std::env::var("CRYPRQ_ENABLE_MDNS").as_deref() == Ok("1") {
+        warn!("event=mdns_unavailable reason=\"mDNS discovery is not part of this build; CRYPRQ_ENABLE_MDNS is ignored\"");
+    }
 
-            // Create request-response behaviour for packet forwarding and file transfer
-            // Use a single protocol and differentiate by packet content
-            let packet_protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
-            let request_response_behaviour = request_response::Behaviour::new(
-                [(packet_protocol_str.clone(), ProtocolSupport::Full)],
-                request_response::Config::default(),
-            );
+    // Create request-response behaviour for packet forwarding and file transfer
+    // Use a single protocol and differentiate by packet content
+    let packet_protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
+    let request_response_behaviour = request_response::Behaviour::new(
+        [(packet_protocol_str.clone(), ProtocolSupport::Full)],
+        request_response::Config::default(),
+    );
 
-            Ok(MyBehaviour {
-                ping: ping::Behaviour::new(ping::Config::new()),
-                limits: connection_limits_behaviour(),
-                request_response: request_response_behaviour,
-            })
-        })?
-        .with_swarm_config(|c| c)
-        .build();
+    let behaviour = MyBehaviour {
+        ping: ping::Behaviour::new(ping::Config::new()),
+        limits: connection_limits_behaviour(),
+        request_response: request_response_behaviour,
+    };
+    let swarm = libp2p::build_swarm(local_key, behaviour, |c| c)?;
     Ok(swarm)
 }
 
@@ -444,7 +437,7 @@ pub async fn start_listener(addr: &str) -> Result<()> {
     // Create Arc<Mutex<Swarm>> for callback access
     let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
 
-    use libp2p::futures::StreamExt;
+    use crate::libp2p::futures::StreamExt;
     let swarm_for_loop = swarm_arc.clone();
 
     loop {
@@ -668,7 +661,7 @@ pub async fn dial_peer(addr: String) -> Result<()> {
     // Create Arc<Mutex<Swarm>> for callback access
     let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
 
-    use libp2p::futures::StreamExt;
+    use crate::libp2p::futures::StreamExt;
     let swarm_for_loop = swarm_arc.clone();
 
     loop {

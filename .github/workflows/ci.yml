@@ -155,7 +155,7 @@ jobs:
     - name: Cargo audit
       if: ${{ !cancelled() }}
       # Keep the existing cargo-deny exception for the unmaintained rustls-pemfile crate.
-      run: cargo audit --ignore RUSTSEC-2025-0134
+      run: cargo audit
 
   # Governance checks job
   governance:

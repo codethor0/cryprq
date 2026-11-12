@@ -20,9 +20,6 @@ allow = [
 ]
 
 [advisories]
-# Allow unmaintained rustls-pemfile (RUSTSEC-2025-0134)
-# This is a transitive dependency via reqwest, and the advisory indicates
-# no safe upgrade path is available. The crate is archived but still functional.
-ignore = [
-    "RUSTSEC-2025-0134",  # rustls-pemfile unmaintained
-]
+# No advisory is ignored. Add an entry here only with a written reason and an
+# owner decision; an entry that no longer matches anything must be removed.
+ignore = []

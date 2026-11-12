@@ -12,17 +12,19 @@ license = "MIT"
 [dependencies]
 anyhow = "1"
 tokio = { version = "1", features = ["full"] }
-libp2p = { version = "0.56", features = [
-    "tcp",
-    "noise",
-    "yamux",
-    "quic",
-    "tokio",
-    "macros",
-    "ping",
-    "kad",
-    "request-response"
-] }
+# Only the libp2p components that are used. The umbrella `libp2p` crate is not
+# a dependency: it would put its optional mDNS and DNS packages, and with them
+# hickory-proto, into Cargo.lock even though they are never built.
+libp2p-core = "0.43"
+libp2p-identity = { version = "0.2", features = ["ed25519", "peerid", "rand"] }
+libp2p-swarm = { version = "0.47", features = ["tokio", "macros"] }
+libp2p-quic = { version = "0.13", features = ["tokio"] }
+libp2p-tcp = { version = "0.44", features = ["tokio"] }
+libp2p-noise = "0.46"
+libp2p-yamux = "0.47"
+libp2p-ping = "0.47"
+libp2p-request-response = "0.29"
+libp2p-connection-limits = "0.6"
 cryprq-crypto = { path = "../crypto" }
 zeroize = "1.8"
 rand = "0.8"

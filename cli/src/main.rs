@@ -8,11 +8,11 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use futures::future::Either;
 use futures::StreamExt;
-use libp2p::{Multiaddr, PeerId};
 use node::{
     FileMetadata, NodeIdentity, PeerPublicKey, TrustedPeers, TunConfig, TunInterface, Tunnel,
     TunnelConfig, TunnelRole,
 };
+use p2p::libp2p::{Multiaddr, PeerId};
 use p2p::secure_vpn::{run_secure_vpn, PacketIo, VpnMode, VpnSettings};
 use p2p::{
     dial_peer, register_packet_recv_tx, send_file_to_peer, set_file_transfer_callback,
@@ -545,7 +545,7 @@ async fn run_authenticated_vpn(
             // The transport peer id is derived from the pinned key.
             if matches!(
                 addr.iter().last(),
-                Some(libp2p::multiaddr::Protocol::P2p(_))
+                Some(p2p::libp2p::multiaddr::Protocol::P2p(_))
             ) {
                 addr.pop();
             }
@@ -781,10 +781,10 @@ async fn handle_send_file(
 // Old implementation - kept for reference but not used
 #[allow(dead_code)]
 async fn handle_send_file_old(peer_addr: String, file_path: PathBuf) -> Result<()> {
-    use libp2p::multiaddr::Protocol;
-    use libp2p::request_response;
-    use libp2p::swarm::{dial_opts::DialOpts, SwarmEvent};
     use p2p::init_swarm;
+    use p2p::libp2p::multiaddr::Protocol;
+    use p2p::libp2p::request_response;
+    use p2p::libp2p::swarm::{dial_opts::DialOpts, SwarmEvent};
     use p2p::MyBehaviourEvent;
 
     log::info!("Sending file: {file_path:?} to peer: {peer_addr}");

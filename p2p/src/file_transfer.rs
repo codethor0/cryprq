@@ -4,9 +4,9 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // License: MIT (see LICENSE file for details)
 
+use crate::libp2p::{request_response::Codec, StreamProtocol};
 use anyhow::{Context, Result};
 use futures::{AsyncRead, AsyncWrite};
-use libp2p::{request_response::Codec, StreamProtocol};
 use sha2::{Digest, Sha256};
 use std::io;
 use std::path::PathBuf;

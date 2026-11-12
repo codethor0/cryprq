@@ -7,7 +7,7 @@
 #[cfg(test)]
 mod p2p_tests {
     use crate::{init_swarm, get_current_pk, dial_peer, P2PError};
-    use libp2p::PeerId;
+    use crate::libp2p::PeerId;
 
     #[tokio::test]
     async fn test_swarm_initialization() {
