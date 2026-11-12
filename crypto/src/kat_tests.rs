@@ -7,8 +7,7 @@
 #[cfg(test)]
 #[allow(clippy::module_inception)]
 mod kat_tests {
-    use pqcrypto_mlkem::mlkem768::*;
-    use pqcrypto_traits::kem::{PublicKey, SecretKey};
+    use crate::mlkem::*;
 
     // Test vectors from FIPS-203 Appendix A (simplified - full vectors would be ~100KB)
     // In production, these should be loaded from external KAT files
@@ -39,14 +38,12 @@ mod kat_tests {
     fn test_kyber768_encaps_decaps_kat() {
         // Known-Answer Test: Verify encapsulation/decapsulation correctness
         // API: encapsulate returns (SharedSecret, Ciphertext) - verified from source
-        use pqcrypto_traits::kem::SharedSecret;
         let (pk, sk) = keypair();
 
         // Encapsulate - returns (ss, ct) - CORRECT ORDER
         let (ss1, ct) = encapsulate(&pk);
 
         // Ciphertext should be 1088 bytes for Kyber768
-        use pqcrypto_traits::kem::Ciphertext;
         assert_eq!(ct.as_bytes().len(), 1088, "Ciphertext must be 1088 bytes");
 
         // Shared secret should be 32 bytes
@@ -89,7 +86,6 @@ mod kat_tests {
     #[test]
     fn test_kyber768_wrong_key_rejection() {
         // Security test: Wrong secret key should not produce correct shared secret
-        use pqcrypto_traits::kem::SharedSecret;
         let (pk1, _sk1) = keypair();
         let (_pk2, sk2) = keypair();
 
@@ -107,7 +103,6 @@ mod kat_tests {
     #[test]
     fn test_kyber768_roundtrip_correctness() {
         // Security test: Verify roundtrip correctness
-        use pqcrypto_traits::kem::SharedSecret;
         let (pk, sk) = keypair();
         let (ss_encaps, ct) = encapsulate(&pk);
         let ss_decaps = decapsulate(&ct, &sk);

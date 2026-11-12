@@ -4,9 +4,8 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // License: MIT (see LICENSE file for details)
 
+use cryprq_crypto::mlkem::{decapsulate, encapsulate, Ciphertext, PublicKey as KyberPublicKey};
 use cryprq_crypto::HybridHandshake;
-use pqcrypto_mlkem::mlkem768::{decapsulate, encapsulate, PublicKey as KyberPublicKey};
-use pqcrypto_traits::kem::{Ciphertext, PublicKey, SharedSecret};
 use x25519_dalek::PublicKey as X25519PublicKey;
 use zeroize::Zeroize;
 
@@ -184,7 +183,7 @@ impl HandshakeState {
             .try_into()
             .map_err(|_| "Failed to extract Kyber public key")?;
         self.peer_kyber_pk = Some(
-            <KyberPublicKey as PublicKey>::from_bytes(&kyber_pk_bytes)
+            KyberPublicKey::from_bytes(&kyber_pk_bytes)
                 .map_err(|e| format!("Failed to parse Kyber public key: {e:?}"))?,
         );
 
@@ -365,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_mlkem_round_trip() {
-        use pqcrypto_mlkem::mlkem768::{decapsulate, encapsulate, keypair};
+        use cryprq_crypto::mlkem::{decapsulate, encapsulate, keypair};
 
         // Generate ML-KEM keypair
         let (pk, sk) = keypair();

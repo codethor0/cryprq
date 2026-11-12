@@ -251,7 +251,7 @@ pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
     KEYS.read()
         .await
         .as_ref()
-        .map(|(pk, _)| *pk)
+        .map(|(pk, _)| pk.clone())
         .ok_or(P2PError::NotInitialized)
 }
 

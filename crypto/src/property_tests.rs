@@ -9,7 +9,6 @@
 mod property_tests {
     use crate::hybrid::HybridHandshake;
     use alloc::vec::Vec;
-    use pqcrypto_traits::kem::{PublicKey, SecretKey};
     use proptest::prelude::*;
 
     proptest! {

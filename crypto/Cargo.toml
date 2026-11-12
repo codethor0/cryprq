@@ -16,9 +16,8 @@ hkdf = "0.12"
 sha2 = "0.10"
 zeroize = { version = "1.7", features = ["zeroize_derive"] }
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }
-pqcrypto-mlkem = "0.1.1"
-pqcrypto-traits = "0.3"
 proptest = { version = "1.5", optional = true }
+ml-kem = { version = "0.3.4", default-features = false, features = ["hazmat", "zeroize"] }
 
 [dev-dependencies]
 proptest = "1.5"

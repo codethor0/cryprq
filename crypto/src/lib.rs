@@ -12,6 +12,7 @@ extern crate alloc;
 
 mod hybrid;
 mod kdf;
+pub mod mlkem;
 mod ppk;
 mod pqc_suite;
 mod zkp;
@@ -35,6 +36,6 @@ pub use crate::pqc_suite::{PQCKeyExchange, PQCSignature, PQCSuite};
 pub use crate::zkp::{generate_proof, verify_proof, ZkProof};
 // Re-export Kyber types for use in other crates (may be used in future)
 #[allow(unused_imports)]
-pub use pqcrypto_mlkem::mlkem768::{
+pub use crate::mlkem::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };

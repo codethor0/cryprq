@@ -4,7 +4,7 @@
 // LinkedIn: https://www.linkedin.com/in/thor-thor0
 // License: MIT (see LICENSE file for details)
 
-use pqcrypto_mlkem::mlkem768::{
+use crate::mlkem::{
     keypair as kyber_keypair, PublicKey as KyberPublicKey, SecretKey as KyberSecretKey,
 };
 use rand::rngs::OsRng;
