@@ -1,0 +1,63 @@
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
+name: Stability Monitor
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+# Read-only by default. A job that needs more asks for it itself.
+permissions:
+  contents: read
+
+jobs:
+  stability-check:
+    name: Stability Monitor
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.88.0
+        components: rustfmt
+    
+    - name: Cache cargo registry and target
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Install cargo-deny
+      run: |
+        set -euo pipefail
+        CARGO_DENY_VERSION=0.18.6
+        curl -fsSL \
+          https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl.tar.gz \
+          -o "$RUNNER_TEMP/cargo-deny.tar.gz"
+        echo "a9c3db6db22288045ad8407bd0febbb13c6339b3d948d666ae8ef634fb3f3853  $RUNNER_TEMP/cargo-deny.tar.gz" | sha256sum --check --strict
+        mkdir "$RUNNER_TEMP/cargo-deny-extract"
+        tar -xzf "$RUNNER_TEMP/cargo-deny.tar.gz" -C "$RUNNER_TEMP/cargo-deny-extract"
+        sudo install "$RUNNER_TEMP/cargo-deny-extract/cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl/cargo-deny" /usr/local/bin/cargo-deny
+
+    - name: Run Stability Monitor
+      run: python3 scripts/stability_monitor.py
+

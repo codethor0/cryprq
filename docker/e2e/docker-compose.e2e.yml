@@ -1,0 +1,83 @@
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
+# E2E Test Suite Docker Compose Configuration
+
+services:
+  # Listener peer for E2E tests
+  listener:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-e2e-listener
+    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
+    ports:
+      - "9999:9999/udp"
+    environment:
+      - RUST_LOG=info
+      - CRYPRQ_ROTATE_SECS=2
+      - CRYPRQ_TEST_MODE=true
+    networks:
+      - cryprq-e2e-network
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # Dialer peer for E2E tests
+  dialer:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: cryprq-node:latest
+    container_name: cryprq-e2e-dialer
+    entrypoint: ["/bin/bash", "/usr/local/bin/dialer-wrapper.sh"]
+    depends_on:
+      listener:
+        condition: service_healthy
+    environment:
+      - PEER_HOST=listener
+      - PEER_PORT=9999
+      - RUST_LOG=info
+      - CRYPRQ_ROTATE_SECS=2
+      - CRYPRQ_TEST_MODE=true
+    networks:
+      - cryprq-e2e-network
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "cryprq"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # E2E Test Runner
+  test-runner:
+    build:
+      context: ../..
+      dockerfile: docker/e2e/Dockerfile
+    container_name: cryprq-e2e-test-runner
+    depends_on:
+      listener:
+        condition: service_healthy
+      dialer:
+        condition: service_healthy
+    networks:
+      - cryprq-e2e-network
+    environment:
+      - LISTENER_HOST=listener
+      - DIALER_HOST=dialer
+      - LISTENER_PORT=9999
+    volumes:
+      - ../../:/workspace:ro
+    command: ["/usr/local/bin/test_suite.sh"]
+
+networks:
+  cryprq-e2e-network:
+    driver: bridge
+

@@ -1,0 +1,41 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "p2p"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+libp2p = { version = "0.56", features = [
+    "tcp",
+    "noise",
+    "yamux",
+    "quic",
+    "tokio",
+    "macros",
+    "ping",
+    "kad",
+    "request-response"
+] }
+cryprq-crypto = { path = "../crypto" }
+zeroize = "1.8"
+rand = "0.8"
+once_cell = "1.21"
+log = "0.4"
+void = "1"
+thiserror = "1.0"
+prometheus = "0.14"
+hyper = { version = "1.7", features = ["full"] }
+hyper-util = { version = "0.1", features = ["server", "tokio", "http1", "http2"] }
+http-body-util = "0.1"
+bytes = "1"
+async-trait = "0.1"
+futures = "0.3"
+node = { path = "../node" }
+sha2 = "0.10"

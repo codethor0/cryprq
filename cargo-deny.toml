@@ -1,0 +1,28 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Cargo-deny configuration for license checking
+
+[licenses]
+# Allow these licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "NCSA",  # University of Illinois/NCSA Open Source License (used by libfuzzer-sys)
+    "WTFPL",  # Do What The F*ck You Want To Public License (used by tun crate)
+    "Zlib",  # zlib License (used by foldhash)
+    "Unicode-3.0",  # Unicode License (used by icu_* crates)
+]
+
+[advisories]
+# Allow unmaintained rustls-pemfile (RUSTSEC-2025-0134)
+# This is a transitive dependency via reqwest, and the advisory indicates
+# no safe upgrade path is available. The crate is archived but still functional.
+ignore = [
+    "RUSTSEC-2025-0134",  # rustls-pemfile unmaintained
+]

@@ -1,0 +1,29 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+[workspace]
+members = [
+    "crypto",
+    "p2p",
+    "node",
+    "cli",
+    "core",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Thor Thor <codethor@gmail.com>"]
+
+[patch.crates-io]
+if-watch = { path = "third_party/if-watch" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

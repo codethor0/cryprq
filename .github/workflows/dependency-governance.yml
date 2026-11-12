@@ -1,0 +1,153 @@
+name: Dependency Governance
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch: {}
+
+# Read-only by default. A job that needs more asks for it itself.
+permissions:
+  contents: read
+
+jobs:
+  dependency-governance:
+    # Applies to any PR that changes dependency manifests (including Dependabot).
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test dependency change detection
+        run: |
+          python3 -m unittest discover -s scripts/tests -p test_dependency_governance.py -v
+          python3 -m unittest discover -s scripts/tests -p test_lockfile_msrv.py -v
+
+      - name: Detect dependency manifest changes
+        id: manifest
+        run: |
+          set -euo pipefail
+          BASE_REF="${GITHUB_BASE_REF:-main}"
+          git fetch --no-tags origin "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+          if ! git merge-base "origin/$BASE_REF" HEAD >/dev/null; then
+            echo "ERROR: Cannot determine merge base. Blocking dependency governance." >&2
+            exit 1
+          fi
+          changed_files="$(git diff --name-only "origin/$BASE_REF"...HEAD)"
+          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changed_files" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          if echo "$changed_files" | grep -Eq '(^|/)(Cargo.toml|Cargo.lock|package.json|package-lock.json)$'; then
+            echo "has_manifests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_manifests=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Short-circuit if no manifests changed
+        if: ${{ steps.manifest.outputs.has_manifests != 'true' }}
+        run: echo "No dependency manifest changes detected; dependency governance not required."
+
+      - name: Gather toolchain and dependency data
+        if: ${{ steps.manifest.outputs.has_manifests == 'true' }}
+        run: |
+          set -euo pipefail
+          mkdir -p governance-artifacts
+
+          if command -v rustc >/dev/null 2>&1; then
+            rustc --version > governance-artifacts/rustc-version.txt
+          fi
+
+          if command -v cargo >/dev/null 2>&1 && [ -f Cargo.toml ]; then
+            # Use locked deps to match CI behavior; do not fail the job if this fails.
+            cargo tree --locked > governance-artifacts/cargo-tree.txt || echo "cargo tree failed" > governance-artifacts/cargo-tree.txt
+          fi
+
+          if [ -f package.json ]; then
+            # Capture JS deps snapshot for reference; best effort only.
+            if command -v jq >/dev/null 2>&1; then
+              jq '{dependencies, devDependencies}' package.json > governance-artifacts/npm-deps.json || echo "{}" > governance-artifacts/npm-deps.json
+            else
+              cp package.json governance-artifacts/npm-deps.json
+            fi
+          fi
+
+      - name: Evaluate MSRV and pin policy
+        if: ${{ steps.manifest.outputs.has_manifests == 'true' }}
+        id: eval
+        run: |
+          set -euo pipefail
+          msrv_status="OK"
+          pin_status="OK"
+
+          # MSRV check: disallow edition 2024 in Cargo.toml unless an explicit MSRV bump PR is made.
+          if grep -R --include='Cargo.toml' -n 'edition *= *"2024"' . > governance-artifacts/msrv-violations.txt 2>/dev/null; then
+            msrv_status="VIOLATION"
+          else
+            rm -f governance-artifacts/msrv-violations.txt || true
+          fi
+
+          # Lockfile MSRV: every resolved package must build on the pinned toolchain.
+          # Missing required inputs and metadata failures are violations (fail closed).
+          if [ ! -f Cargo.toml ] || [ ! -f Cargo.lock ]; then
+            msrv_status="VIOLATION"
+            echo "ERROR: Required Cargo.toml or Cargo.lock is missing; lockfile MSRV not verified." > governance-artifacts/lockfile-msrv.txt
+          elif ! python3 scripts/check_lockfile_msrv.py > governance-artifacts/lockfile-msrv.txt 2>&1; then
+            msrv_status="VIOLATION"
+          fi
+          if [ -f governance-artifacts/lockfile-msrv.txt ]; then
+            cat governance-artifacts/lockfile-msrv.txt
+          fi
+
+          # Pin policy: base64ct must remain pinned to "=1.6.0" in node/Cargo.toml per operator guide.
+          if [ ! -f node/Cargo.toml ]; then
+            pin_status="VIOLATION"
+            echo "ERROR: Required node/Cargo.toml is missing; base64ct pin not verified." > governance-artifacts/pin-violations.txt
+          elif ! grep -q 'base64ct *= *"=1.6.0"' node/Cargo.toml; then
+            pin_status="VIOLATION"
+            echo 'ERROR: node/Cargo.toml must pin base64ct = "=1.6.0".' > governance-artifacts/pin-violations.txt
+          fi
+          if [ -f governance-artifacts/pin-violations.txt ]; then
+            cat governance-artifacts/pin-violations.txt
+          fi
+
+          echo "msrv_status=$msrv_status" >> "$GITHUB_OUTPUT"
+          echo "pin_status=$pin_status" >> "$GITHUB_OUTPUT"
+
+      - name: Upload dependency governance artifacts
+        if: ${{ always() && steps.manifest.outputs.has_manifests == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-governance-${{ github.run_id }}
+          path: governance-artifacts
+
+      - name: Dependency governance summary
+        if: ${{ always() && steps.manifest.outputs.has_manifests == 'true' }}
+        run: |
+          msrv="${{ steps.eval.outputs.msrv_status || 'UNKNOWN' }}"
+          pin="${{ steps.eval.outputs.pin_status || 'UNKNOWN' }}"
+
+          {
+            echo "### Dependency Governance Summary"
+            echo ""
+            echo "- MSRV impact: ${msrv}"
+            echo "- Pin policy (base64ct = \"=1.6.0\"): ${pin}"
+            echo "- Artifacts: \`dependency-governance-${GITHUB_RUN_ID}\`"
+            echo ""
+            echo "This summary is the standardized narrative for dependency-change PRs, including Dependabot."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on MSRV or pin policy violations
+        if: ${{ steps.manifest.outputs.has_manifests == 'true' && (steps.eval.outputs.msrv_status == 'VIOLATION' || steps.eval.outputs.pin_status == 'VIOLATION') }}
+        run: |
+          echo "Dependency governance violation:"
+          echo "  MSRV: ${{ steps.eval.outputs.msrv_status }}"
+          echo "  Pin policy: ${{ steps.eval.outputs.pin_status }}"
+          echo "See dependency governance artifacts and MSRV/Dependency Pin Policy in docs/OPERATOR_GUIDE.md."
+          exit 1

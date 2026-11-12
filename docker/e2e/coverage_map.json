@@ -1,0 +1,131 @@
+{
+  "_comment": "Each retired legacy Docker E2E placeholder and the real assertions that replace it. scripts/tests/test_e2e_gates.py fails if a listed assertion no longer exists or the workflow stops running the scripts. Human-readable form: docs/E2E_COVERAGE_MAP.md.",
+  "retired": [
+    {
+      "legacy": "02_mlkem_x25519_hybrid.sh",
+      "claim": "Both peers complete the ML-KEM-768 + X25519 handshake and agree on the same keys; a wrong or substituted peer does not.",
+      "replaced_by": [
+        {
+          "file": "node/src/auth_handshake.rs",
+          "needle": "fn pinned_peers_agree_on_transcript_bound_keys()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/auth_handshake.rs",
+          "needle": "fn man_in_the_middle_key_share_substitution_is_detected()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/auth_handshake.rs",
+          "needle": "fn wrong_key_confirmation_fails_and_yields_no_session()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/auth_handshake.rs",
+          "needle": "fn low_order_key_share_from_an_authentic_peer_is_fatal()",
+          "kind": "rust"
+        },
+        {
+          "file": "crypto/src/kdf.rs",
+          "needle": "fn test_session_secrets_bind_transcript_and_both_shares()",
+          "kind": "rust"
+        },
+        {
+          "file": "scripts/e2e-authenticated-file-transfer.sh",
+          "needle": "both processes derived the same session id",
+          "kind": "e2e"
+        },
+        {
+          "file": "scripts/e2e-authenticated-file-transfer.sh",
+          "needle": "sender refused a receiver with another identity",
+          "kind": "e2e"
+        },
+        {
+          "file": "scripts/e2e-authenticated-vpn.sh",
+          "needle": "dialer got no session with another identity",
+          "kind": "e2e"
+        }
+      ]
+    },
+    {
+      "legacy": "04_file_transfer_integrity.sh",
+      "claim": "A file sent between two processes arrives complete, and the receiver publishes it only if its SHA-256 matches.",
+      "replaced_by": [
+        {
+          "file": "scripts/e2e-authenticated-file-transfer.sh",
+          "needle": "file arrived byte-identical (sha256",
+          "kind": "e2e"
+        },
+        {
+          "file": "scripts/e2e-authenticated-file-transfer.sh",
+          "needle": "receiver established nothing and wrote nothing",
+          "kind": "e2e"
+        },
+        {
+          "file": "node/src/file_transfer.rs",
+          "needle": "fn rejects_and_removes_file_with_hash_mismatch()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/file_transfer.rs",
+          "needle": "fn publishes_only_after_complete_verified_transfer()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/file_transfer.rs",
+          "needle": "fn rejects_data_beyond_announced_size()",
+          "kind": "rust"
+        }
+      ]
+    },
+    {
+      "legacy": "05_packet_validation.sh",
+      "claim": "Replayed, forged and modified packets are injected and rejected, and nothing is delivered twice or altered.",
+      "replaced_by": [
+        {
+          "file": "node/src/tests.rs",
+          "needle": "async fn replayed_and_forged_datagrams_are_rejected_on_the_wire()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/tests.rs",
+          "needle": "fn any_modified_or_truncated_record_is_rejected_without_changing_state()",
+          "kind": "rust"
+        },
+        {
+          "file": "node/src/tests.rs",
+          "needle": "fn replayed_and_reordered_records_are_handled_per_session()",
+          "kind": "rust"
+        },
+        {
+          "file": "p2p/src/secure_vpn_tests.rs",
+          "needle": "fn tampered_records_are_rejected_and_do_not_disturb_the_session()",
+          "kind": "rust"
+        },
+        {
+          "file": "p2p/src/secure_vpn_tests.rs",
+          "needle": "fn replayed_and_reflected_records_are_rejected()",
+          "kind": "rust"
+        },
+        {
+          "file": "scripts/e2e-authenticated-vpn.sh",
+          "needle": "no packet is delivered twice under replay",
+          "kind": "e2e"
+        },
+        {
+          "file": "scripts/e2e-authenticated-vpn.sh",
+          "needle": "20 ICMP round trips arrive exactly once and unmodified",
+          "kind": "e2e"
+        }
+      ]
+    }
+  ],
+  "legacy_kept": [
+    "01_legacy_quic_connection.sh",
+    "02_legacy_rotation_timer.sh"
+  ],
+  "required_e2e_scripts": [
+    "scripts/e2e-authenticated-vpn.sh",
+    "scripts/e2e-authenticated-file-transfer.sh"
+  ]
+}

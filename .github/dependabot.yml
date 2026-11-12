@@ -1,0 +1,41 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+# Routine version-update pull requests are paused with
+# `open-pull-requests-limit: 0`. This setting does not affect Dependabot alerts.
+# Do not restore higher limits without the owner's decision: updates are to be
+# re-enabled as grouped updates with at most two update branches open at a
+# time. The proposal and the deferred updates are in
+# docs/DEFERRED_DEPENDENCY_UPDATES.md.
+
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+    
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"

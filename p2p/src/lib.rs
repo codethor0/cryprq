@@ -1,0 +1,968 @@
+// Copyright (c) 2025 Thor Thor
+// Author: Thor Thor (GitHub: https://github.com/codethor0)
+// Contact: codethor@gmail.com
+// LinkedIn: https://www.linkedin.com/in/thor-thor0
+// License: MIT (see LICENSE file for details)
+
+use anyhow::{Context, Result};
+use libp2p::{
+    connection_limits::{Behaviour as ConnectionLimitBehaviour, ConnectionLimits},
+    identity,
+    multiaddr::Protocol,
+    noise, ping,
+    request_response::{self, ProtocolSupport},
+    swarm::{dial_opts::DialOpts, NetworkBehaviour, SwarmEvent},
+    tcp, yamux, Multiaddr, PeerId, Swarm, SwarmBuilder,
+};
+use log::{info, warn};
+use once_cell::sync::Lazy;
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+    env,
+    str::FromStr,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
+use thiserror::Error;
+use tokio::sync::mpsc;
+use tokio::sync::RwLock;
+use tokio::time::MissedTickBehavior;
+
+// Import the *public* items from the crypto crate
+use cryprq_crypto::{kyber_keypair, KyberPublicKey, KyberSecretKey, PPKStore, PostQuantumPSK};
+
+mod metrics;
+pub use metrics::start_metrics_server;
+
+pub mod packet_forwarder;
+
+// Authenticated VPN link: CrypRQ handshake and records over libp2p
+pub mod secure_vpn;
+pub use packet_forwarder::Libp2pPacketForwarder;
+
+pub mod file_transfer;
+pub use file_transfer::{
+    calculate_file_hash, create_end_packet, is_end_packet, DataChunk, FileMetadata,
+    FileTransferCodec, CHUNK_SIZE, FILE_PROTOCOL,
+};
+
+// Store recv_tx channels for each peer to forward incoming packets to TUN
+// Type alias to reduce complexity
+pub type PacketRecvTx = Arc<tokio::sync::Mutex<mpsc::UnboundedSender<Vec<u8>>>>;
+
+// Callback for when connection is established (for VPN packet forwarding)
+// Now includes recv_tx for forwarding incoming packets to TUN
+pub type ConnectionCallback =
+    Arc<dyn Fn(PeerId, Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>, PacketRecvTx) + Send + Sync>;
+static CONNECTION_CALLBACK: Lazy<RwLock<Option<ConnectionCallback>>> =
+    Lazy::new(|| RwLock::new(None));
+
+// Callback for file transfer requests (receiving files)
+pub type FileTransferCallback =
+    Arc<dyn Fn(PeerId, Vec<u8>) -> Result<Vec<u8>, String> + Send + Sync>;
+static FILE_TRANSFER_CALLBACK: Lazy<RwLock<Option<FileTransferCallback>>> =
+    Lazy::new(|| RwLock::new(None));
+
+/// Set callback for handling incoming file transfer requests
+pub async fn set_file_transfer_callback(callback: FileTransferCallback) {
+    *FILE_TRANSFER_CALLBACK.write().await = Some(callback);
+}
+
+/// Send a file to a peer using the file transfer protocol
+pub async fn send_file_to_peer(
+    swarm: Arc<tokio::sync::Mutex<Swarm<MyBehaviour>>>,
+    peer_id: PeerId,
+    file_path: std::path::PathBuf,
+) -> Result<()> {
+    use std::fs::File;
+    use std::io::Read;
+
+    // Calculate file hash
+    let file_hash = file_transfer::calculate_file_hash(&file_path)?;
+    let file_size = std::fs::metadata(&file_path)?.len();
+    let filename = file_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?
+        .to_string();
+
+    // Create metadata packet
+    let metadata = FileMetadata::new(filename.clone(), file_size, file_hash);
+    let metadata_packet = metadata.serialize();
+
+    // Wait for protocol negotiation - libp2p needs time to negotiate the request-response protocol
+    // After ConnectionEstablished, protocol negotiation happens asynchronously
+    // We need to wait and ensure the swarm event loop is processing events
+    tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+
+    // Send metadata - release lock immediately to allow event loop to process
+    {
+        let mut swarm_guard = swarm.lock().await;
+        swarm_guard
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, metadata_packet.clone());
+    }
+    // Lock released here - event loop can now process protocol negotiation
+
+    log::info!("Sent file metadata to {peer_id}: {filename} ({file_size} bytes)");
+
+    // Yield to allow event loop to process protocol negotiation
+    // Protocol negotiation happens when send_request is called, but needs event loop processing
+    tokio::task::yield_now().await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Read and send file in chunks
+    let mut file = File::open(&file_path)?;
+    let mut chunk_id = 0u32;
+    let mut buffer = vec![0u8; CHUNK_SIZE];
+
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        let chunk = DataChunk {
+            chunk_id,
+            data: buffer[..bytes_read].to_vec(),
+        };
+        let chunk_packet = chunk.serialize();
+
+        {
+            let mut swarm_guard = swarm.lock().await;
+            swarm_guard
+                .behaviour_mut()
+                .request_response
+                .send_request(&peer_id, chunk_packet);
+        }
+        // Lock released immediately to allow event loop processing
+
+        log::debug!("Sent chunk {chunk_id} to {peer_id} ({bytes_read} bytes)");
+
+        // Yield to allow event loop to process
+        tokio::task::yield_now().await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        chunk_id += 1;
+    }
+
+    // Send end packet
+    let end_packet = create_end_packet();
+    {
+        let mut swarm_guard = swarm.lock().await;
+        swarm_guard
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, end_packet);
+    }
+    // Lock released immediately
+
+    log::debug!("Sent end packet to {peer_id}");
+
+    // Yield to allow event loop to process end packet
+    tokio::task::yield_now().await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    log::info!("File transfer complete: {filename} sent to {peer_id}");
+    Ok(())
+}
+
+#[allow(clippy::type_complexity)]
+static PACKET_RECV_TX: Lazy<RwLock<HashMap<PeerId, PacketRecvTx>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
+/// Register recv_tx channel for a peer (called from connection callback)
+pub async fn register_packet_recv_tx(peer_id: PeerId, recv_tx: PacketRecvTx) {
+    let mut map = PACKET_RECV_TX.write().await;
+    map.insert(peer_id, recv_tx);
+}
+
+/// Get recv_tx channel for a peer (called from swarm event handler)
+pub async fn get_packet_recv_tx(peer_id: &PeerId) -> Option<PacketRecvTx> {
+    let map = PACKET_RECV_TX.read().await;
+    map.get(peer_id).cloned()
+}
+
+/// Set callback to be called when connection is established
+/// The callback receives the peer_id and the swarm instance for packet forwarding
+pub async fn set_connection_callback(callback: ConnectionCallback) {
+    *CONNECTION_CALLBACK.write().await = Some(callback);
+}
+
+// Define the error type correctly
+#[derive(Debug, Error)]
+pub enum P2PError {
+    #[error("Key generation failed: {0}")]
+    KeyGenFailed(String),
+    #[error("Keys not initialized")]
+    NotInitialized,
+}
+
+// Define the global key store
+static KEYS: Lazy<RwLock<Option<(KyberPublicKey, KyberSecretKey)>>> =
+    Lazy::new(|| RwLock::new(None));
+static ALLOWED_PEERS: Lazy<RwLock<Option<HashSet<PeerId>>>> = Lazy::new(|| RwLock::new(None));
+// PPK store for post-quantum pre-shared keys
+static PPK_STORE: Lazy<RwLock<PPKStore>> = Lazy::new(|| RwLock::new(PPKStore::new()));
+static BACKOFF_CONFIG: Lazy<BackoffConfig> = Lazy::new(|| BackoffConfig {
+    base_ms: read_env_u64("CRYPRQ_BACKOFF_BASE_MS").unwrap_or(500),
+    max_ms: read_env_u64("CRYPRQ_BACKOFF_MAX_MS").unwrap_or(30_000),
+});
+static BACKOFF: Lazy<Mutex<HashMap<String, BackoffState>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+#[derive(NetworkBehaviour)]
+#[behaviour(to_swarm = "MyBehaviourEvent")]
+pub struct MyBehaviour {
+    ping: ping::Behaviour,
+    limits: ConnectionLimitBehaviour,
+    request_response: request_response::Behaviour<packet_forwarder::PacketCodec>,
+}
+
+#[derive(Debug)]
+pub enum MyBehaviourEvent {
+    Ping(ping::Event),
+    Limits(Infallible),
+    RequestResponse(request_response::Event<Vec<u8>, Vec<u8>>),
+}
+
+impl From<ping::Event> for MyBehaviourEvent {
+    fn from(event: ping::Event) -> Self {
+        MyBehaviourEvent::Ping(event)
+    }
+}
+
+impl From<Infallible> for MyBehaviourEvent {
+    fn from(event: Infallible) -> Self {
+        match event {}
+    }
+}
+
+impl From<request_response::Event<Vec<u8>, Vec<u8>>> for MyBehaviourEvent {
+    fn from(event: request_response::Event<Vec<u8>, Vec<u8>>) -> Self {
+        MyBehaviourEvent::RequestResponse(event)
+    }
+}
+
+// Public function to get the current key
+pub async fn get_current_pk() -> Result<KyberPublicKey, P2PError> {
+    KEYS.read()
+        .await
+        .as_ref()
+        .map(|(pk, _)| *pk)
+        .ok_or(P2PError::NotInitialized)
+}
+
+pub async fn set_allowed_peers(peers: &[String]) -> anyhow::Result<()> {
+    let mut set = HashSet::with_capacity(peers.len());
+    for entry in peers {
+        let peer_id = PeerId::from_str(entry).context(format!("Invalid peer ID: {entry}"))?;
+        set.insert(peer_id);
+    }
+    let mut guard = ALLOWED_PEERS.write().await;
+    *guard = Some(set);
+    Ok(())
+}
+
+async fn peer_is_allowed(peer_id: &PeerId) -> bool {
+    ALLOWED_PEERS
+        .read()
+        .await
+        .as_ref()
+        .map(|set| set.contains(peer_id))
+        .unwrap_or(true)
+}
+
+// Public function to start key rotation
+pub async fn start_key_rotation(interval: Duration) {
+    metrics::set_rotation_interval(interval);
+
+    info!(
+        "event=rotation_task_started interval_secs={}",
+        interval.as_secs()
+    );
+
+    rotate_once(interval).await;
+
+    let mut ticker = tokio::time::interval(interval);
+    ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+
+    loop {
+        ticker.tick().await;
+        rotate_once(interval).await;
+    }
+}
+
+async fn rotate_once(interval: Duration) {
+    let start = Instant::now();
+    let (pk, sk) = kyber_keypair();
+
+    let mut guard = KEYS.write().await;
+    guard.replace((pk, sk));
+
+    // Cleanup expired PPKs on rotation
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let mut ppk_store = PPK_STORE.write().await;
+    ppk_store.cleanup_expired(now);
+
+    let elapsed = start.elapsed();
+    // TODO: Track actual protocol epoch (u8) from tunnel layer
+    // For now, use a local epoch counter that wraps at 256
+    static LOCAL_EPOCH: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+    let protocol_epoch = LOCAL_EPOCH
+        .fetch_update(
+            std::sync::atomic::Ordering::Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
+            |e| Some(e.wrapping_add(1)),
+        )
+        .unwrap_or(0);
+    let _counter = metrics::record_rotation_success(elapsed, protocol_epoch);
+
+    info!(
+        "event=key_rotation status=success epoch={} duration_ms={} interval_secs={}",
+        protocol_epoch,
+        elapsed.as_millis(),
+        interval.as_secs()
+    );
+}
+
+/// Derive and store a PPK for a peer after ML-KEM key exchange
+///
+/// # Arguments
+///
+/// * `kyber_shared` - Shared secret from ML-KEM encapsulation (32 bytes)
+/// * `peer_id_bytes` - Peer identity bytes (32 bytes, typically Ed25519 public key)
+/// * `rotation_interval_secs` - Key rotation interval in seconds
+pub async fn derive_and_store_ppk(
+    kyber_shared: &[u8; 32],
+    peer_id_bytes: &[u8; 32],
+    rotation_interval_secs: u64,
+) {
+    use rand::RngCore;
+
+    // Generate random salt for this PPK derivation
+    let mut salt = [0u8; 16];
+    rand::thread_rng().fill_bytes(&mut salt);
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    let ppk = PostQuantumPSK::derive(
+        kyber_shared,
+        peer_id_bytes,
+        &salt,
+        rotation_interval_secs * 2, // Expire after 2 rotation intervals
+        now,
+    );
+
+    let mut store = PPK_STORE.write().await;
+    store.store(ppk);
+
+    info!(
+        "event=ppk_derived peer_id={:x} expires_in_secs={}",
+        peer_id_bytes
+            .iter()
+            .take(8)
+            .fold(0u64, |acc, &b| (acc << 8) | b as u64),
+        rotation_interval_secs
+    );
+}
+
+/// Get PPK for a peer (if available and not expired)
+pub async fn get_ppk_for_peer(peer_id_bytes: &[u8; 32]) -> Option<PostQuantumPSK> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let store = PPK_STORE.read().await;
+    store.get(peer_id_bytes, now).cloned()
+}
+
+pub async fn init_swarm(
+) -> Result<Swarm<MyBehaviour>, Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let local_key = identity::Keypair::generate_ed25519();
+    let swarm = SwarmBuilder::with_existing_identity(local_key)
+        .with_tokio()
+        .with_tcp(
+            tcp::Config::default(),
+            noise::Config::new,
+            yamux::Config::default,
+        )?
+        .with_quic()
+        .with_behaviour(|_key| {
+            // mDNS discovery is not compiled in. Its events were never used,
+            // and libp2p-mdns 0.48 depends on a hickory-proto release with open
+            // advisories that libp2p 0.56 cannot move past. A node that was
+            // started with the former opt-in is told so instead of silently
+            // running without discovery.
+            if std::env::var("CRYPRQ_ENABLE_MDNS").as_deref() == Ok("1") {
+                warn!("event=mdns_unavailable reason=\"mDNS discovery is not part of this build; CRYPRQ_ENABLE_MDNS is ignored\"");
+            }
+
+            // Create request-response behaviour for packet forwarding and file transfer
+            // Use a single protocol and differentiate by packet content
+            let packet_protocol_str = packet_forwarder::PACKET_PROTOCOL.as_ref().to_string();
+            let request_response_behaviour = request_response::Behaviour::new(
+                [(packet_protocol_str.clone(), ProtocolSupport::Full)],
+                request_response::Config::default(),
+            );
+
+            Ok(MyBehaviour {
+                ping: ping::Behaviour::new(ping::Config::new()),
+                limits: connection_limits_behaviour(),
+                request_response: request_response_behaviour,
+            })
+        })?
+        .with_swarm_config(|c| c)
+        .build();
+    Ok(swarm)
+}
+
+pub async fn start_listener(addr: &str) -> Result<()> {
+    let mut swarm = init_swarm()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to init swarm: {e}"))?;
+    let local_peer_id = *swarm.local_peer_id();
+
+    // Log listener startup with structured format
+    info!(
+        "event=listener_starting peer_id={local_peer_id} listen_addr={addr} transport=QUIC/libp2p"
+    );
+    println!("Local peer id: {local_peer_id}");
+
+    let listen_addr: Multiaddr = addr.parse()?;
+    swarm.listen_on(listen_addr)?;
+    metrics::mark_swarm_initialized();
+
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
+
+    use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+
+    loop {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+
+        match event {
+            SwarmEvent::NewListenAddr { address, .. } => {
+                info!(
+                    "event=listener_ready peer_id={local_peer_id} listen_addr={address} status=accepting_connections"
+                );
+                println!("Listening on {address}");
+            }
+            SwarmEvent::ConnectionEstablished {
+                peer_id, endpoint, ..
+            } => {
+                if !peer_is_allowed(&peer_id).await {
+                    metrics::record_handshake_failure();
+                    warn!("event=peer_denied peer_id={peer_id} reason=not_allowlisted");
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(peer_id);
+                } else {
+                    metrics::record_handshake_success();
+                    metrics::inc_active_peers();
+                    clear_backoff_for(endpoint.get_remote_address());
+
+                    // The libp2p transport handshake only. The CrypRQ hybrid handshake does
+                    // not run on this legacy path, and the log must not suggest it did.
+                    info!(
+                        "event=handshake_complete peer_id={peer_id} direction=inbound endpoint={endpoint:?} encryption=libp2p-transport cryprq_handshake=none status=ready"
+                    );
+                    info!(
+                        "event=connection_established peer_id={peer_id} transport=QUIC/libp2p encryption_active=true encryption_scope=transport"
+                    );
+
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        // Create a placeholder recv_tx - the actual one will come from PacketForwarder
+                        let (recv_tx, _) = tokio::sync::mpsc::unbounded_channel();
+                        callback(
+                            peer_id,
+                            swarm_for_loop.clone(),
+                            Arc::new(tokio::sync::Mutex::new(recv_tx)),
+                        );
+                    }
+                }
+            }
+            SwarmEvent::IncomingConnection { send_back_addr, .. } => {
+                metrics::record_handshake_attempt();
+                if allow_incoming(&send_back_addr) {
+                    println!("Incoming connection attempt from {send_back_addr}");
+                } else {
+                    println!("Incoming connection denied via backoff for {send_back_addr}");
+                }
+            }
+            SwarmEvent::IncomingConnectionError {
+                send_back_addr,
+                error,
+                ..
+            } => {
+                metrics::record_handshake_failure();
+                record_failure(&send_back_addr);
+                println!("Incoming connection error: {error:?}");
+            }
+            SwarmEvent::ConnectionClosed { .. } => {
+                metrics::dec_active_peers();
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
+                println!("Ping event: {event:?}");
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Limits(_)) => {}
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, peer, .. } => {
+                        match message {
+                            request_response::Message::Request {
+                                request, channel, ..
+                            } => {
+                                // Check if this is a file transfer packet (starts with packet type)
+                                let is_file_transfer = request.len() >= 4
+                                    && u32::from_be_bytes([
+                                        request[0], request[1], request[2], request[3],
+                                    ]) < 3; // File transfer packet types are 0, 1, or 2
+
+                                if is_file_transfer {
+                                    // Handle file transfer request
+                                    let callback = FILE_TRANSFER_CALLBACK.read().await.clone();
+                                    let mut s = swarm_for_loop.lock().await;
+                                    if let Some(cb) = callback {
+                                        match cb(peer, request.clone()) {
+                                            Ok(response) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, response);
+                                                log::info!(
+                                                    "File transfer request handled from peer {peer}"
+                                                );
+                                            }
+                                            Err(e) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, e.as_bytes().to_vec());
+                                                log::warn!(
+                                                    "File transfer error from peer {peer}: {e}"
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        // No file transfer callback - send error response
+                                        let _ = s.behaviour_mut().request_response.send_response(
+                                            channel,
+                                            b"File transfer not enabled".to_vec(),
+                                        );
+                                        log::debug!(
+                                            "File transfer request from {peer} but no callback set"
+                                        );
+                                    }
+                                } else {
+                                    // Regular packet forwarding
+                                    let mut s = swarm_for_loop.lock().await;
+                                    let _ = s
+                                        .behaviour_mut()
+                                        .request_response
+                                        .send_response(channel, vec![]);
+                                    log::debug!(
+                                        "DECRYPT: Received {} bytes packet from peer {}",
+                                        request.len(),
+                                        peer
+                                    );
+
+                                    // Forward packet to TUN interface via recv_tx channel
+                                    if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                        let recv_tx_guard = recv_tx_arc.lock().await;
+                                        if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                            log::warn!("Failed to forward packet to TUN: {e}");
+                                        } else {
+                                            log::debug!(
+                                                "Forwarded {} bytes packet to TUN",
+                                                request.len()
+                                            );
+                                        }
+                                    } else {
+                                        log::debug!(
+                                            "No recv_tx channel registered for peer {peer}"
+                                        );
+                                    }
+                                }
+                            }
+                            request_response::Message::Response {
+                                response,
+                                request_id,
+                                ..
+                            } => {
+                                // Response to our request - acknowledgment
+                                log::debug!(
+                                    "Received response for request {:?} ({} bytes)",
+                                    request_id,
+                                    response.len()
+                                );
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure {
+                        error, request_id, ..
+                    } => {
+                        log::warn!(
+                            "Request-response outbound failure for {request_id:?}: {error:?}"
+                        );
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {error:?}");
+                    }
+                    _ => {}
+                }
+            }
+            other => {
+                println!("Unhandled event: {other:?}");
+            }
+        }
+    }
+}
+
+pub async fn dial_peer(addr: String) -> Result<()> {
+    let mut swarm = init_swarm()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to init swarm: {e}"))?;
+    let local_peer_id = *swarm.local_peer_id();
+
+    // Log dialer startup with structured format
+    info!("event=dialer_starting peer_id={local_peer_id} target_addr={addr} transport=QUIC/libp2p");
+    println!("Local peer id: {local_peer_id}");
+
+    let mut dial_addr: Multiaddr = addr.parse()?;
+    let peer_id = if matches!(dial_addr.iter().last(), Some(Protocol::P2p(_))) {
+        match dial_addr.pop() {
+            Some(Protocol::P2p(peer_id)) => Some(peer_id),
+            _ => None,
+        }
+    } else {
+        None
+    };
+
+    if let Some(peer_id) = peer_id {
+        if !peer_is_allowed(&peer_id).await {
+            anyhow::bail!("Peer {peer_id} is not in the allow list");
+        }
+        let opts = DialOpts::peer_id(peer_id)
+            .addresses(vec![dial_addr])
+            .build();
+        swarm.dial(opts)?;
+    } else {
+        swarm.dial(dial_addr)?;
+    }
+
+    metrics::mark_swarm_initialized();
+
+    // Create Arc<Mutex<Swarm>> for callback access
+    let swarm_arc = Arc::new(tokio::sync::Mutex::new(swarm));
+
+    use libp2p::futures::StreamExt;
+    let swarm_for_loop = swarm_arc.clone();
+
+    loop {
+        let event = {
+            let mut swarm_guard = swarm_for_loop.lock().await;
+            swarm_guard.select_next_some().await
+        };
+
+        match event {
+            SwarmEvent::ConnectionEstablished {
+                peer_id: remote,
+                endpoint,
+                ..
+            } => {
+                if !peer_is_allowed(&remote).await {
+                    metrics::record_handshake_failure();
+                    warn!("event=peer_denied peer_id={remote} reason=not_allowlisted");
+                    let mut s = swarm_for_loop.lock().await;
+                    let _ = s.disconnect_peer_id(remote);
+                } else {
+                    metrics::record_handshake_success();
+                    clear_backoff_for(endpoint.get_remote_address());
+
+                    // Log handshake completion with encryption details
+                    info!(
+                        "event=handshake_complete peer_id={remote} direction=outbound endpoint={endpoint:?} encryption=libp2p-transport cryprq_handshake=none status=ready"
+                    );
+                    info!(
+                        "event=connection_established peer_id={remote} transport=QUIC/libp2p encryption_active=true encryption_scope=transport"
+                    );
+
+                    // Call connection callback if set (for VPN packet forwarding)
+                    if let Some(callback) = CONNECTION_CALLBACK.read().await.as_ref() {
+                        // Create a placeholder recv_tx - the actual one will come from PacketForwarder
+                        let (recv_tx, _) = tokio::sync::mpsc::unbounded_channel();
+                        callback(
+                            remote,
+                            swarm_for_loop.clone(),
+                            Arc::new(tokio::sync::Mutex::new(recv_tx)),
+                        );
+                    }
+
+                    // Keep connection alive - continue processing events
+                    // Don't break - the connection needs to stay active for VPN mode
+                }
+            }
+            SwarmEvent::OutgoingConnectionError { error, .. } => {
+                metrics::record_handshake_failure();
+                anyhow::bail!("Dial error: {error:?}");
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
+                println!("Ping event: {event:?}");
+            }
+            SwarmEvent::Behaviour(MyBehaviourEvent::RequestResponse(event)) => {
+                match event {
+                    request_response::Event::Message { message, peer, .. } => {
+                        match message {
+                            request_response::Message::Request {
+                                request, channel, ..
+                            } => {
+                                // Check if this is a file transfer packet (starts with packet type)
+                                let is_file_transfer = request.len() >= 4
+                                    && u32::from_be_bytes([
+                                        request[0], request[1], request[2], request[3],
+                                    ]) < 3; // File transfer packet types are 0, 1, or 2
+
+                                if is_file_transfer {
+                                    // Handle file transfer request
+                                    let callback = FILE_TRANSFER_CALLBACK.read().await.clone();
+                                    let mut s = swarm_for_loop.lock().await;
+                                    if let Some(cb) = callback {
+                                        match cb(peer, request.clone()) {
+                                            Ok(response) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, response);
+                                                log::info!(
+                                                    "File transfer request handled from peer {peer}"
+                                                );
+                                            }
+                                            Err(e) => {
+                                                let _ = s
+                                                    .behaviour_mut()
+                                                    .request_response
+                                                    .send_response(channel, e.as_bytes().to_vec());
+                                                log::warn!(
+                                                    "File transfer error from peer {peer}: {e}"
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        // No file transfer callback - send error response
+                                        let _ = s.behaviour_mut().request_response.send_response(
+                                            channel,
+                                            b"File transfer not enabled".to_vec(),
+                                        );
+                                        log::debug!(
+                                            "File transfer request from {peer} but no callback set"
+                                        );
+                                    }
+                                } else {
+                                    // Regular packet forwarding
+                                    let mut s = swarm_for_loop.lock().await;
+                                    let _ = s
+                                        .behaviour_mut()
+                                        .request_response
+                                        .send_response(channel, vec![]);
+                                    log::debug!(
+                                        "DECRYPT: Received {} bytes packet from peer {}",
+                                        request.len(),
+                                        peer
+                                    );
+
+                                    // Forward packet to TUN interface via recv_tx channel
+                                    if let Some(recv_tx_arc) = get_packet_recv_tx(&peer).await {
+                                        let recv_tx_guard = recv_tx_arc.lock().await;
+                                        if let Err(e) = recv_tx_guard.send(request.clone()) {
+                                            log::warn!("Failed to forward packet to TUN: {e}");
+                                        } else {
+                                            log::debug!(
+                                                "Forwarded {} bytes packet to TUN",
+                                                request.len()
+                                            );
+                                        }
+                                    } else {
+                                        log::debug!(
+                                            "No recv_tx channel registered for peer {peer}"
+                                        );
+                                    }
+                                }
+                            }
+                            request_response::Message::Response {
+                                response,
+                                request_id,
+                                ..
+                            } => {
+                                // Response to our request - acknowledgment
+                                log::debug!(
+                                    "Received response for request {:?} ({} bytes)",
+                                    request_id,
+                                    response.len()
+                                );
+                            }
+                        }
+                    }
+                    request_response::Event::OutboundFailure {
+                        error, request_id, ..
+                    } => {
+                        log::warn!(
+                            "Request-response outbound failure for {request_id:?}: {error:?}"
+                        );
+                    }
+                    request_response::Event::InboundFailure { error, .. } => {
+                        log::warn!("Request-response inbound failure: {error:?}");
+                    }
+                    _ => {}
+                }
+            }
+            SwarmEvent::Dialing {
+                peer_id,
+                connection_id,
+            } => {
+                metrics::record_handshake_attempt();
+                if let Some(pid) = peer_id {
+                    println!("Dialing peer {pid} (connection {connection_id:?})");
+                } else {
+                    println!("Dialing peer (connection {connection_id:?})");
+                }
+            }
+            SwarmEvent::ConnectionClosed { peer_id, .. } => {
+                println!("Connection closed with {peer_id:?}");
+                // For VPN mode, we might want to reconnect
+                // For now, just log and continue
+            }
+            other => {
+                println!("Unhandled event: {other:?}");
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct BackoffConfig {
+    base_ms: u64,
+    max_ms: u64,
+}
+
+#[derive(Debug)]
+struct BackoffState {
+    failures: u32,
+    next_allowed: Instant,
+    last_warn: Option<Instant>,
+}
+
+fn read_env_u64(key: &str) -> Option<u64> {
+    env::var(key)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|v| *v > 0)
+}
+
+fn compute_backoff_duration(base_ms: u64, max_ms: u64, failures: u32) -> Duration {
+    if failures == 0 || base_ms == 0 {
+        return Duration::from_millis(0);
+    }
+    let exponent = (failures - 1).min(30);
+    let multiplier = 1u128 << exponent;
+    let mut ms = (base_ms as u128).saturating_mul(multiplier);
+    if max_ms > 0 {
+        ms = ms.min(max_ms as u128);
+    }
+    Duration::from_millis(ms.min(u64::MAX as u128) as u64)
+}
+
+fn allow_incoming(addr: &Multiaddr) -> bool {
+    let key = addr.to_string();
+    let now = Instant::now();
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{e}\"");
+            return true; // Allow on lock poisoning (fail open)
+        }
+    };
+
+    if let Some(state) = guard.get_mut(&key) {
+        if now < state.next_allowed {
+            let should_warn = state
+                .last_warn
+                .is_none_or(|last| now.duration_since(last) > Duration::from_secs(60));
+            if should_warn {
+                warn!(
+                    "event=inbound_backoff addr=\"{key}\" wait_ms={}",
+                    state
+                        .next_allowed
+                        .saturating_duration_since(now)
+                        .as_millis()
+                );
+                state.last_warn = Some(now);
+            }
+            return false;
+        }
+        guard.remove(&key);
+    }
+    true
+}
+
+fn record_failure(addr: &Multiaddr) {
+    let key = addr.to_string();
+    let now = Instant::now();
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{e}\"");
+            return; // Skip recording on lock poisoning
+        }
+    };
+    let state = guard.entry(key).or_insert(BackoffState {
+        failures: 0,
+        next_allowed: now,
+        last_warn: None,
+    });
+    state.failures = (state.failures + 1).min(16);
+    let backoff = compute_backoff_duration(
+        BACKOFF_CONFIG.base_ms,
+        BACKOFF_CONFIG.max_ms,
+        state.failures,
+    );
+    state.next_allowed = now + backoff;
+    state.last_warn = None;
+}
+
+fn clear_backoff_for(addr: &Multiaddr) {
+    let key = addr.to_string();
+    let mut guard = match BACKOFF.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("event=backoff_lock_poisoned error=\"{e}\"");
+            return; // Skip clearing on lock poisoning
+        }
+    };
+    guard.remove(&key);
+}
+
+fn connection_limits_config() -> ConnectionLimits {
+    let max_inbound = read_env_u64("CRYPRQ_MAX_INBOUND")
+        .unwrap_or(64)
+        .min(u64::from(u32::MAX)) as u32;
+    ConnectionLimits::default()
+        .with_max_pending_incoming(Some(max_inbound))
+        .with_max_established_incoming(Some(max_inbound))
+}
+
+fn connection_limits_behaviour() -> ConnectionLimitBehaviour {
+    ConnectionLimitBehaviour::new(connection_limits_config())
+}

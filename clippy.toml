@@ -1,0 +1,17 @@
+# © 2025 Thor Thor
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# SPDX-License-Identifier: MIT
+
+disallowed-macros = [
+    { path = "std::panic", reason = "use Result instead" },
+    { path = "core::panic", reason = "use Result instead" },
+]
+
+disallowed-methods = [
+    { path = "std::option::Option::unwrap", reason = "use expect or pattern matching" },
+    { path = "std::result::Result::unwrap", reason = "use expect or pattern matching" },
+    { path = "std::result::Result::unwrap_err", reason = "use expect or pattern matching" },
+]
+
+cognitive-complexity-threshold = 15

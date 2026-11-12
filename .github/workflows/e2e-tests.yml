@@ -1,0 +1,127 @@
+# Copyright (c) 2025 Thor Thor
+# Author: Thor Thor (GitHub: https://github.com/codethor0)
+# Contact: codethor@gmail.com
+# LinkedIn: https://www.linkedin.com/in/thor-thor0
+# License: MIT (see LICENSE file for details)
+
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run E2E tests daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only by default. A job that needs more asks for it itself.
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    name: Legacy transport E2E (Docker)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build CrypRQ images
+      run: |
+        docker build -t cryprq-node:latest -f Dockerfile .
+        docker build -t cryprq-web:latest -f Dockerfile.web .
+    
+    # Two test-mode containers: QUIC connection and the local rotation timer.
+    # The protocol assertions are in the vpn-e2e job (docs/E2E_COVERAGE_MAP.md).
+    - name: Run legacy transport E2E
+      run: |
+        docker compose -f docker/e2e/docker-compose.e2e.yml up --build -d listener dialer
+        # Run the existing suite on the host, where Docker can inspect the peers.
+        # The test-runner image has no Docker CLI and cannot verify peer logs.
+        timeout 300 bash docker/e2e/test_suite.sh
+    
+    - name: Collect test logs
+      if: failure()
+      run: |
+        echo "=== Listener Logs ==="
+        docker logs cryprq-e2e-listener || true
+        echo ""
+        echo "=== Dialer Logs ==="
+        docker logs cryprq-e2e-dialer || true
+
+
+    - name: Tear down E2E stack
+      if: always()
+      run: docker compose -f docker/e2e/docker-compose.e2e.yml down -v --remove-orphans
+
+  vpn-e2e:
+    name: Authenticated VPN E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CRYPRQ_E2E_KEEP_LOGS: "1"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.88.0
+
+    - name: Build release binary
+      run: cargo build --release -p cryprq --locked
+
+    # The exit status of each script is the result. There is no fallback:
+    # a missing script or binary fails the job.
+    # The runner context exists only inside steps, so the log directory is
+    # set here and not in the job's env.
+    - name: Authenticated VPN link, two processes
+      run: bash scripts/e2e-authenticated-vpn.sh ./target/release/cryprq
+      env:
+        TMPDIR: ${{ runner.temp }}
+
+    - name: Authenticated file transfer, two processes
+      run: bash scripts/e2e-authenticated-file-transfer.sh ./target/release/cryprq
+      env:
+        TMPDIR: ${{ runner.temp }}
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: vpn-e2e-logs
+        path: ${{ runner.temp }}/cryprq-*e2e.*
+        if-no-files-found: ignore
+
+  vpn-tun-containers:
+    name: VPN on TUN devices (containers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Two endpoints on real TUN devices in two containers with NET_ADMIN and
+    # /dev/net/tun only. The script builds the committed tree itself.
+    - name: Device test
+      run: bash scripts/e2e-tun-docker.sh
+      env:
+        CRYPRQ_TUN_EVIDENCE: ${{ runner.temp }}/tun-evidence
+
+    - name: Upload evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tun-evidence
+        path: ${{ runner.temp }}/tun-evidence
+        if-no-files-found: ignore

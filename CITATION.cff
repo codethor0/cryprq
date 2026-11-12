@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+title: CrypRQ
+message: "If you use CrypRQ in your research, please cite it using the metadata from this file."
+type: software
+version: 1.0.1-web-preview
+doi: 10.5281/zenodo.XXXXXXX
+date-released: 2025-11-14
+authors:
+  - given-names: Thor
+    family-names: Thor
+    email: codethor@gmail.com
+    orcid: https://orcid.org/0000-0000-0000-0000
+repository-code: https://github.com/codethor0/cryprq
+url: https://github.com/codethor0/cryprq
+license: MIT
+abstract: "CrypRQ is a post-quantum-hybrid secure tunnel and file-transfer protocol designed for peer-to-peer communication. It leverages a hybrid key exchange combining ML-KEM (Kyber768) and X25519 to establish secure, ephemeral session keys, ensuring confidentiality and integrity of data in transit. The protocol operates over QUIC/UDP and provides automatic key rotation every five minutes, forward secrecy, and support for multiple concurrent data streams including file transfer and VPN functionality."
+keywords:
+  - post-quantum cryptography
+  - ML-KEM
+  - Kyber768
+  - X25519
+  - encrypted tunnel
+  - file transfer
+  - key rotation
+  - forward secrecy
+  - QUIC
+  - libp2p
+  - ChaCha20-Poly1305
+  - HKDF
+references:
+  - type: whitepaper
+    title: "CrypRQ: A Post-Quantum–Ready Encrypted Record and File Transfer System"
+    authors:
+      - given-names: Thor
+        family-names: Thor
+    year: 2025
+    month: 11
+    day: 14
+    url: https://github.com/codethor0/cryprq/blob/main/docs/WHITEPAPER.md
+  - type: protocol-specification
+    title: "CrypRQ v1.0 Protocol Specification"
+    authors:
+      - given-names: Thor
+        family-names: Thor
+    year: 2025
+    month: 11
+    day: 14
+    url: https://github.com/codethor0/cryprq/blob/main/cryp-rq-protocol-v1.md
+
