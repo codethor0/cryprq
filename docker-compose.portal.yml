@@ -1,0 +1,68 @@
+# Copyright (c) 2025 Thor Thor
+# License: MIT (see LICENSE file for details)
+
+x-portal: &portal
+  build:
+    context: .
+    dockerfile: Dockerfile.web
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  networks: [portal]
+  command:
+    - node
+    - --input-type=module
+    - -e
+    - >-
+      import {networkInterfaces} from 'node:os';
+      const address = Object.values(networkInterfaces()).flat().find(x => x && x.family === 'IPv4' && !x.internal)?.address;
+      if (!address) throw new Error('Container IPv4 address is unavailable');
+      process.env.CRYPRQ_ADVERTISE_ADDR = '/ip4/' + address + '/udp/19991';
+      const {createPortal} = await import('./web/server/server.mjs');
+      const portal = await createPortal();
+      let closing = false;
+      for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {
+        if (!closing) { closing = true; portal.close().finally(() => process.exit(0)); }
+      });
+  healthcheck:
+    test: [CMD, node, -e, "fetch('http://127.0.0.1:' + process.env.PORT + '/api/session').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"]
+    interval: 2s
+    timeout: 3s
+    retries: 30
+    start_period: 10s
+
+services:
+  portal-a:
+    <<: *portal
+    ports: ["127.0.0.1:${CRYPRQ_PORTAL_A_PORT:-18787}:${CRYPRQ_PORTAL_A_PORT:-18787}"]
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      CRYPRQ_CONTAINER: "1"
+      PORT: "${CRYPRQ_PORTAL_A_PORT:-18787}"
+      CRYPRQ_LISTEN_ADDR: /ip4/0.0.0.0/udp/19991
+      CRYPRQ_STATE_DIR: /data
+      CRYPRQ_MAX_FILE_BYTES: "1048576"
+    volumes: [portal-a:/data]
+  portal-b:
+    <<: *portal
+    ports: ["127.0.0.1:${CRYPRQ_PORTAL_B_PORT:-18788}:${CRYPRQ_PORTAL_B_PORT:-18788}"]
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      CRYPRQ_CONTAINER: "1"
+      PORT: "${CRYPRQ_PORTAL_B_PORT:-18788}"
+      CRYPRQ_LISTEN_ADDR: /ip4/0.0.0.0/udp/19991
+      CRYPRQ_STATE_DIR: /data
+      CRYPRQ_MAX_FILE_BYTES: "1048576"
+    volumes: [portal-b:/data]
+
+networks:
+  portal:
+volumes:
+  portal-a:
+  portal-b:

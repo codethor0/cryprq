@@ -3,10 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "start": "node server.mjs",
+    "test": "node --test *.test.mjs"
   }
 }

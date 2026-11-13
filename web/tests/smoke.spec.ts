@@ -6,13 +6,13 @@
 
 import { test, expect } from '@playwright/test';
 
-const baseURL = process.env.CRYPRQ_WEB_BASE_URL || 'http://127.0.0.1:8787';
+const baseURL = process.env.CRYPRQ_WEB_BASE_URL || 'http://127.0.0.1:18787';
 
 test.describe('Web E2E Smoke', () => {
   test('web UI loads and shows critical elements', async ({ page }) => {
     await page.goto(baseURL);
 
-    await expect(page).toHaveTitle(/web/i);
+    await expect(page).toHaveTitle(/CrypRQ/i);
 
     const appRoot = page.getByTestId('app-root');
     await expect(appRoot).toBeVisible();
@@ -21,27 +21,16 @@ test.describe('Web E2E Smoke', () => {
     await expect(appTitle).toBeVisible();
     await expect(appTitle).toContainText('CrypRQ');
 
-    const connectButton = page.getByTestId('connect-button');
-    await expect(connectButton).toBeVisible();
-
-    const connectButtonText = await connectButton.textContent();
-    expect(connectButtonText).toMatch(/Connect/i);
+    await expect(page.getByTestId('pairing-bundle')).toBeVisible();
+    await expect(page.getByTestId('send-file')).toBeAttached();
+    await expect(page.getByRole('heading', { name: 'Received files' })).toBeVisible();
   });
 
-  test('connect button is enabled when server is connected', async ({ page }) => {
+  test('shows the public pairing identity without claiming encryption', async ({ page }) => {
     await page.goto(baseURL);
 
-    const connectButton = page.getByTestId('connect-button');
-    
-    await page.waitForTimeout(2000);
-
-    const isDisabled = await connectButton.isDisabled();
-    
-    if (!isDisabled) {
-      await expect(connectButton).toBeEnabled();
-    } else {
-      const statusIndicator = page.locator('text=Connected').or(page.locator('text=Disconnected'));
-      await expect(statusIndicator).toBeVisible();
-    }
+    await expect(page.getByTestId('pairing-bundle')).toHaveValue(/ed25519:[a-f0-9]{64}/);
+    await expect(page.getByTestId('pairing-bundle')).toHaveValue(/"version":\s*1/);
+    await expect(page.getByText('End-to-end encrypted', { exact: true })).toHaveCount(0);
   });
 });

@@ -245,18 +245,13 @@ jobs:
     - name: Test with all features
       run: cargo test --workspace --all-features
 
-  # Web E2E Smoke job
+  # Two independent portals and the authenticated CLI, with verified downloads.
   web-e2e-smoke:
-    name: Web E2E Smoke
+    name: Authenticated Portal E2E
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-
-    services:
-      docker:
-        image: docker:26.1.3-dind
-        options: >-
-          --privileged
-          --dns 8.8.8.8
+    timeout-minutes: 45
+    env:
+      COMPOSE_PROJECT_NAME: cryprq-portal-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Checkout
@@ -270,48 +265,55 @@ jobs:
           cache-dependency-path: |
             web/package-lock.json
 
-      - name: Build and start web stack
+      - name: Build and start isolated portals
         run: |
           set -euo pipefail
-          docker compose -f docker-compose.web.yml up --build -d
-          # Wait for health / readiness. Adjust path if a dedicated /health exists.
-          for i in $(seq 1 60); do
-            if curl -fsS "http://127.0.0.1:8787" >/dev/null 2>&1; then
-              echo "Web UI is up."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Web UI did not become ready in time."
-          docker compose -f docker-compose.web.yml logs || true
-          exit 1
+          docker compose -f docker-compose.portal.yml up --build -d --wait --wait-timeout 90
+
+      - name: Test adapter with the real CLI
+        run: docker compose -f docker-compose.portal.yml exec -T portal-a sh -c 'node --test web/server/*.test.mjs'
 
       - name: Install web dependencies
         working-directory: web
         run: |
           set -euo pipefail
           npm ci
-          npx playwright install --with-deps
+          npx playwright install --with-deps chromium
 
-      - name: Run web smoke test
+      - name: Check web build, lint, and dependencies
         working-directory: web
-        env:
-          CRYPRQ_WEB_BASE_URL: "http://127.0.0.1:8787"
         run: |
           set -euo pipefail
-          npm run test:smoke:web
+          npm run build
+          npm run lint
+          npm audit
+          npm --prefix server audit --package-lock-only
+
+      - name: Transfer files in two browsers
+        working-directory: web
+        env:
+          CRYPRQ_WEB_BASE_URL: "http://127.0.0.1:18787"
+          CRYPRQ_WEB_PEER_URL: "http://127.0.0.1:18788"
+        run: |
+          set -euo pipefail
+          npx playwright test
+
+      - name: Collect portal logs
+        if: ${{ always() }}
+        run: docker compose -f docker-compose.portal.yml logs --no-color > portal-compose.log
 
       - name: Upload Playwright artifacts
-        if: ${{ failure() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: web-e2e-smoke-artifacts-${{ github.run_id }}
+          name: portal-e2e-evidence-${{ github.run_id }}
           path: |
             web/playwright-report
             web/test-results
+            portal-compose.log
           if-no-files-found: ignore
 
-      - name: Tear down web stack
+      - name: Tear down isolated portals
         if: ${{ always() }}
         run: |
-          docker compose -f docker-compose.web.yml down
+          docker compose -f docker-compose.portal.yml down --volumes

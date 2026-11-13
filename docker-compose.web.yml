@@ -4,51 +4,38 @@
 # LinkedIn: https://www.linkedin.com/in/thor-thor0
 # License: MIT (see LICENSE file for details)
 
-services:
-  # Backend: Rust CrypRQ binary (spawned by web server)
-  # Note: The web server spawns this, so this service is optional for direct testing
-  cryprq-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: cryprq-node:latest
-    container_name: cryprq-backend
-    command: ["--listen", "/ip4/0.0.0.0/udp/9999/quic-v1"]
-    ports:
-      - "9999:9999/udp"
-    environment:
-      - RUST_LOG=info
-      - CRYPRQ_ROTATE_SECS=300
-    networks:
-      - cryprq-web-network
-    restart: unless-stopped
-    profiles:
-      - backend-only  # Use this profile if you want backend without web server
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "cryprq"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+# One portal device. For two devices on one machine use
+# docker-compose.portal.yml, which needs no published UDP port.
+#
+# The web port and the transfer port are published on host loopback only.
+# Set CRYPRQ_ADVERTISE_ADDR to the address other devices reach this one at.
 
-  # Web server: Node.js Express backend + Vite frontend
-  web:
+services:
+  portal:
     build:
       context: .
       dockerfile: Dockerfile.web
-    container_name: cryprq-web
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "8787:8787"  # Backend API
-      - "5173:5173"   # Vite dev server (or serve built assets)
+      - "127.0.0.1:${CRYPRQ_PORTAL_PORT:-8787}:${CRYPRQ_PORTAL_PORT:-8787}"
+      - "127.0.0.1:${CRYPRQ_PORTAL_UDP_PORT:-9999}:9999/udp"
     environment:
-      - NODE_ENV=production
-      - RUST_LOG=info
-      - CRYPRQ_BIN=/usr/local/bin/cryprq
-    networks:
-      - cryprq-web-network
-    restart: unless-stopped
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      CRYPRQ_CONTAINER: "1"
+      PORT: "${CRYPRQ_PORTAL_PORT:-8787}"
+      CRYPRQ_LISTEN_ADDR: /ip4/0.0.0.0/udp/9999
+      CRYPRQ_ADVERTISE_ADDR: "${CRYPRQ_ADVERTISE_ADDR:-/ip4/127.0.0.1/udp/9999}"
+      CRYPRQ_STATE_DIR: /data
+    volumes:
+      - portal-state:/data
     command: ["node", "web/server/server.mjs"]
 
-networks:
-  cryprq-web-network:
-    driver: bridge
-
+volumes:
+  portal-state:

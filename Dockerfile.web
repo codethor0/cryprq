@@ -72,8 +72,13 @@ COPY --from=web-builder /build/web/index.html ./web/
 WORKDIR /app/web/server
 RUN npm ci --omit=dev
 
-# Expose ports
-EXPOSE 8787 5173
+# Each portal keeps its identity, trust store, and inbox in a private volume.
+RUN mkdir -p /data && chown node:node /data && chmod 700 /data
+ENV CRYPRQ_STATE_DIR=/data
+ENV CRYPRQ_BIN=/usr/local/bin/cryprq
+USER node
+
+EXPOSE 8787
 
 # Start web server
 WORKDIR /app

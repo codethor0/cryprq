@@ -60,3 +60,8 @@ support_bundles/
 .cargo/.package-cache-mutate
 .cargo/registry/
 .cargo/git/
+
+# Local portal identities and private files
+.portal-*/
+web/playwright-report/
+web/test-results/
