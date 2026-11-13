@@ -8,6 +8,7 @@
 <p align="center">
   <a href="https://github.com/codethor0/cryprq/actions/workflows/ci.yml"><img alt="CI status on main" src="https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/codethor0/cryprq/actions/workflows/dependency-governance.yml"><img alt="Dependency governance status" src="https://github.com/codethor0/cryprq/actions/workflows/dependency-governance.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/codethor0/cryprq/actions/workflows/e2e-tests.yml"><img alt="E2E test status on main" src="https://github.com/codethor0/cryprq/actions/workflows/e2e-tests.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
@@ -32,7 +33,7 @@ Snapshot: **November 2026**.
 | Legacy libp2p/QUIC listener and dialer | Prototype transport | A connection is **not** an authenticated hybrid tunnel and carries no tunnel traffic |
 | Dependency and CI gates | In place | `cargo deny`, `cargo audit` and `npm audit` report no findings on the locked dependencies and no advisory is ignored; see [Security Notes](docs/SECURITY_NOTES.md). Routine Dependabot version updates are paused, see [deferred updates](docs/DEFERRED_DEPENDENCY_UPDATES.md) |
 
-**Verification boundary:** the results quoted in this repository were obtained on developer machines (macOS and Linux containers) with the scripts listed under "Validation and CI". Check the workflow runs for what hosted CI has actually executed. Do not use these results as a production assurance statement.
+**Verification boundary:** hosted CI runs the Rust build, tests and lints, the dependency scanners, the two-process authenticated VPN and file-transfer tests, the container TUN test, the legacy Docker transport test and the web smoke test; the badges above show the state of `main`, and the workflow runs show what was executed. Those tests cover two processes on one machine and Linux TUN devices in containers. Nothing here tests macOS TUN devices, host routing, DNS or leak behaviour, and none of it is an independent review. Do not use these results as a production assurance statement.
 
 ## Architecture at a glance
 

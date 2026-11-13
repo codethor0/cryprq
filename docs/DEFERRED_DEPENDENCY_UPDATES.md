@@ -28,7 +28,6 @@ and both end-to-end scripts run before and after. Do not apply them one by one.
 | clap | 4.5.53 | 4.5.60 | |
 | blake3 | 1.8.2 | 1.8.7 | |
 | futures | 0.3.31 | 0.3.34 | |
-| libp2p components | core 0.43, swarm 0.47, quic 0.13 and others | the 0.57 release line | Changes swarm and QUIC/TLS APIs; to be done as one reviewed change |
 
 ## GitHub Actions major versions: one reviewed workflow change
 

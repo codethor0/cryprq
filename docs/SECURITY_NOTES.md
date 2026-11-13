@@ -38,6 +38,21 @@ on a patched `minimatch` itself.
 no package any more and is removed from `cargo-deny.toml` and from the audit
 command in CI.
 
+**5. Remote-panic advisories in the libp2p transport** (GHSA-5hq8-qhww-jm7q
+in `libp2p-quic`; GHSA-vxx9-2994-q338 and GHSA-4w32-2493-32g7 in `yamux`).
+The old `yamux` 0.12 was a hard dependency of `libp2p-yamux` 0.47, so a patch
+update could not remove it. The libp2p components are therefore moved
+together to the next release family (core 0.44, swarm 0.48, quic 0.14, tcp
+0.45, noise 0.47, yamux 0.48, ping 0.48, request-response 0.30,
+connection-limits 0.7, identity 0.3), which uses `yamux` 0.14 only. The
+transports, their order, the timeout and the application protocols are
+unchanged. Two things do change underneath the CrypRQ handshake: the QUIC
+transport's TLS now uses the AWS-LC provider (a C library built with the
+binary) and offers the X25519MLKEM768 key exchange group first, falling back
+to X25519. Evidence: a build from before the change and one from after pass
+the authenticated VPN and file-transfer tests with each other in both
+directions over QUIC.
+
 **mDNS remains removed.** Local peer discovery does not exist in this build:
 `CRYPRQ_ENABLE_MDNS=1` only logs that it is unavailable. It must not be
 restored without a maintained, advisory-free implementation and a decision
@@ -57,8 +72,9 @@ Evidence levels used here:
 
 - **Implemented**: the code path exists.
 - **Tested locally**: tests that exercise it pass on a developer machine.
-- **Tested in hosted CI**: see the workflow runs of this repository. The
-  statements below are "tested locally" unless a run shows otherwise.
+- **Tested in hosted CI**: the jobs in `docs/CI_VPN_GATES.md` run these
+  tests on every push and pull request; see the workflow runs of this
+  repository for the result on a given revision.
 
 ### The four v1.0.1 warnings
 
@@ -97,8 +113,9 @@ authenticated ones.
 
 ### What is not established
 
-- **Hosted CI is not a release gate yet.** The results quoted here are from
-  developer machines.
+- **Hosted CI is not a release gate yet.** The workflows run on every push
+  and pull request, but GitHub does not require them before a merge (no
+  branch protection is configured).
 - **No independent review or audit** of the handshake, the record layer or
   the receiver.
 - **Authentication is classical.** Ed25519 signatures are not post-quantum;
