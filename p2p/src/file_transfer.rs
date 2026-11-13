@@ -180,7 +180,6 @@ pub fn calculate_file_hash(file_path: &PathBuf) -> Result<[u8; 32]> {
 #[derive(Clone, Default)]
 pub struct FileTransferCodec;
 
-#[async_trait::async_trait]
 impl Codec for FileTransferCodec {
     type Protocol = String;
     type Request = Vec<u8>;

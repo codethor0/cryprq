@@ -20,7 +20,6 @@ pub struct PacketCodec;
 /// Packet protocol identifier
 pub const PACKET_PROTOCOL: StreamProtocol = StreamProtocol::new("/cryprq/packet/1.0.0");
 
-#[async_trait::async_trait]
 impl Codec for PacketCodec {
     type Protocol = String;
     type Request = Vec<u8>;

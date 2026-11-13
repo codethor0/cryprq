@@ -523,7 +523,6 @@ async fn write_frame<T: AsyncWrite + Unpin + Send>(
     io.flush().await
 }
 
-#[async_trait::async_trait]
 impl request_response::Codec for VpnCodec {
     type Protocol = StreamProtocol;
     type Request = Vec<u8>;
@@ -1111,7 +1110,7 @@ where
     // `tokio::select!`, whose expansion contains `panic!`.
     enum Wake {
         Shutdown,
-        Swarm(SwarmEvent<request_response::Event<Vec<u8>, Vec<u8>>>),
+        Swarm(Box<SwarmEvent<request_response::Event<Vec<u8>, Vec<u8>>>>),
         Device(Option<Vec<u8>>),
         Rotate,
         Housekeeping,
@@ -1136,7 +1135,10 @@ where
                 }
                 for offset in 0..4 {
                     let ready = match (first + offset) % 4 {
-                        0 => swarm_event.as_mut().poll(cx).map(Wake::Swarm),
+                        0 => swarm_event
+                            .as_mut()
+                            .poll(cx)
+                            .map(|event| Wake::Swarm(Box::new(event))),
                         1 => device.as_mut().poll(cx).map(Wake::Device),
                         2 => rotate.as_mut().poll(cx).map(|_| Wake::Rotate),
                         _ => keep.as_mut().poll(cx).map(|_| Wake::Housekeeping),
@@ -1152,7 +1154,7 @@ where
         turn = turn.wrapping_add(1);
         match wake {
             Wake::Shutdown => break,
-            Wake::Swarm(event) => engine.on_swarm_event(event),
+            Wake::Swarm(event) => engine.on_swarm_event(*event),
             Wake::Device(Some(packet)) => engine.on_device_packet(packet),
             Wake::Device(None) => {
                 // Without a device there is nothing to protect. Stop, and
