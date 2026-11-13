@@ -7,7 +7,6 @@
 
 <p align="center">
   <a href="https://github.com/codethor0/cryprq/actions/workflows/ci.yml"><img alt="CI status on main" src="https://github.com/codethor0/cryprq/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/codethor0/cryprq/actions/workflows/dependency-governance.yml"><img alt="Dependency governance status" src="https://github.com/codethor0/cryprq/actions/workflows/dependency-governance.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/codethor0/cryprq/actions/workflows/e2e-tests.yml"><img alt="E2E test status on main" src="https://github.com/codethor0/cryprq/actions/workflows/e2e-tests.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
@@ -186,10 +185,11 @@ GitHub workflows: [CI](https://github.com/codethor0/cryprq/actions/workflows/ci.
 - [File-transfer test plan](docs/FILE_TRANSFER_TEST_PLAN.md) and [VPN routing/leak test plan](docs/VPN_LEAK_AND_ROUTING_TEST_PLAN.md): verification checklists.
 - [Release checklist](docs/RELEASE_CHECKLIST.md) and [troubleshooting guide](docs/TROUBLESHOOTING_SUPPORT_BUNDLE.md): release and operational references; validate against the revision being tested.
 - [CI gates](docs/CI_VPN_GATES.md) and [E2E coverage map](docs/E2E_COVERAGE_MAP.md): what CI runs and which test asserts which claim.
+- [Internet connectivity roadmap](docs/INTERNET_CONNECTIVITY_ROADMAP.md): future goals for connectivity beyond a local network; none of it is implemented.
 
 ## Contributing and branch safety
 
-Use short-lived, focused pull requests against `main`. Check the actual workflow results, relevant tests, and cryptographic signatures before integration. Do not bypass a failing security check to make a dashboard appear green.
+Use short-lived, focused pull requests against `main`. Check the actual workflow results, relevant tests, and cryptographic signatures before integration. Do not bypass a failing security check to make a dashboard appear green. See [CONTRIBUTING.md](CONTRIBUTING.md), and [SECURITY.md](SECURITY.md) for reporting a vulnerability.
 
 ## License and research support
 
