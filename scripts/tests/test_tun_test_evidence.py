@@ -97,6 +97,29 @@ class RouterSolicitationTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         evidence.count_router_solicitations(path)
 
+    def test_capture_after_the_peer_stops_counts_only_the_solicitation(self):
+        # The shape seen on the dialer's wire after the listener stops:
+        # IPv4 link traffic, ARP and one kernel router solicitation. A second
+        # IPv6 packet that is not a solicitation must not be counted.
+        ipv4 = bytes.fromhex("0200000000020200000000010800") + b"\x45" + b"\0" * 47
+        arp = bytes.fromhex("ffffffffffff0200000000010806") + b"\0" * 28
+        echo = bytearray(RS)
+        echo[54] = 128
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "afterstop-wire.pcap"
+            path.write_bytes(pcap([ipv4, arp, RS, ipv4, with_checksum(echo)]))
+            self.assertEqual(evidence.count_router_solicitations(path), 1)
+
+    def test_both_wire_captures_use_the_strict_count(self):
+        script = (Path(__file__).resolve().parents[1] / "e2e-tun-docker.sh").read_text()
+        for capture in ["wire.pcap", "afterstop-wire.pcap"]:
+            with self.subTest(capture=capture):
+                self.assertIn(
+                    f'count-router-solicitations "$E/{capture}")', script)
+        # No blanket IPv6 exclusion in any capture filter.
+        for forbidden in ["not ip6", "not icmp6", "and ip)", "ip and "]:
+            self.assertNotIn(forbidden, script)
+
     def test_missing_capture_is_a_command_failure(self):
         with tempfile.TemporaryDirectory() as directory:
             process = subprocess.run(

@@ -518,8 +518,19 @@ check "no ICMP echo is on the dialer's wire" \
     [ "$(count_in "$ALICE" /afterstop-wire.pcap 'icmp[icmptype]=icmp-echo or icmp[icmptype]=icmp-echoreply')" = 0 ]
 check "no packet with a tunnel address is on the dialer's wire" \
     [ "$(count_in "$ALICE" /afterstop-wire.pcap "net $TUN_SUBNET")" = 0 ]
-check "the dialer's wire carries only reconnection attempts, their refusals and ARP" \
-    [ "$(count_in "$ALICE" /afterstop-wire.pcap "not udp port $PORT and not arp and not (icmp[icmptype]=icmp-unreach and src host $BOB_IP)")" = 0 ]
+afterstop_other="$(count_in "$ALICE" /afterstop-wire.pcap "not udp port $PORT and not arp and not (icmp[icmptype]=icmp-unreach and src host $BOB_IP)")"
+# As for the first capture: keep the raw file and exclude only
+# checksum-validated, fixed-format router solicitations, which the kernel
+# sends on the link by itself. Any other IPv6 packet still counts.
+timeout 30 docker cp "$ALICE:/afterstop-wire.pcap" "$E/afterstop-wire.pcap" >/dev/null 2>&1 ||
+    abort "wire capture after the stop cannot be read"
+afterstop_nd="$(python3 "$EVIDENCE_HELPER" count-router-solicitations "$E/afterstop-wire.pcap")" ||
+    abort "wire capture after the stop is invalid"
+case "$afterstop_other:$afterstop_nd" in *[!0-9:]* | :* | *:) abort "packet counts after the stop are invalid" ;; esac
+[ "$afterstop_other" -ge "$afterstop_nd" ] || abort "packet counters after the stop disagree"
+afterstop_other=$((afterstop_other - afterstop_nd))
+check "the dialer's wire carries only reconnection attempts, their refusals, ARP and validated router solicitations ($afterstop_other other, $afterstop_nd solicitations)" \
+    [ "$afterstop_other" = 0 ]
 
 # ---- 5. recovery -------------------------------------------------------------
 
