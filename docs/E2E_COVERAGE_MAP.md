@@ -81,6 +81,15 @@ The harness must run exactly these two and reports
 `E2E_RESULT passed=2 failed=0 skipped=0` on success. A pass says nothing about
 the authenticated protocol.
 
+## Browser portal
+
+| Assertion | Where | What it shows |
+|---|---|---|
+| "real authenticated adapter transfer, request boundaries, rejection and recovery" | `web/server/portal.test.mjs` | Two adapters run the release CLI: transfers both ways, downloads equal to the originals, and no published file for an unpinned sender, a wrong identity, an interrupted or an oversized transfer |
+| "concurrent pairing is serialized, idempotent and leaves a running receiver alone" | same | Simultaneous pairing requests yield one pin per identity, one line per key in the trust store, and no restart of a receiver that is already correct |
+| "two independent browsers pair, send both ways, and download identical files" | `web/tests/portal.spec.ts` | Two browsers against two portal containers; the downloaded bytes, size and SHA-256 equal the original |
+| "real portals reject wrong identities, untrusted peers, unsafe uploads, and unauthorized downloads" | same | The same rejections through the HTTP interface of running containers |
+
 ## Enforcement
 
 A failing script fails its job and the workflow run. Whether a failed run also

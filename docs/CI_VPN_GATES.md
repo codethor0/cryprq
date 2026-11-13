@@ -131,23 +131,28 @@ The evidence directory holds logs, packet captures and the before/after
 state. It never holds identity keys: they are created inside the containers
 and destroyed with them, and the script fails if it finds one.
 
-## Browser smoke test on another port
+## Browser portal test
 
-The workflow's `Web E2E Smoke` job starts the Docker web stack on port 8787.
-Locally the same test runs without Docker and on any free port, which avoids
-a port that something else holds:
+The workflow's `Authenticated Portal E2E` job builds `Dockerfile.web`, starts
+the two portals of `docker-compose.portal.yml` on loopback ports 18787 and
+18788, runs the adapter tests inside one container against the real CLI, and
+then drives both portals with Playwright: pairing, a transfer in each
+direction, downloads compared with the originals, and the rejection cases.
+The transfer path between the containers is the project's Docker network; no
+UDP port is published on the host.
+
+Locally, when those ports are taken:
 
 ```sh
-(cd web && npm ci && npm run build && cd server && npm ci)
-cargo build --release -p cryprq --locked
-BRIDGE_PORT=18787 CRYPRQ_BIN="$PWD/target/release/cryprq" node web/server/server.mjs &
-(cd web && CRYPRQ_WEB_BASE_URL=http://127.0.0.1:18787 npx playwright test tests/smoke.spec.ts)
+CRYPRQ_PORTAL_A_PORT=18797 CRYPRQ_PORTAL_B_PORT=18798 \
+  docker compose -p cryprq-portal-test -f docker-compose.portal.yml up --build -d --wait
+(cd web && npm ci && CRYPRQ_WEB_BASE_URL=http://127.0.0.1:18797 \
+  CRYPRQ_WEB_PEER_URL=http://127.0.0.1:18798 npx playwright test)
+docker compose -p cryprq-portal-test -f docker-compose.portal.yml down -v
 ```
 
-The server port (`BRIDGE_PORT`) and the test's target (`CRYPRQ_WEB_BASE_URL`)
-are both existing settings; no code change is involved. The test checks that
-the page loads and the connect control is present. It says nothing about the
-authenticated protocol.
+The job covers file transfer through the portal. It says nothing about the VPN
+link, which the two jobs above cover.
 
 ## Required status checks
 
@@ -158,7 +163,7 @@ For a failing job to block a merge, the repository's branch protection for
 - `Build and Test`
 - `Security Checks`
 - `Governance Checks`
-- `Web E2E Smoke`
+- `Authenticated Portal E2E`
 - `dependency-governance`
 - `Legacy transport E2E (Docker)`
 - `Authenticated VPN E2E`

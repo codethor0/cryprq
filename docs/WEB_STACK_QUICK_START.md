@@ -1,89 +1,45 @@
-# CrypRQ Web Stack — Quick Start for New Contributors
+# Local portal setup
 
-> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+Use [Docker](DOCKER_WEB_GUIDE.md) for two isolated devices. To develop locally:
 
-**File:** docs/WEB_STACK_QUICK_START.md 
-**Audience:** New contributors who want to focus on the web-only stack 
-**Goal:** Get you productive quickly without reconstructing the entire project history
+```bash
+cargo build --release -p cryprq --locked
+cd web
+npm ci
+npm run build
+cd ..
+```
 
-> **TL;DR:** If you only care about the web stack, read these four docs in this order:
+Run each command below in its own terminal from the repository root. Use two
+new private state directories. Do not point both processes at the same directory.
 
----
+```bash
+PORT=18787 CRYPRQ_STATE_DIR="$PWD/.portal-a" CRYPRQ_LISTEN_ADDR=/ip4/127.0.0.1/udp/20441 CRYPRQ_BIN="$PWD/target/release/cryprq" node web/server/server.mjs
+```
 
-## Reading Order (Web Stack Focus)
+```bash
+PORT=18788 CRYPRQ_STATE_DIR="$PWD/.portal-b" CRYPRQ_LISTEN_ADDR=/ip4/127.0.0.1/udp/20442 CRYPRQ_BIN="$PWD/target/release/cryprq" node web/server/server.mjs
+```
 
-### 1. **`WEB_ONLY_RELEASE_NOTES_v1.0.1.md`** (5 min read)
- - **Why:** Understand what the web stack is, what it includes, and what it's NOT (test mode only).
- - **Key takeaway:** This is a test-mode preview, not production-ready.
+Open `http://127.0.0.1:18787` and `http://127.0.0.1:18788`, then follow
+[Pair devices](WEB_UI_GUIDE.md#pair-devices). The adapter defaults to loopback.
+Each process generates its identity only if none exists. Existing identity and
+trust failures stop startup instead of resetting state.
 
-### 2. **`DOCKER_WEB_GUIDE.md`** (10 min read)
- - **Why:** Learn how to bring up the web stack with one command.
- - **Key takeaway:** `docker compose -f docker-compose.web.yml up --build` → open browser → test file transfer.
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Local HTTP port |
+| `HOST` | HTTP bind address; default `127.0.0.1` |
+| `CRYPRQ_BIN` | Path to the authenticated CLI |
+| `CRYPRQ_STATE_DIR` | Exclusive private device state |
+| `CRYPRQ_LISTEN_ADDR` | Receiver IPv4 UDP multiaddress |
+| `CRYPRQ_ADVERTISE_ADDR` | Reachable peer address; defaults to listen address |
+| `CRYPRQ_MAX_FILE_BYTES` | Upload and published-inbox size limit; default 64 MiB |
+| `CRYPRQ_RECEIVER_IDLE_MS` | Stalled authenticated-session timeout; default 15,000 ms |
 
-### 3. **`WEB_UI_GUIDE.md`** (10 min read)
- - **Why:** Understand how to use the web UI and what the API endpoints do.
- - **Key takeaway:** File transfer workflow, event streaming, API contract.
+For frontend development, build and restart the adapter after changes. The
+production build and API share one origin. No server dependency installation is
+needed when the adapter uses only Node's standard library.
 
-### 4. **`WEB_VALIDATION_RUN.md`** (15 min read)
- - **Why:** See the test matrix and validation status for the web stack.
- - **Key takeaway:** What tests exist, what's passing, what needs work.
-
----
-
-## Optional Deep Dives
-
-If you want to understand the underlying protocol:
-
-- **`cryp-rq-protocol-v1.md`** — Full protocol specification (v1.0.1)
-- **`VALIDATION_RUN.md`** — CLI validation (shows the record layer works end-to-end)
-- **`SECURITY_NOTES.md`** — Security posture and limitations
-
-If you want to contribute code:
-
-- See `docs/` directory for implementation guides
-- **`.github/ISSUES/001-004.md`** — GitHub issue templates for web stack work
-
----
-
-## Quick Test (After Reading Guides)
-
-1. **Start the stack:**
-   ```bash
-   docker compose -f docker-compose.web.yml up --build
-   ```
-
-2. **Open UI:** `http://localhost:3000` (or whatever port is configured)
-
-3. **Send a test file:**
- - Create: `echo "test" > test.bin`
- - Use UI to send it
- - Verify hash matches
-
-4. **If it works:** You're ready to contribute!
-
-5. **If it doesn't:** Check `DOCKER_WEB_GUIDE.md` troubleshooting section.
-
----
-
-## What You're NOT Reading (For Now)
-
-- CLI implementation details (`cli/src/main.rs`)
-- VPN/TUN mode specifics
-- Handshake implementation (not done yet)
-- Production deployment guides (not applicable to test mode)
-
-These are documented elsewhere if you need them later.
-
----
-
-## Next Steps After Quick Start
-
-- **Want to validate the web stack?** → Use `WEB_VALIDATION_RUN.md` test matrix
-- **Want to align web backend with record layer?** → See `.github/ISSUES/001-align-web-backend-record-layer.md`
-- **Want to wire up new UI features?** → See `.github/ISSUES/002-wire-web-ui-file-transfer.md`
-- **Want to understand the protocol?** → Read `cryp-rq-protocol-v1.md`
-
----
-
-**Remember:** The CLI path is validated and working. The web stack should behave identically, just with a web UI on top. If something works in CLI but not web, that's a bug to fix, not a design decision.
-
+See [portal validation](WEB_VALIDATION_RUN.md) for checks and
+[security boundaries](SECURITY_NOTES.md#browser-portal-boundary) for limitations.

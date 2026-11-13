@@ -1,5 +1,7 @@
 # CrypRQ Release Checklist
 
+> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+
 ## Overview
 
 This document defines a repeatable process for cutting a CrypRQ release (Git tag + GitHub release), minimizing regressions and ensuring consistency.

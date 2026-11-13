@@ -1,5 +1,7 @@
 # CrypRQ Troubleshooting and Support Bundle Guide
 
+> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+
 ## Overview
 
 This document helps users and developers diagnose issues with CrypRQ and collect actionable evidence for bug reports. It covers the current P2P tunnel and Web Tester release, focusing on practical troubleshooting steps and support bundle collection.

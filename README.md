@@ -12,13 +12,13 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
-> **Research prototype. Not production-ready.** CrypRQ contains a Rust implementation of an authenticated hybrid handshake, a point-to-point VPN link and file transfer built on it, and a web testing stack that runs an older unauthenticated path. It has not been independently audited. A successful build or a green badge is not proof that it has passed a security review.
+> **Research prototype. Not production-ready.** CrypRQ contains a Rust implementation of an authenticated hybrid handshake, a point-to-point VPN link and file transfer built on it, and a local browser portal that invokes the authenticated CLI. It has not been independently audited. A successful build or a green badge is not proof that it has passed a security review.
 
 ## What CrypRQ is
 
-CrypRQ explores peer-to-peer encrypted communication combining **ML-KEM-768** and **X25519**, with ChaCha20-Poly1305 records, session key rotation, and explicit trust boundaries. The project consists of a Rust CLI, cryptographic and networking crates, a libp2p/QUIC transport, and a React/TypeScript web testing interface.
+CrypRQ explores peer-to-peer encrypted communication combining **ML-KEM-768** and **X25519**, with ChaCha20-Poly1305 records, session key rotation, and explicit trust boundaries. The project consists of a Rust CLI, cryptographic and networking crates, a libp2p/QUIC transport, and a React/TypeScript file-transfer portal.
 
-The design goal is a secure, practical VPN with evidence-based verification. **The full end-to-end VPN goal is still in progress.** The versioned, mutually authenticated handshake is distinct from the legacy libp2p/QUIC path that the web preview uses. Do not interpret a libp2p connection event as proof that CrypRQ's hybrid handshake has finished.
+The design goal is a secure, practical VPN with evidence-based verification. **The full end-to-end VPN goal is still in progress.** The portal uses the versioned, mutually authenticated file-transfer handshake. The legacy libp2p/QUIC connection mode remains separate. Do not interpret a libp2p connection event as proof that CrypRQ's hybrid handshake has finished.
 
 ## Implementation status
 
@@ -29,16 +29,16 @@ Snapshot: **November 2026**.
 | Authenticated handshake | Implemented | Pinned Ed25519 identities, ML-KEM-768 + X25519, transcript binding and key confirmation in both directions. Unit tests and two-process tests |
 | Authenticated file transfer | Implemented | UDP tunnel between pinned peers; the receiver verifies size and SHA-256, publishes atomically without overwriting, rejects unsafe names and symlinks, and bounds size, concurrent transfers and reserved storage |
 | Authenticated VPN link (`--vpn`) | Implemented as a **point-to-point link** | Tested between two processes and between Linux TUN devices in containers. Installs no routes, no DNS settings and no leak protection. macOS TUN devices are **untested** |
-| Web UI and Docker lab stack | **Test-mode preview** | Runs the legacy libp2p path without the CrypRQ handshake and without peer authentication |
+| Browser portal | Authenticated CLI adapter | Separate device identities and explicit peer pinning; bounded uploads; receiver-verified inbox and downloads. See [portal validation](docs/WEB_VALIDATION_RUN.md) |
 | Legacy libp2p/QUIC listener and dialer | Prototype transport | A connection is **not** an authenticated hybrid tunnel and carries no tunnel traffic |
 | Dependency and CI gates | In place | `cargo deny`, `cargo audit` and `npm audit` report no findings on the locked dependencies and no advisory is ignored; see [Security Notes](docs/SECURITY_NOTES.md). Routine Dependabot version updates are paused, see [deferred updates](docs/DEFERRED_DEPENDENCY_UPDATES.md) |
 
-**Verification boundary:** hosted CI runs the Rust build, tests and lints, the dependency scanners, the two-process authenticated VPN and file-transfer tests, the container TUN test, the legacy Docker transport test and the web smoke test; the badges above show the state of `main`, and the workflow runs show what was executed. Those tests cover two processes on one machine and Linux TUN devices in containers. Nothing here tests macOS TUN devices, host routing, DNS or leak behaviour, and none of it is an independent review. Do not use these results as a production assurance statement.
+**Verification boundary:** hosted CI runs the Rust build, tests and lints, the dependency scanners, the two-process authenticated VPN and file-transfer tests, the container TUN test, the legacy Docker transport test and browser-driven two-portal transfers; the badges above show the state of `main`, and the workflow runs show what was executed. Those tests cover two processes on one machine and Linux TUN devices in containers. Nothing here tests macOS TUN devices, host routing, DNS or leak behaviour, and none of it is an independent review. Do not use these results as a production assurance statement.
 
 ## Architecture at a glance
 
 ```text
-Web lab UI (React / TypeScript) -> Node.js web server -> Rust CLI (test-mode preview)
+Browser portal (React / TypeScript) -> local Node.js adapter -> authenticated Rust CLI
 
 Rust CLI
   |-- crypto / core : ML-KEM-768, X25519, KDF, authenticated record format
@@ -49,24 +49,30 @@ Rust CLI
 
 The [`crypto/`](crypto/), [`core/`](core/), [`node/`](node/), [`p2p/`](p2p/), and [`cli/`](cli/) directories contain the Rust implementation. The [`web/`](web/) directory contains the browser interface and backend. The authenticated handshake and the VPN link are specified in [`docs/HANDSHAKE_V2.md`](docs/HANDSHAKE_V2.md).
 
-## Quickstart: local web lab
-
-**For evaluation only.** The web preview runs the legacy libp2p path: it does not run the CrypRQ hybrid handshake and does not authenticate peers. Do not expose it as a production VPN, use it to protect sensitive traffic, or assume authenticated peers.
+## Quickstart: two local portals
 
 ```bash
 git clone https://github.com/codethor0/cryprq.git
 cd cryprq
-docker compose -f docker-compose.web.yml up --build
-# Web lab: http://localhost:8787
+docker compose -p cryprq-portal -f docker-compose.portal.yml up --build -d
 ```
 
-To stop the lab:
+Open [device A](http://127.0.0.1:18787) and [device B](http://127.0.0.1:18788).
+Each portal creates its own identity and private storage. Copy each device's
+pairing code to the other portal, compare the public keys over a trusted channel,
+and explicitly pin both devices. Select a file and send it. On the receiving
+portal, wait for the verified file, download it, and compare its SHA-256 with the
+original. Sender completion alone does not prove delivery.
 
 ```bash
-docker compose -f docker-compose.web.yml down
+docker compose -p cryprq-portal -f docker-compose.portal.yml down
 ```
 
-The web-specific setup and limitations are in [Docker Web Guide](docs/DOCKER_WEB_GUIDE.md), [Web Stack Quick Start](docs/WEB_STACK_QUICK_START.md), and [Security Notes](docs/SECURITY_NOTES.md). Those documents describe historical preview behavior and should not be mistaken for a current production deployment guide.
+This project uses alternate loopback web ports and separate state volumes. It
+does not use the existing `cryprq-web` container. Keep the portal local. It has no
+remote user authentication and is not a public hosting service. See the
+[Web UI Guide](docs/WEB_UI_GUIDE.md), [local setup](docs/WEB_STACK_QUICK_START.md),
+[Docker guide](docs/DOCKER_WEB_GUIDE.md), and [Security Notes](docs/SECURITY_NOTES.md).
 
 ## Authenticated file transfer
 
@@ -109,7 +115,7 @@ The exact wire layout, key schedule, identity-file format, test-mode rules, and 
 | Key confirmation | The handshake binds messages and identities to an authenticated transcript before permitting application data. |
 | Record protection | The protocol work tests nonce exhaustion, direction-specific keys, replay rejection and epoch handling. Host-level routing and leak behavior require separate tests. |
 | Quantum-security scope | **Ed25519 authentication is classical**, not post-quantum. Hybrid confidentiality does not make the entire system post-quantum secure against every threat. |
-| Test mode | The historical web preview and explicit fixed-key CLI test paths are for isolated labs only. They do not establish peer authentication. |
+| Test mode | Explicit fixed-key CLI test paths are for isolated labs only. The portal never enables test mode. |
 | Local discovery | None. mDNS is not compiled and peers are given explicit addresses. |
 | Supply chain | ML-KEM-768 comes from the RustCrypto `ml-kem` crate and is checked against NIST ACVP vectors. `cargo deny`, `cargo audit` and `npm audit` run in CI without exceptions. A clean scan covers known advisories only; the dependencies have not been audited by this project. |
 
@@ -161,7 +167,13 @@ The device test needs Docker and runs both endpoints on real TUN devices in two 
 bash scripts/e2e-tun-docker.sh
 ```
 
-The E2E workflow runs these scripts as the `Authenticated VPN E2E` job and the container TUN test as a second job; see [CI gates for the VPN](docs/CI_VPN_GATES.md) and the [E2E coverage map](docs/E2E_COVERAGE_MAP.md). Host-level routing and leak tests are still required before a full release claim.
+The browser portal has adapter tests against the real CLI and a Playwright suite that drives two portals in containers; see [portal validation](docs/WEB_VALIDATION_RUN.md):
+
+```bash
+(cd web && npm ci && npm run build && npm run test:adapter)
+```
+
+The E2E workflow runs the two-process scripts as the `Authenticated VPN E2E` job and the container TUN test as a second job; the CI workflow runs the portal tests as `Authenticated Portal E2E`; see [CI gates for the VPN](docs/CI_VPN_GATES.md) and the [E2E coverage map](docs/E2E_COVERAGE_MAP.md). Host-level routing and leak tests are still required before a full release claim.
 
 GitHub workflows: [CI](https://github.com/codethor0/cryprq/actions/workflows/ci.yml), [Dependency Governance](https://github.com/codethor0/cryprq/actions/workflows/dependency-governance.yml), [E2E Tests](https://github.com/codethor0/cryprq/actions/workflows/e2e-tests.yml), and [Stability Monitor](https://github.com/codethor0/cryprq/actions/workflows/stability-monitor.yml).
 

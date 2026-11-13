@@ -1,4 +1,4 @@
-# Operator Guide — Cutting v1.0.1-web-preview Release
+# Operator Guide: Cutting v1.0.1-web-preview Release
 
 **Purpose:** Short, operator-level game plan for cutting the web-only preview release and starting the next phase.
 
@@ -23,13 +23,12 @@ From `docs/PRE_TAG_CHECKLIST.md`, confirm:
 Follow tests in `docs/WEB_VALIDATION_RUN.md`:
 
 ```bash
-# Bring up web stack
-docker compose -f docker-compose.web.yml up --build
+# Bring up two portals (see DOCKER_WEB_GUIDE.md for the URLs)
+docker compose -p cryprq-portal -f docker-compose.portal.yml up --build -d
 
-# Hit the web UI (see DOCKER_WEB_GUIDE.md for URL)
-# Do a simple file transfer & confirm:
-# - UI shows success
-# - File appears on disk with correct SHA-256
+# Pair both devices, send a file and confirm on the receiving portal:
+# - the file is listed as SHA-256 verified
+# - the downloaded file has the SHA-256 of the original
 ```
 
 **Update `WEB_VALIDATION_RUN.md`** for each test:
@@ -87,7 +86,7 @@ git tag | grep v1.0.1
 
 2. **Tag:** `v1.0.1-web-preview`
 
-3. **Title:** `CrypRQ v1.0.1 — Web-Only Preview (Test Mode, Non-Production)`
+3. **Title:** `CrypRQ v1.0.1: Web-Only Preview (Test Mode, Non-Production)`
 
 4. **Description:** Copy entire contents of:
    ```
@@ -139,7 +138,7 @@ Follow the protocol specification for:
  - web-preview line (test mode)
  - future non-test-mode line
 
-**Note:** You already have the protocol spec and KDF/record layer aligned — this phase is mostly: "Make the running system behave exactly like the spec, instead of spec emulating the test harness."
+**Note:** You already have the protocol spec and KDF/record layer aligned: this phase is mostly: "Make the running system behave exactly like the spec, instead of spec emulating the test harness."
 
 ---
 

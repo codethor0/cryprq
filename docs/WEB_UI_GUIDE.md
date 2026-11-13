@@ -1,278 +1,68 @@
-# CrypRQ v1.0.1 — Web UI Guide
-
-**File:** docs/WEB_UI_GUIDE.md 
-**Scope:** Using the web UI to exercise the CrypRQ v1.0.1 stack (test mode) 
-**Audience:** Developers, testers, and demo users.
-
-> **Important:** The web UI currently drives a **test-mode** backend:
-> - Static test keys
-> - No handshake or peer authentication
-> - NOT suitable for production use
-
-See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` and `SECURITY_NOTES.md` for the security posture.
-
----
-
-## 1. Web UI Overview
-
-The CrypRQ Web UI is a thin control and visibility layer over the v1.0.1 record-based backend. It provides:
-
-- A **File Transfer** panel for:
- - Selecting a file.
- - Entering/choosing a peer or endpoint.
- - Starting a CrypRQ-based file transfer.
- - Observing progress and completion status.
-- A **Status / Logs** section for:
- - Real-time updates from the backend (via `/events` or WebSocket).
- - Displaying high-level events: transfers starting/completing, errors, warnings.
-
-The UI is intentionally minimal and focused on protocol validation and demos.
-
----
-
-## 2. Architecture (High-Level)
-
-```text
-[Browser / Web UI]  <-- HTTP / WebSocket / SSE -->  [Web Backend]
-         |                                                |
-         |                              CrypRQ v1.0.1 record layer
-         |                                                |
-         '---------------------------------->  [UDP peer]  (loopback or remote)
-```
-
-Key backend endpoints (as integrated in previous phases):
-
-- `GET /connect` — (Optional) Initialize or verify a backend connection / configuration.
-- `GET /events` — Server-Sent Events (SSE) or equivalent for live status/log streaming.
-- `POST /api/send-file` — Initiates a file transfer via the CrypRQ tunnel.
-
-Each `send-file` operation results in:
-- Backend creating/using a `Tunnel`.
-- File metadata and chunks being sent as `FILE_META` + `FILE_CHUNK` records.
-- Events being pushed to the UI via `/events`.
-
----
-
-## 3. Starting the Web Stack
-
-Follow `DOCKER_WEB_GUIDE.md` for full details. Short version:
-
-```bash
-docker compose -f docker-compose.web.yml up --build
-```
-
-Then open the UI in your browser:
-
-```
-http://localhost:<frontend_port>
-```
-
-(e.g., `http://localhost:3000` if that's how the compose file is configured.)
-
----
-
-## 4. File Transfer via Web UI
-
-### 4.1 Minimal Web File Transfer
-
-**Goal:** Send a small file via the web UI and confirm it is received correctly.
-
-**Prepare a test file** on the host (optional if UI lets you create/choose):
-
-```bash
-echo "Test file for CrypRQ web v1.0.1" > test-web-minimal.bin
-sha256sum test-web-minimal.bin
-```
-
-**Open the Web UI**
-
-1. Navigate to the File Transfer section.
-
-**Select a file**
-
-2. Click the file picker.
-3. Choose `test-web-minimal.bin`.
-
-**Configure the peer/endpoint**
-
-4. Enter the backend's CrypRQ target (depending on how the backend is set up).
- - In a simple loopback test, the backend may be configured to treat itself as both sender and receiver over `udp://127.0.0.1:20440` or similar.
- - Use whatever peer format the UI expects (`/ip4/.../udp/.../quic-v1` or simple `udp://host:port`), as documented in the UI/placeholder help text.
-
-**Start the transfer**
-
-5. Click Send (or the equivalent button).
-
-**Watch the status panel**
-
-6. You should see events like:
- - "Transfer started"
- - "Sending file: test-web-minimal.bin"
- - "Transfer complete" (or similar wording)
- - If an error occurs, you should see an error message.
-
-**Verify on disk**
-
-7. Locate the output directory used by the backend (see `WEB_VALIDATION_RUN.md` or backend config).
-8. Compare hashes:
-   ```bash
-   sha256sum test-web-minimal.bin /path/to/received/test-web-minimal.bin
-   ```
- They should be identical.
-
----
-
-## 5. Status / Logs Panel
-
-The UI should expose a log or status area that reflects backend events arriving from `/events` or from a WebSocket.
-
-**Typical events** (sanitized):
-
-- `file_transfer_started`
- - Fields: `filename`, `size`, `stream_id`
-- `file_chunk_sent` or `file_chunk_received`
- - Optional, for detailed progress.
-- `file_transfer_complete`
- - Fields: `filename`, `size`, `duration`, `stream_id`
-- `error`
- - Fields: `type`, `message` (non-sensitive), possibly `stream_id`
-
-**Notes:**
-
-- No cryptographic keys, nonces, or raw ciphertext should appear in UI logs.
-- File paths may be shown, but avoid leaking sensitive directories in production.
-
-**Use this panel to:**
-
-- Confirm that the UI is successfully connected to `/events`.
-- Debug failures by inspecting high-level error messages.
-
----
-
-## 6. API Details (Developer-Facing)
-
-This is a conceptual summary for developers. The exact JSON shapes may vary; adjust this section to match the actual implementation.
-
-### 6.1 POST /api/send-file
-
-**Purpose:** Start a file transfer via the CrypRQ backend.
-
-**Example** (conceptual)
-
-Request: `multipart/form-data` or `application/json` with a file + metadata.
-
-Possible JSON shape (if not multipart):
-
-```json
-{
-  "peer": "/ip4/127.0.0.1/udp/20440/quic-v1",
-  "filename": "test-web-minimal.bin",
-  "size": 39,
-  "content_base64": "VGhpcyBpcyBhIHRlc3QgZmlsZSBjb250ZW50..."
-}
-```
-
-Response: `200 OK` with a transfer ID:
-
-```json
-{
-  "status": "accepted",
-  "transfer_id": "abc123",
-  "stream_id": 2
-}
-```
-
-The backend then:
-- Allocates a `stream_id`.
-- Sends `FILE_META` and `FILE_CHUNK` records via the record layer.
-- Emits events on `/events`.
-
-### 6.2 GET /events
-
-**Purpose:** Provide real-time updates to the UI.
-
-If using SSE:
-- Endpoint returns `text/event-stream`.
-- Events look like:
-
-```
-event: file_transfer_started
-data: {"transfer_id":"abc123","stream_id":2,"filename":"test-web-minimal.bin","size":39}
-
-event: file_transfer_complete
-data: {"transfer_id":"abc123","stream_id":2,"filename":"test-web-minimal.bin","bytes_sent":39,"elapsed_ms":42}
-```
-
-The UI subscribes and updates the status/log panel accordingly.
-
-### 6.3 GET /connect (Optional)
-
-**Purpose:** Initialize or verify backend state (for example, test mode and UDP config).
-
-Response might include:
-
-```json
-{
-  "mode": "test",
-  "udp_bind": "0.0.0.0:20440",
-  "record_layer": "cryp-rq v1.0.1"
-}
-```
-
-The UI can show this information in a status bar or "connection info" section.
-
----
-
-## 7. Limitations (Web UI in v1.0.1)
-
-- **Test mode only**
- - No real handshake.
- - No peer identity validation.
- - Static keys and a key-direction hack on the receiver.
-- **Single-node / lab use**
- - Designed for loopback or small lab environments.
- - Not tested or hardened for multi-tenant or Internet-wide use.
-- **Focus on file transfer**
- - VPN/TUN flows are validated by CLI and backend, not exposed as a polished web UX yet.
- - Web UI currently treats everything as "file transfer use case."
-
-See `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for a full rundown of MUST-FIX items before production.
-
----
-
-## 8. Suggested Workflows
-
-### 8.1 Developer Regression Loop
-
-1. Modify backend or record layer code.
-2. Rebuild and restart Docker:
-   ```bash
-   docker compose -f docker-compose.web.yml up --build
-   ```
-3. Use the Web UI to send:
- - A small file.
- - A medium file (~10 MB).
-4. Verify hashes and check logs.
-5. Update `WEB_VALIDATION_RUN.md` as needed (WEB-1, WEB-2 tests).
-
-### 8.2 Demo Workflow
-
-1. Start the stack ahead of time.
-2. Show:
- - A small file transfer (fast).
- - Status panel updates in real time.
-3. Optionally show:
- - `tcpdump` on the UDP port to prove encrypted traffic.
- - Mapping from UI action → backend events.
-
----
-
-## 9. References
-
-- `DOCKER_WEB_GUIDE.md` — Docker deployment details.
-- `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` — Web-only release description.
-- `WEB_VALIDATION_RUN.md` — Web validation matrix and results.
-- `VALIDATION_RUN.md` — CLI/tunnel validation.
-- `TEST_MATRIX.md` — Combined test matrix (CLI + web).
-- `SECURITY_NOTES.md` — Security posture and limitations.
-
+# Browser portal
+
+The portal sends files through the authenticated Rust CLI. Each running portal
+owns one identity, an explicit peer trust store, a receiver, and private storage.
+The browser has no private identity key and implements no transfer cryptography.
+
+## Pair devices
+
+1. Open two independently running portals. Two tabs on the same portal share one device.
+2. Copy the pairing code from device A to device B.
+3. Compare the public key with device A over a trusted channel. An address alone does not establish identity.
+4. Name the peer and pin it explicitly.
+5. Repeat in the other direction. Both devices must trust each other.
+
+Pairing codes contain a version, an Ed25519 public key, and an IPv4 UDP address.
+They contain no private key. Do not accept a pairing code from an unverified source.
+Removing a peer removes its pin and restarts the receiver.
+
+Pairing requests are applied one at a time. Pinning an identity that is already
+pinned at the same address changes nothing and reports the existing pin. The
+same identity at another address is refused until the old pin is removed.
+Pinning and removal are refused while a transfer is active.
+
+## Send and receive
+
+Select a pinned destination, choose or drop a file, then select **Send file**.
+The portal uploads the file as bounded binary data to its local adapter. The
+adapter invokes `send-file` with explicit identity, trust, address, and peer-key
+arguments. Authentication is reported only after the CLI confirms the handshake.
+
+**Sent. Check the receiving device** means transmission ended. The protocol has
+no application-level delivery acknowledgement or retransmission. It does not
+mean the receiver published the file.
+
+The receiving CLI checks the announced size and SHA-256 before atomic publication.
+The adapter independently opens and hashes the published regular file before
+listing it. Download from **Receive**, then compare the download with the original.
+The browser also checks downloaded bytes against the listed size and SHA-256.
+A failed or interrupted transfer must be retried. Each published file has a unique
+storage ID. Repeated filenames create separate inbox entries and preserve earlier files.
+
+The receiver restarts between sessions and after a bounded stalled session.
+Wait for **Ready to receive** before retrying. **Ready** means listening; it does
+not mean a peer has completed authentication.
+
+## Diagnostics
+
+Open **Diagnostics** for receiver state, public addresses, and transfer hashes.
+The default screen contains pairing, send, transfer status, and received files.
+There are no browser VPN controls or host network changes.
+
+## Local API
+
+`GET /api/session` returns an in-memory portal token. Other API requests require
+`X-Portal-Token`. Keep this token out of URLs and logs. The adapter checks Host,
+Origin, and cross-site request metadata, and sends no permissive CORS headers.
+
+| Request | Purpose |
+| --- | --- |
+| `GET /api/state` | Public identity, pairing code, peers, receiver state, transfers, verified inbox, limits |
+| `POST /api/peers` | Explicitly pin `{name, pairing: {version: 1, key, address}}`. `201` for a new pin, `200` if that pin already exists, `409` for a conflicting address or an active transfer |
+| `DELETE /api/peers/:id` | Remove a peer pin |
+| `POST /api/send?peer=:id` | Binary upload with `Content-Type: application/octet-stream` and URI-encoded `X-Filename` |
+| `GET /api/files/:id` | Download an indexed verified file using the token header |
+
+Uploads are streamed into private temporary storage. Downloads use opaque IDs,
+never caller-supplied filesystem paths. The adapter rejects unsafe names,
+symlinks, oversized uploads, unknown peers, and missing tokens.

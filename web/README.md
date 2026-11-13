@@ -1,52 +1,45 @@
-# CrypRQ Web UI
+# CrypRQ browser portal
 
-Modern React + TypeScript web interface for CrypRQ VPN.
+A local web interface for file transfer between explicitly trusted devices. The
+React front end talks to a Node.js adapter (`server/server.mjs`), which runs the
+authenticated `cryprq` CLI. The browser holds no private key and implements no
+transfer cryptography.
 
-## Quick Start
-
-### Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start backend server (spawns Rust binary)
-node server/server.mjs
-
-# In another terminal, start frontend dev server
-npm run dev
-```
-
-Open http://localhost:5173 in your browser.
-
-### Production Build
+## Build and run
 
 ```bash
-# Build frontend
+cargo build --release -p cryprq --locked   # from the repository root
+cd web
+npm ci
 npm run build
-
-# Start production server
-node server/server.mjs
+PORT=18787 CRYPRQ_STATE_DIR="$PWD/../.portal-a" \
+  CRYPRQ_BIN="$PWD/../target/release/cryprq" node server/server.mjs
 ```
 
-## Architecture
+Open `http://127.0.0.1:18787`. A second device needs its own port, state
+directory and `CRYPRQ_LISTEN_ADDR`; see
+[local setup](../docs/WEB_STACK_QUICK_START.md) or run two devices with
+[Docker](../docs/DOCKER_WEB_GUIDE.md).
 
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js Express server that spawns the CrypRQ Rust binary
-- **Real-time**: EventSource for streaming logs and status updates
+## Tests
 
-## Features
+```bash
+npm run lint
+npm run test:adapter    # adapter against the real CLI (needs the release binary)
+npm run test:e2e        # Playwright, against two running portals
+```
 
-- Connection management (Listener/Dialer modes)
-- Real-time debug console with structured logs
-- Encryption status monitoring
-- VPN mode toggle (system-wide routing)
+`test:e2e` reads `CRYPRQ_WEB_BASE_URL` and `CRYPRQ_WEB_PEER_URL` and defaults to
+ports 18787 and 18788. See [portal validation](../docs/WEB_VALIDATION_RUN.md).
 
-## Development
+## Layout
 
-The web UI communicates with the Rust backend via the Node.js server, which:
-1. Spawns the CrypRQ binary with appropriate arguments
-2. Streams stdout/stderr logs via EventSource
-3. Provides REST API endpoints for control
+| Path | Content |
+| --- | --- |
+| `src/App.tsx` | The interface: pairing, send, received files, diagnostics |
+| `server/server.mjs` | Adapter: HTTP API, CLI processes, private state, inbox |
+| `server/portal.test.mjs` | Adapter tests |
+| `tests/` | Playwright tests |
 
-See main [README.md](../README.md) for full project documentation.
+Usage and limits are in the [Web UI guide](../docs/WEB_UI_GUIDE.md) and the
+[Security Notes](../docs/SECURITY_NOTES.md#browser-portal-boundary).

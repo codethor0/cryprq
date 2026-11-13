@@ -1,5 +1,7 @@
 # CrypRQ v1.0.1 Test Matrix
 
+> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+
 ## Overview
 
 This document provides a systematic test plan for validating the CrypRQ v1.0.1 protocol implementation, focusing on the new record-layer-based data path.
@@ -300,60 +302,12 @@ curl http://example.com
 
 ---
 
-## 5. Web UI & Backend Integration
+## 5. Browser portal
 
-> **Note:** For comprehensive web-only validation, see `WEB_VALIDATION_RUN.md` which defines a full test matrix (WEB-1 through WEB-7) covering minimal transfers, medium files, concurrent transfers, log streaming, protocol alignment, and security posture checks.
-
-### 5.1. Start Web Stack
-
-**Command:**
-```bash
-docker compose -f docker-compose.web.yml up --build
-```
-
----
-
-### 5.2. File Upload via Web UI
-
-**Steps:**
-1. Open web UI in browser
-2. Connect to node (same port as receive-file)
-3. Use UI file upload to send a file
-
-**Verify:**
-- Backend logs show `send_file_meta` / `send_file_chunk` calls
-- Record layer logs show FILE_META / FILE_CHUNK for that stream
-- File lands in output directory
-- Hashes match
-
-**Reference:** See `WEB_VALIDATION_RUN.md` WEB-1 (Minimal Web Loopback File Transfer) for detailed steps and acceptance criteria.
-
----
-
-### 5.3. Real-Time Logs
-
-**Verify:**
-- Log streaming in UI works with record-based tunnel
-- Doesn't depend on old libp2p behavior
-- Shows FILE_META, FILE_CHUNK, epoch changes, etc.
-
-**Reference:** See `WEB_VALIDATION_RUN.md` WEB-5 (Web Log Streaming / Events) for detailed validation steps.
-
----
-
-### 5.4. Web-Only Test Matrix
-
-For complete web-only validation, refer to `WEB_VALIDATION_RUN.md` which includes:
-
-- **WEB-1:** Minimal web loopback file transfer
-- **WEB-2:** Medium file web transfer
-- **WEB-3:** Concurrent web transfers
-- **WEB-4:** CLI ↔ Web mixed transfer (optional)
-- **WEB-5:** Web log streaming / events
-- **WEB-6:** Protocol alignment (web path)
-- **WEB-7:** Security posture checks (web)
-
-See also: `WEB_ONLY_RELEASE_NOTES_v1.0.1.md` for release summary and security posture.
+The Listener/Dialer web interface this section used to describe no longer
+exists. The browser portal runs the authenticated CLI and is tested by
+`web/server/portal.test.mjs` and the Playwright suite in `web/tests/`. The
+commands and acceptance criteria are in [Portal validation](WEB_VALIDATION_RUN.md).
 
 ---
 

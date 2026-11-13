@@ -1,5 +1,7 @@
 # CrypRQ VPN and P2P Tunnel Test Plan
 
+> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+
 ## Overview
 
 CrypRQ provides a QUIC-based, ML-KEM+X25519 encrypted P2P tunnel for secure peer-to-peer communication. The system includes:
@@ -48,42 +50,11 @@ bash scripts/e2e-authenticated-vpn.sh ./target/release/cryprq
 bash scripts/e2e-authenticated-file-transfer.sh ./target/release/cryprq
 ```
 
-## Web UI + P2P Manual Tests
+## Browser portal
 
-The web UI provides a browser-based interface for testing P2P tunnel functionality without CLI access.
-
-### Two-Tab Listener/Dialer Test
-
-**Setup:**
-1. Start web stack: `docker compose -f docker-compose.web.yml up --build -d`
-2. Open http://localhost:8787 in two browser tabs
-
-**Test Steps:**
-1. Tab 1: Set mode to "Listener", configure port (default 10000), click "Connect"
-2. Verify: UI shows listening state, debug console shows `listener_ready` events
-3. Tab 2: Set mode to "Dialer", configure peer address (e.g., `/ip4/127.0.0.1/udp/10000/quic-v1`), click "Connect"
-4. Verify: Both tabs show connected/encrypted state, debug console shows `handshake_complete` and `connection_established` events
-
-**Expected Behavior:**
-- Connection status indicators show "Encrypted tunnel active"
-- Encryption Status panel displays ML-KEM+X25519 hybrid encryption
-- Connection Health panel shows handshake direction, ping latency, current epoch
-- No console errors related to mode switching or connection establishment
-
-### File Transfer Test (if implemented in UI)
-
-**Test Steps:**
-1. Establish Listener/Dialer connection (from above)
-2. On sender side: Use "Send File Securely" control, select a test file
-3. Verify: Progress indicators update, file transfer completes
-4. On receiver side: Verify file appears, download works
-5. Integrity check: Compare SHA-256 hash of original and received files
-
-**Expected Behavior:**
-- File transfer completes without errors
-- SHA-256 hashes match exactly
-- Debug console shows file transfer events
-- UI shows transfer progress and completion status
+The browser portal transfers files only. It has no VPN controls and changes no
+host network settings. Its tests are described in
+[Portal validation](WEB_VALIDATION_RUN.md).
 
 ## VPN Mode Error-Handling Tests (Current Environment)
 
@@ -235,7 +206,7 @@ Run `scripts/vpn_leak_probe.sh` before and after starting VPN to observe changes
 - `docs/VPN_HOST_TEST_PLAN.md`: Host-mode VPN testing procedures (macOS/Linux)
 - `docs/VPN_LEAK_AND_ROUTING_TEST_PLAN.md`: VPN leak & routing test plan
 - `docker/e2e/docker-compose.e2e.yml`: E2E test harness configuration
-- `docker-compose.web.yml`: Web stack configuration
+- `docker-compose.portal.yml`: two-device browser portal
 - `docs/VALIDATION_RUN_RELEASE_12f7bd6.md`: Release validation results
 - `docs/WEB_ONLY_RELEASE_NOTES_v1.0.1.md`: Web stack release notes
 

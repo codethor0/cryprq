@@ -1,5 +1,7 @@
 # CrypRQ Validation Run Template
 
+> **Historical document.** Written for the v1.0.x web preview, which ran an unauthenticated test-mode path. Statements about readiness or encryption in it do not describe the current code; see [README](../README.md) and [Security Notes](SECURITY_NOTES.md).
+
 ## STATUS: <GREEN/YELLOW/RED> (<short summary>)
 
 **HEAD:**
@@ -76,7 +78,7 @@
 
 ## NEXT ACTION:
 
-- None — system validated and ready.
+- None: system validated and ready.
 - OR: Specific follow-ups (e.g., investigate failing test X, address ENV limitation Y, fix bug Z)
 
 ## Additional Artifacts:

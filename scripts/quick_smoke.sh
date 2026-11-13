@@ -29,15 +29,16 @@ timeout 300 bash docker/e2e/test_suite.sh
 cleanup_e2e
 trap - EXIT
 
-echo "[SMOKE] Phase 4: Web stack bring-up"
-docker compose -f docker-compose.web.yml down --remove-orphans || true
-docker compose -f docker-compose.web.yml up --build -d
+echo "[SMOKE] Phase 4: Two browser portals in their own compose project"
+PORTAL=(docker compose -p cryprq-portal-smoke -f docker-compose.portal.yml)
+cleanup_portal() { "${PORTAL[@]}" down -v --remove-orphans || true; }
+trap cleanup_portal EXIT
+"${PORTAL[@]}" up --build -d --wait --wait-timeout 180
 
-echo "[SMOKE] Current containers:"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | sed -n '1,10p'
+echo "[SMOKE] Adapter tests against the real CLI:"
+"${PORTAL[@]}" exec -T portal-a sh -c 'node --test web/server/*.test.mjs'
+cleanup_portal
+trap - EXIT
 
-echo "[SMOKE] HTTP sanity check:"
-curl -v http://localhost:8787/ || true
-
-echo "[SMOKE] DONE. cryprq-web should now be running on http://localhost:8787"
+echo "[SMOKE] DONE."
 

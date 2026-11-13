@@ -30,7 +30,9 @@ its swarm itself (`p2p/src/libp2p.rs`). `hickory-proto`, `libp2p-mdns` and
 
 **3. npm development-dependency advisories** (17, in `web/`). Closed by
 updating puppeteer to 25.17 and pinning the lint parser's `minimatch` to a
-patched release through an npm override. The override is a pin of a
+patched release through an npm override. Puppeteer has since been removed
+together with the scripts of the old web preview that used it, and the
+adapter (`web/server/`) no longer has any npm dependency. The override is a pin of a
 transitive dependency and should be removed once `typescript-eslint` depends
 on a patched `minimatch` itself.
 
@@ -107,7 +109,7 @@ authenticated ones.
 | Path | What it is | Exposure |
 |---|---|---|
 | `cryprq --listen` / `--peer` without `--vpn` | The legacy libp2p/QUIC connection. It runs no CrypRQ handshake and pins nobody. It logs `encryption=libp2p-transport cryprq_handshake=none` | Carries no tunnel traffic and accepts no files: no file-transfer handler is installed and packet forwarding is only wired in test mode. Any node can connect and ping |
-| Web preview (`web/`, `docker-compose.web.yml`) | Starts the node on that legacy path. Until this revision the UI stated that all traffic was encrypted with "ML-KEM (Kyber768) + X25519 hybrid"; that was false for this path and is corrected | For evaluation on an isolated machine only. The preview does not provision identities, so `--vpn` and `send-file` started from it stop with "cannot load the node identity" instead of running unauthenticated |
+| Historical v1.0.x web preview | Used the legacy path without provisioning identities | Replaced by the authenticated CLI portal. Historical release documents describe that earlier implementation |
 | `--test-mode` with `CRYPRQ_TEST_MODE=1` | Fixed keys, no peer authentication, for interoperability tests | Refused unless both switches are given; logs `INSECURE` |
 | Legacy Docker E2E stack (`docker/e2e/`) | Two test-mode containers | CI and local testing only; publishes UDP 9999 on the host that runs it |
 
@@ -152,3 +154,34 @@ authenticated ones.
 - Protocol Specification: `cryp-rq-protocol-v1.md`
 - Test Matrix: `docs/TEST_MATRIX.md`
 
+
+## Browser portal boundary
+
+The Node adapter invokes the existing authenticated CLI with explicit identity,
+trusted-peer, and receiver paths. Each portal owns separate private state. Public
+keys must be exchanged, verified, and pinned explicitly. No trust is added on
+first contact, and the browser never receives a private identity key.
+
+The browser-to-adapter HTTP connection is plaintext local traffic. The CLI's
+peer-to-peer encryption starts only after its authenticated handshake completes.
+Listening, pairing, and sender exit are not delivery or encryption evidence.
+Only files atomically published by the verifying receiver and independently
+hashed by the adapter are listed. Downloads are checked again against their
+listed size and SHA-256.
+
+The web server defaults to loopback. Container binding is an explicit override
+behind loopback-only host port publication. There is no remote user login or
+multi-user isolation. Host and Origin checks, cross-site request rejection, and
+an in-memory API token protect the browser request boundary. The token is sent
+in headers, including downloads; it is not a public sharing link. Local processes
+running as the owner can still access the portal. Treat the state directory as
+private and never serve it as static content.
+
+Uploads use bounded streams and private temporary files. Unsafe filenames,
+path traversal, symlinks, and unauthorized download IDs are rejected. The CLI
+retains its 1 GiB incoming-file limit and 2 GiB reserved-storage bound; a smaller
+portal limit controls local uploads and inbox publication. Neither bound is a
+storage quota across the lifetime of the device. The receiver restarts after a
+session or timeout and cleans temporary state. Existing received names are not
+overwritten. UDP transfer has no retransmission or delivery acknowledgement;
+retry a failed transfer and compare receiver downloads with the original.

@@ -42,7 +42,7 @@ echo "[3/4] Docker compose flows"
 
 # You can customize or extend this list:
 COMPOSE_FILES=(
-  "docker-compose.web.yml"
+  "docker-compose.portal.yml"
   "docker-compose.vpn.yml"
 )
 
@@ -71,6 +71,6 @@ done
 echo "[4/4] Validation pipeline completed."
 echo "Next manual checks:"
 echo "  - Use the CLI to run a listener + dialer and transfer a test file."
-echo "  - Use the web UI (if applicable) to establish a session and transfer data."
+echo "  - Pair two browser portals, send a file and compare the download's SHA-256 (docs/WEB_VALIDATION_RUN.md)."
 echo "  - Watch logs for handshake/tunnel events and confirm no unexpected errors."
 

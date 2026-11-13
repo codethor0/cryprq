@@ -90,49 +90,23 @@ INFO  p2p File transfer request handled from peer 12D3KooW...
 INFO  cryprq File received successfully: test.txt (15 bytes) from peer 12D3KooW...
 ```
 
-## Phase 4: Web UI + Backend
+## Phase 4: Browser portal
 
-### Local Development
-- [ ] Build frontend: `cd web && npm install && npm run build`
-- [ ] Start backend: `cd web && node server/server.mjs`
-- [ ] Access web UI: `http://localhost:8787`
-- [ ] Web UI loads correctly
-- [ ] Event stream connects (see "Connected" indicator)
+- [ ] `cd web && npm ci && npm run build && npm run lint`
+- [ ] Adapter tests against the real CLI: `npm run test:adapter`
+- [ ] Two portals start: `docker compose -p cryprq-portal -f docker-compose.portal.yml up --build -d --wait`
+- [ ] Each portal shows its own public identity and pairing code
+- [ ] Both devices pin each other after comparing public keys
+- [ ] A file sent from A appears in B's received files as SHA-256 verified
+- [ ] The downloaded file has the size and SHA-256 of the original
+- [ ] The same holds from B to A
+- [ ] Browser suite passes: `npx playwright test` (see [Portal validation](WEB_VALIDATION_RUN.md))
 
-### Connection via Web UI
-- [ ] Start listener via web UI (Mode: Listener, Port: 10000)
-- [ ] See connection logs in web UI
-- [ ] Start dialer via web UI (Mode: Dialer, Port: 10000)
-- [ ] See handshake and connection events in web UI
-- [ ] See key rotation events in web UI
+## Phase 5: Portal containers
 
-### File Transfer via Web UI
-- [ ] Establish connection (listener + dialer)
-- [ ] Upload file via web UI "Send File Securely" button
-- [ ] See file transfer progress in logs:
- - `Sent file metadata to <PEER_ID>: <filename> (<size> bytes)`
- - `Received response for request OutboundRequestId(1): 2 bytes`
- - `File received successfully: <filename> (<size> bytes) from peer <PEER_ID>`
-- [ ] File transfer completes successfully
-- [ ] Web UI shows success message
-
-## Phase 5: Docker Web Stack
-
-### Build
-- [ ] `docker compose -f docker-compose.web.yml build` completes successfully
-- [ ] No build errors or warnings
-
-### Run
-- [ ] `docker compose -f docker-compose.web.yml up` starts successfully
-- [ ] Container `cryprq-web` is running
-- [ ] Access web UI: `http://localhost:8787`
-- [ ] Web UI loads correctly
-- [ ] Can connect listener/dialer via web UI
-- [ ] Logs appear in web UI
-
-### Logs
-- [ ] `docker compose -f docker-compose.web.yml logs` shows web server logs
-- [ ] No errors in container logs
+- [ ] `docker compose -p cryprq-portal -f docker-compose.portal.yml ps` shows both services healthy
+- [ ] Web ports are published on `127.0.0.1` only
+- [ ] `docker compose -p cryprq-portal -f docker-compose.portal.yml logs` contains no private key and no file content
 
 ## Phase 6: Docker VPN Stack
 
@@ -214,9 +188,9 @@ INFO  cryprq::p2p event=key_rotation status=success epoch=<N> duration_ms=<MS> i
 
 ### Docker Issues
 - Ensure Docker daemon is running
-- Check container logs: `docker compose -f docker-compose.web.yml logs`
-- Verify ports are not in use: `lsof -i:8787`
-- Try rebuilding: `docker compose -f docker-compose.web.yml build --no-cache`
+- Check container logs: `docker compose -p cryprq-portal -f docker-compose.portal.yml logs`
+- Verify ports are not in use: `lsof -i:18787 -i:18788`, or set `CRYPRQ_PORTAL_A_PORT` and `CRYPRQ_PORTAL_B_PORT`
+- Try rebuilding: `docker compose -p cryprq-portal -f docker-compose.portal.yml build --no-cache`
 
 ### VPN Mode Issues
 - Requires `NET_ADMIN` capability (Docker: `cap_add: [NET_ADMIN]`)
@@ -230,9 +204,9 @@ All phases should complete without errors:
 - [OK] Rust workspace builds and tests pass
 - [OK] Encrypted tunnel establishes successfully
 - [OK] Key rotation occurs on schedule
-- [OK] File transfer works end-to-end (CLI + Web UI)
+- [OK] File transfer works end-to-end (CLI and browser portal)
 - [OK] Hash verification passes for transferred files
-- [OK] Web UI displays logs and allows connections
+- [OK] The portal lists only receiver-verified files
 - [OK] Docker stacks start and run correctly
 - [OK] Documentation is complete and accurate
 

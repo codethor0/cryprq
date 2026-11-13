@@ -7,7 +7,7 @@ CrypRQ is a QUIC/libp2p-based peer-to-peer tunnel that uses ML-KEM (Kyber768) + 
 **Key Characteristics:**
 - **Transport:** QUIC over UDP with libp2p networking
 - **Encryption:** ML-KEM (Kyber768) + X25519 hybrid key establishment
-- **Modes:** P2P tunnels, file transfer via Web Tester, and future system-wide VPN mode (requires TUN + OS integration)
+- **Modes:** P2P tunnels, authenticated file transfer (CLI and browser portal), and a point-to-point VPN link (requires TUN + OS integration)
 - **Target Use Case:** Secure peer-to-peer connectivity with post-quantum cryptographic protection
 
 ## High-Level Architecture
@@ -33,22 +33,18 @@ CrypRQ is a QUIC/libp2p-based peer-to-peer tunnel that uses ML-KEM (Kyber768) + 
 - Key rotation mechanism for forward secrecy
 - Optional VPN mode using TUN interfaces (system-level, OS-dependent, requires admin/root privileges)
 
-#### Web Tester Front-End
+#### Browser portal
 
-**Single-Page Application:**
-- Served at http://localhost:8787
-- React + TypeScript (Vite build)
-- Spawns cryprq processes (listener/dialer) with appropriate arguments
-
-**Features:**
-- **Guided Tests:** Pre-configured test scenarios (Local Loopback P2P, Two-Tab Web Test, VPN Demo)
-- **Connection Health:** Real-time connection state, handshake direction/time, ping latency, epoch, rotation interval
-- **Advanced Metrics:** Aggregated session statistics (connection attempts, ping stats, key rotations, file transfers, errors)
-- **File Transfer UX:** State machine with progress, throughput, and completion status
-- **Connection Profiles:** Save/load named profiles (mode, port, peer address, VPN toggle) to localStorage
-- **CLI Snippet Generator:** Generate and copy equivalent CLI commands
-- **Bug Report Draft Generator:** Pre-filled bug report template with session state
-- **Debug Console:** Real-time log stream with filters (All, Errors, Rotation, Peer, Status) and log export
+- React and TypeScript single-page application (Vite build), served by a local
+  Node.js adapter on a loopback port.
+- The adapter runs the authenticated CLI (`send-file`, `receive-file`) with an
+  explicit identity, trust store and receiver directory per device.
+- Devices are paired by exchanging public pairing codes and pinning each
+  other's Ed25519 key. Nothing is trusted on first contact.
+- Received files are listed only after the CLI has verified and published them
+  and the adapter has hashed them again.
+- The boundary and its limits are in
+  [Security Notes](SECURITY_NOTES.md#browser-portal-boundary).
 
 #### Test Harness and Docker E2E
 
