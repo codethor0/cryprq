@@ -22,6 +22,7 @@ pub use libp2p_identity::PeerId;
 pub use libp2p_noise as noise;
 pub use libp2p_ping as ping;
 pub use libp2p_quic as quic;
+pub use libp2p_relay as relay;
 pub use libp2p_request_response as request_response;
 pub use libp2p_swarm as swarm;
 pub use libp2p_swarm::{StreamProtocol, Swarm};
@@ -30,6 +31,7 @@ pub use libp2p_yamux as yamux;
 
 use libp2p_core::muxing::StreamMuxerBox;
 use libp2p_core::transport::timeout::TransportTimeout;
+use libp2p_core::transport::Boxed;
 use libp2p_core::transport::Transport;
 use libp2p_core::upgrade::Version;
 use std::time::Duration;
@@ -48,21 +50,58 @@ pub fn build_swarm<B>(
 where
     B: swarm::NetworkBehaviour,
 {
-    let tcp_transport = tcp::tokio::Transport::new(tcp::Config::default())
-        .upgrade(Version::V1Lazy)
-        .authenticate(noise::Config::new(&keypair)?)
-        .multiplex(yamux::Config::default())
-        .map(|(peer, muxer), _| (peer, StreamMuxerBox::new(muxer)));
-    let quic_transport = quic::tokio::Transport::new(quic::Config::new(&keypair))
-        .map(|(peer, muxer), _| (peer, StreamMuxerBox::new(muxer)));
-    let transport = tcp_transport
-        .or_transport(quic_transport)
-        .map(|either, _| either.into_inner());
-
+    let transport = tcp_and_quic(&keypair)?;
     Ok(Swarm::new(
         TransportTimeout::new(transport, CONNECTION_TIMEOUT).boxed(),
         behaviour,
         keypair.public().to_peer_id(),
         configure(swarm::Config::with_tokio_executor()),
     ))
+}
+
+/// Like [`build_swarm`], plus the Circuit Relay v2 client transport, which
+/// handles only explicit `/p2p-circuit` addresses. A relayed connection gets
+/// the same Noise and Yamux upgrade as TCP, so the remote's transport key is
+/// authenticated end to end and the relay only forwards ciphertext. Used only
+/// by the opt-in relayed direct-file mode; the VPN keeps [`build_swarm`].
+pub fn build_relay_client_swarm<B>(
+    keypair: identity::Keypair,
+    behaviour: impl FnOnce(relay::client::Behaviour) -> B,
+    configure: impl FnOnce(swarm::Config) -> swarm::Config,
+) -> Result<Swarm<B>, noise::Error>
+where
+    B: swarm::NetworkBehaviour,
+{
+    let (relay_transport, client) = relay::client::new(keypair.public().to_peer_id());
+    let relayed = relay_transport
+        .upgrade(Version::V1Lazy)
+        .authenticate(noise::Config::new(&keypair)?)
+        .multiplex(yamux::Config::default())
+        .map(|(peer, muxer), _| (peer, StreamMuxerBox::new(muxer)));
+    let transport = relayed
+        .or_transport(tcp_and_quic(&keypair)?)
+        .map(|either, _| either.into_inner());
+    Ok(Swarm::new(
+        TransportTimeout::new(transport, CONNECTION_TIMEOUT).boxed(),
+        behaviour(client),
+        keypair.public().to_peer_id(),
+        configure(swarm::Config::with_tokio_executor()),
+    ))
+}
+
+/// TCP (Noise, Yamux) or QUIC, in that order.
+fn tcp_and_quic(
+    keypair: &identity::Keypair,
+) -> Result<Boxed<(PeerId, StreamMuxerBox)>, noise::Error> {
+    let tcp_transport = tcp::tokio::Transport::new(tcp::Config::default())
+        .upgrade(Version::V1Lazy)
+        .authenticate(noise::Config::new(keypair)?)
+        .multiplex(yamux::Config::default())
+        .map(|(peer, muxer), _| (peer, StreamMuxerBox::new(muxer)));
+    let quic_transport = quic::tokio::Transport::new(quic::Config::new(keypair))
+        .map(|(peer, muxer), _| (peer, StreamMuxerBox::new(muxer)));
+    Ok(tcp_transport
+        .or_transport(quic_transport)
+        .map(|either, _| either.into_inner())
+        .boxed())
 }

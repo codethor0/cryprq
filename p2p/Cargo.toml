@@ -25,6 +25,9 @@ libp2p-yamux = "0.48"
 libp2p-ping = "0.48"
 libp2p-request-response = "0.30"
 libp2p-connection-limits = "0.7"
+# Circuit Relay v2, used only by the opt-in relayed direct-file mode and the
+# bounded `relay-serve` command. Adds libp2p-relay and prost-codec to Cargo.lock.
+libp2p-relay = "0.22"
 cryprq-crypto = { path = "../crypto" }
 zeroize = "1.8"
 rand = "0.8"

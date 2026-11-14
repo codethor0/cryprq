@@ -202,27 +202,62 @@ enum Command {
     },
     /// Send one file over an authenticated direct libp2p connection (opt-in)
     DirectSendFile {
-        /// Reachable receiver multiaddr (QUIC or TCP)
-        #[arg(long)]
-        peer: String,
+        /// Reachable receiver multiaddr (QUIC or TCP); omit with --relay
+        #[arg(long, required_unless_present = "relay", conflicts_with = "relay")]
+        peer: Option<String>,
         /// File path to send
         #[arg(long)]
         file: PathBuf,
         /// Explicit pinned receiver key (ed25519:<hex>)
         #[arg(long, value_name = "KEY")]
         peer_key: String,
+        /// Reach the receiver only through this relay multiaddr (QUIC or TCP)
+        #[arg(long, requires = "relay_key")]
+        relay: Option<String>,
+        /// Independently verified key of the relay (ed25519:<hex>)
+        #[arg(long, value_name = "KEY", requires = "relay")]
+        relay_key: Option<String>,
     },
     /// Receive one verified file over an explicitly enabled direct listener
     DirectReceiveFile {
-        /// Controlled listener multiaddr (QUIC or TCP)
-        #[arg(long)]
-        listen: String,
+        /// Controlled listener multiaddr (QUIC or TCP); omit with --relay
+        #[arg(long, required_unless_present = "relay", conflicts_with = "relay")]
+        listen: Option<String>,
         /// Existing directory for the verified file
         #[arg(long)]
         output_dir: PathBuf,
         /// Explicit pinned sender key (ed25519:<hex>)
         #[arg(long, value_name = "KEY")]
         peer_key: String,
+        /// Reserve on this relay multiaddr and accept the sender only through it
+        #[arg(long, requires = "relay_key")]
+        relay: Option<String>,
+        /// Independently verified key of the relay (ed25519:<hex>)
+        #[arg(long, value_name = "KEY", requires = "relay")]
+        relay_key: Option<String>,
+    },
+    /// Run a bounded Circuit Relay v2 server for relayed direct-file transfers.
+    /// It forwards end-to-end encrypted connections and loads no trust store.
+    RelayServe {
+        /// Listen multiaddr (QUIC or TCP); repeat for several
+        #[arg(long, required = true)]
+        listen: Vec<String>,
+        /// Address peers use to reach this relay; repeat for several.
+        /// Defaults to concrete listen addresses
+        #[arg(long)]
+        external_address: Vec<String>,
+        /// Bytes one circuit may carry
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_circuit_bytes: u64,
+        /// Seconds one circuit may stay open
+        #[arg(long, default_value_t = 600)]
+        max_circuit_secs: u64,
+        /// Concurrent circuits
+        #[arg(long, default_value_t = 16)]
+        max_circuits: usize,
+        /// Concurrent reservations
+        #[arg(long, default_value_t = 32)]
+        max_reservations: usize,
     },
     /// Manage this node's long-term identity
     Identity {
@@ -256,12 +291,14 @@ async fn main() -> Result<()> {
                 peer,
                 file,
                 peer_key,
+                relay,
+                relay_key,
             } => {
                 let paths = TrustPaths::resolve(args.identity, args.trusted_peers);
                 let (config, expected) = direct_file_config(paths, &peer_key, args.test_mode)?;
-                let address = peer.parse().context("invalid direct receiver multiaddr")?;
-                return await_direct_file(p2p::direct_file::send_file(
-                    &config, address, expected, file,
+                let route = direct_route(peer, relay, relay_key, "receiver")?;
+                return await_direct_file(p2p::direct_file::send_file_routed(
+                    &config, route, expected, file,
                 ))
                 .await;
             }
@@ -269,16 +306,67 @@ async fn main() -> Result<()> {
                 listen,
                 output_dir,
                 peer_key,
+                relay,
+                relay_key,
             } => {
                 let paths = TrustPaths::resolve(args.identity, args.trusted_peers);
                 let (config, expected) = direct_file_config(paths, &peer_key, args.test_mode)?;
-                let address = listen
-                    .parse()
-                    .context("invalid direct listener multiaddr")?;
-                return await_direct_file(p2p::direct_file::receive_file(
-                    &config, address, expected, output_dir,
+                let route = direct_route(listen, relay, relay_key, "listener")?;
+                return await_direct_file(p2p::direct_file::receive_file_routed(
+                    &config, route, expected, output_dir,
                 ))
                 .await;
+            }
+            Command::RelayServe {
+                listen,
+                external_address,
+                max_circuit_bytes,
+                max_circuit_secs,
+                max_circuits,
+                max_reservations,
+            } => {
+                require_authenticated_direct_mode(args.test_mode, node::test_mode_enabled())?;
+                let paths = TrustPaths::resolve(args.identity, args.trusted_peers)?;
+                let identity = NodeIdentity::load(&paths.identity).with_context(|| {
+                    format!(
+                        "cannot load the relay identity from {}; create one with `cryprq identity init`",
+                        paths.identity.display()
+                    )
+                })?;
+                let parse = |items: Vec<String>, what: &str| -> Result<Vec<Multiaddr>> {
+                    items
+                        .iter()
+                        .map(|item| {
+                            item.parse()
+                                .with_context(|| format!("invalid relay {what} multiaddr"))
+                        })
+                        .collect()
+                };
+                let limits = p2p::direct_relay::RelayLimits {
+                    max_circuit_bytes,
+                    max_circuit_duration: Duration::from_secs(max_circuit_secs),
+                    max_circuits,
+                    max_reservations,
+                };
+                println!(
+                    "relay peer_id={} key={}",
+                    p2p::secure_vpn::peer_id_of(&identity.public_key())?,
+                    identity.public_key()
+                );
+                let serving = p2p::direct_relay::serve_relay(
+                    &identity,
+                    parse(listen, "listen")?,
+                    parse(external_address, "external")?,
+                    limits,
+                    None,
+                );
+                return match first_of(serving, shutdown_signal(), true).await {
+                    Either::Left(result) => result.map(|never| match never {}),
+                    Either::Right(()) => {
+                        log::info!("event=relay_stopped");
+                        Ok(())
+                    }
+                };
             }
             Command::Identity { action } => {
                 let paths = TrustPaths::resolve(args.identity, args.trusted_peers)?;
@@ -742,6 +830,30 @@ fn direct_file_config(
     Ok((config, expected))
 }
 
+/// The explicit route: a direct address, or a relay address with its pinned
+/// key. clap already requires exactly one of the two forms.
+fn direct_route(
+    direct: Option<String>,
+    relay: Option<String>,
+    relay_key: Option<String>,
+    what: &str,
+) -> Result<p2p::direct_file::Route> {
+    match (direct, relay, relay_key) {
+        (Some(address), None, None) => Ok(p2p::direct_file::Route::Direct(
+            address
+                .parse()
+                .with_context(|| format!("invalid direct {what} multiaddr"))?,
+        )),
+        (None, Some(address), Some(key)) => Ok(p2p::direct_file::Route::Relay {
+            address: address.parse().context("invalid relay multiaddr")?,
+            key: PeerPublicKey::parse(&key).map_err(|e| {
+                anyhow::anyhow!("--relay-key is not a valid `ed25519:<hex>` key: {e}")
+            })?,
+        }),
+        _ => anyhow::bail!("use either a direct address or --relay with --relay-key"),
+    }
+}
+
 async fn await_direct_file(
     transfer: impl std::future::Future<Output = Result<p2p::direct_file::TransferReceipt>>,
 ) -> Result<()> {
@@ -750,7 +862,8 @@ async fn await_direct_file(
         Either::Right(()) => anyhow::bail!("direct file transfer cancelled"),
     };
     println!(
-        "route=direct peer_id={} bytes={} sha256={}",
+        "route={} peer_id={} bytes={} sha256={}",
+        if receipt.relayed { "relay" } else { "direct" },
         p2p::secure_vpn::peer_id_of(&receipt.peer)?,
         receipt.bytes,
         hex::encode(receipt.sha256)
@@ -1360,5 +1473,102 @@ mod direct_cli_tests {
         .err()
         .expect("test mode rejected before loading identity files");
         assert!(error.to_string().contains("requires authenticated mode"));
+    }
+
+    const RELAY: &str = "/ip4/127.0.0.1/udp/20441/quic-v1";
+    const RELAY_PIN: &str =
+        "ed25519:8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394";
+
+    #[test]
+    fn relay_route_replaces_the_direct_address_and_needs_both_relay_arguments() {
+        for (command, direct) in [
+            ("direct-send-file", "--peer"),
+            ("direct-receive-file", "--listen"),
+        ] {
+            let tail: &[&str] = if command == "direct-send-file" {
+                &["--file", "source.bin"]
+            } else {
+                &["--output-dir", "received"]
+            };
+            let relayed = |extra: &[&str]| {
+                let mut arguments = vec!["cryprq", command, "--peer-key", PIN];
+                arguments.extend_from_slice(tail);
+                arguments.extend_from_slice(extra);
+                Args::try_parse_from(arguments)
+            };
+            let parsed = relayed(&["--relay", RELAY, "--relay-key", RELAY_PIN])
+                .expect("relay form needs no direct address");
+            assert!(
+                matches!(
+                    &parsed.command,
+                    Some(Command::DirectSendFile {
+                        peer: None,
+                        relay: Some(_),
+                        ..
+                    }) | Some(Command::DirectReceiveFile {
+                        listen: None,
+                        relay: Some(_),
+                        ..
+                    })
+                ),
+                "{command}: relay route without a direct address"
+            );
+            for extra in [&["--relay", RELAY][..], &["--relay-key", RELAY_PIN][..]] {
+                assert_eq!(
+                    relayed(extra)
+                        .expect_err("relay needs its pinned key")
+                        .kind(),
+                    ErrorKind::MissingRequiredArgument
+                );
+            }
+            assert_eq!(
+                relayed(&[direct, RELAY, "--relay", RELAY, "--relay-key", RELAY_PIN])
+                    .expect_err("direct and relay routes are exclusive")
+                    .kind(),
+                ErrorKind::ArgumentConflict
+            );
+        }
+    }
+
+    #[test]
+    fn route_parsing_rejects_malformed_relay_keys_and_addresses() {
+        assert!(matches!(
+            direct_route(None, Some(RELAY.into()), Some(RELAY_PIN.into()), "receiver"),
+            Ok(p2p::direct_file::Route::Relay { .. })
+        ));
+        assert!(matches!(
+            direct_route(Some(RELAY.into()), None, None, "receiver"),
+            Ok(p2p::direct_file::Route::Direct(_))
+        ));
+        for (relay, key) in [
+            (RELAY, "ed25519:RELAY"),
+            (RELAY, "not-a-key"),
+            ("not-a-multiaddr", RELAY_PIN),
+        ] {
+            assert!(direct_route(None, Some(relay.into()), Some(key.into()), "receiver").is_err());
+        }
+        assert!(direct_route(None, None, None, "receiver").is_err());
+    }
+
+    #[test]
+    fn relay_serve_requires_an_explicit_listener_and_has_bounded_defaults() {
+        assert_eq!(
+            Args::try_parse_from(["cryprq", "relay-serve"])
+                .expect_err("listen is required")
+                .kind(),
+            ErrorKind::MissingRequiredArgument
+        );
+        let args = Args::try_parse_from(["cryprq", "relay-serve", "--listen", RELAY])
+            .expect("explicit relay listener");
+        assert!(matches!(
+            &args.command,
+            Some(Command::RelayServe {
+                listen,
+                external_address,
+                max_circuit_bytes: 67_108_864,
+                max_circuit_secs: 600,
+                ..
+            }) if listen == &[RELAY] && external_address.is_empty()
+        ));
     }
 }

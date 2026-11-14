@@ -1,0 +1,95 @@
+# Copyright (c) 2026 Thor Thor
+# License: MIT (see LICENSE file for details)
+
+# Relayed direct-file test bed. node-a and node-c sit on net-a, node-b on
+# net-b, and only the relay is attached to both, so a direct connection
+# between the two sides is impossible and every transfer must use the relay.
+# Both networks are internal and nothing is published. This is local
+# integration evidence only: WAN TEST NOT VERIFIED.
+#
+# See scripts/e2e-direct-relay-docker.sh for the exact sequence.
+
+x-node: &node
+  image: ${CRYPRQ_DIRECT_IMAGE:-cryprq-web:latest}
+  build:
+    context: .
+    dockerfile: Dockerfile.web
+  entrypoint: ["/usr/local/bin/cryprq"]
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  mem_limit: 256m
+  cpus: 1.0
+  pids_limit: 64
+  environment:
+    RUST_LOG: ${CRYPRQ_E2E_RUST_LOG:-info}
+
+services:
+  relay:
+    <<: *node
+    volumes: [relay-state:/data]
+    networks:
+      net-a:
+        ipv4_address: ${CRYPRQ_RELAY_A_IP:-172.31.231.10}
+      net-b:
+        ipv4_address: ${CRYPRQ_RELAY_B_IP:-172.31.232.10}
+    command:
+      - --identity
+      - /data/identity.key
+      - relay-serve
+      - --listen
+      - /ip4/0.0.0.0/udp/20450/quic-v1
+      - --listen
+      - /ip4/0.0.0.0/tcp/20450
+      - --external-address
+      - /ip4/${CRYPRQ_RELAY_A_IP:-172.31.231.10}/udp/20450/quic-v1
+      - --external-address
+      - /ip4/${CRYPRQ_RELAY_A_IP:-172.31.231.10}/tcp/20450
+      - --external-address
+      - /ip4/${CRYPRQ_RELAY_B_IP:-172.31.232.10}/udp/20450/quic-v1
+      - --external-address
+      - /ip4/${CRYPRQ_RELAY_B_IP:-172.31.232.10}/tcp/20450
+      # Small on purpose: the E2E proves a cut circuit publishes nothing.
+      - --max-circuit-bytes
+      - "1048576"
+      - --max-circuit-secs
+      - "120"
+      - --max-circuits
+      - "4"
+      - --max-reservations
+      - "4"
+  node-a:
+    <<: *node
+    volumes: [direct-a:/data]
+    networks: [net-a]
+  node-b:
+    <<: *node
+    volumes: [direct-b:/data]
+    networks: [net-b]
+  # An identity nobody expects, on node-a's side of the relay.
+  node-c:
+    <<: *node
+    volumes: [direct-c:/data]
+    networks: [net-a]
+
+networks:
+  net-a:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${CRYPRQ_RELAY_NET_A:-172.31.231.0/24}
+  net-b:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${CRYPRQ_RELAY_NET_B:-172.31.232.0/24}
+
+volumes:
+  relay-state:
+  direct-a:
+  direct-b:
+  direct-c:

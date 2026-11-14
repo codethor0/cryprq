@@ -65,6 +65,12 @@ and must not be trusted for confidentiality or integrity. It does see who
 talks to whom, when, and how much. Resource limits and abuse controls are part
 of the design.
 
+Status: an opt-in relayed route for the direct-file commands and a bounded
+`relay-serve` command exist (see the [direct transfer guide](DIRECT_FILE_TRANSFER.md#relayed-route-opt-in)).
+They are tested between two isolated Docker networks on one host only. Relay
+admission is bounded but not yet restricted to known peers, and NAT traversal
+(goal 2) is not implemented. **WAN TEST NOT VERIFIED.**
+
 ### 4. Delivery acknowledgements and retries
 
 The existing UDP file commands and portal have no application acknowledgement
