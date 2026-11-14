@@ -1,0 +1,51 @@
+# Copyright (c) 2026 Thor Thor
+# License: MIT (see LICENSE file for details)
+
+# Two-container test bed for the opt-in direct-file commands. It runs the
+# existing CLI from the portal image (non-root `node`, private /data), on an
+# internal network with no published ports. This is local integration
+# evidence only: WAN TEST NOT VERIFIED.
+#
+# Each node keeps its own identity, trust store and inbox in its own volume.
+# See scripts/e2e-direct-docker.sh for the exact sequence.
+
+x-direct: &direct
+  image: ${CRYPRQ_DIRECT_IMAGE:-cryprq-web:latest}
+  build:
+    context: .
+    dockerfile: Dockerfile.web
+  entrypoint: ["/usr/local/bin/cryprq"]
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  mem_limit: 256m
+  cpus: 1.0
+  pids_limit: 64
+  environment:
+    RUST_LOG: info
+  networks: [direct]
+
+services:
+  node-a:
+    <<: *direct
+    volumes: [direct-a:/data]
+  node-b:
+    <<: *direct
+    volumes: [direct-b:/data]
+  # A third, independent identity that nobody pins, for rejection tests.
+  node-c:
+    <<: *direct
+    volumes: [direct-c:/data]
+
+networks:
+  direct:
+    internal: true
+
+volumes:
+  direct-a:
+  direct-b:
+  direct-c:

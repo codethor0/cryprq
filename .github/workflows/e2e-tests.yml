@@ -48,7 +48,22 @@ jobs:
         # Run the existing suite on the host, where Docker can inspect the peers.
         # The test-runner image has no Docker CLI and cannot verify peer logs.
         timeout 300 bash docker/e2e/test_suite.sh
-    
+
+    # Two non-root, read-only containers from the portal image on an internal
+    # network with no published ports. One Docker host: not WAN evidence.
+    - name: Direct file transfer between two containers (QUIC and TCP)
+      run: timeout 600 bash scripts/e2e-direct-docker.sh
+      env:
+        CRYPRQ_DIRECT_IMAGE: cryprq-web:latest
+        TMPDIR: ${{ runner.temp }}
+
+    - name: Collect direct Docker E2E logs
+      if: failure()
+      run: |
+        for log in "$RUNNER_TEMP"/cryprq-direct-docker-e2e.*/*.log; do
+          [ -f "$log" ] && { echo "=== $log ==="; cat "$log"; }
+        done || true
+
     - name: Collect test logs
       if: failure()
       run: |

@@ -106,6 +106,36 @@ route=direct peer_id=... bytes=... sha256=...
 `route=direct` describes the selected transport. It does not distinguish a
 loopback address from an internet route and is not WAN evidence by itself.
 
+## Docker
+
+`docker-compose.direct.yml` runs the same CLI from the portal image
+(`Dockerfile.web`) as two independent nodes, `node-a` and `node-b`, plus an
+unpinned `node-c` for rejection tests. Each node keeps its identity, trust
+store and inbox in its own named volume. The containers run as the non-root
+`node` user with a read-only root filesystem, all capabilities dropped,
+`no-new-privileges`, memory/CPU/process limits, and an `internal` network.
+No port is published, the portal is not started, and no host networking,
+privileged mode or Docker socket is used.
+
+```bash
+docker build -t cryprq-web:latest -f Dockerfile.web .
+bash scripts/e2e-direct-docker.sh
+```
+
+The script creates and pins three identities, checks that they persist in
+their volumes, checks the container posture on a live receiver, delivers a
+nonempty and an empty file over QUIC and TCP with matching SHA-256 receipts,
+rejects an unexpected sender and an unexpected receiver key, refuses
+`CRYPRQ_TEST_MODE`, and checks that SIGTERM stops a waiting receiver with
+nothing published. It removes its containers, network and volumes on exit.
+
+All containers share one Docker host, so this is packaging and isolation
+evidence, not internet evidence. Container-to-container traffic on Docker
+Desktop stays inside its Linux VM; host-published UDP ports on Docker Desktop
+are a separate path that only a WAN test can exercise. Publishing a peer port
+for such a test requires separate approval and does not make a host
+reachable through its router.
+
 ## Authentication and receiver safety
 
 The transport reuses the existing Ed25519 identity to derive libp2p's peer ID.
@@ -226,6 +256,7 @@ cargo deny check
 cargo audit
 cargo build --release --locked -p cryprq
 CRYPRQ_E2E_KEEP_LOGS=1 python3 scripts/e2e-direct-file.py ./target/release/cryprq
+bash scripts/e2e-direct-docker.sh
 bash scripts/e2e-authenticated-file-transfer.sh ./target/release/cryprq
 bash scripts/e2e-authenticated-vpn.sh ./target/release/cryprq
 bash scripts/e2e-tun-docker.sh
