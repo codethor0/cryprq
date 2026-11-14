@@ -136,6 +136,80 @@ are a separate path that only a WAN test can exercise. Publishing a peer port
 for such a test requires separate approval and does not make a host
 reachable through its router.
 
+## Relayed route (opt-in)
+
+When neither peer can reach the other, both can use a Circuit Relay v2 server
+that they can reach and whose key they have verified. Replace the direct
+address with `--relay ADDRESS --relay-key KEY` on both commands:
+
+```bash
+# Receiver: reserve on the relay and accept the sender only through it.
+cryprq --identity ... --trusted-peers ... direct-receive-file \
+  --relay /ip4/RELAY_IP/udp/20450/quic-v1 --relay-key "$RELAY_KEY" \
+  --peer-key "$SENDER_KEY" --output-dir ./inbox
+# Sender: reach the receiver only through the same relay.
+cryprq --identity ... --trusted-peers ... direct-send-file \
+  --relay /ip4/RELAY_IP/udp/20450/quic-v1 --relay-key "$RELAY_KEY" \
+  --peer-key "$RECEIVER_KEY" --file ./example.txt
+```
+
+Both commands then print `route=relay`. The relay address uses the same
+explicit IP/QUIC/TCP forms as a direct address. The relay key is pinned on the
+command line and is never added to a trust file: the relay is not an
+application peer and cannot authorize anything.
+
+Security boundaries:
+
+- The connection between the peers is upgraded with Noise inside the relay
+  circuit and bound to the receiver's pinned transport key, and the unchanged
+  hybrid handshake, key confirmation and record encryption run inside it. The
+  relay forwards ciphertext; it has no session key and cannot impersonate a
+  peer or alter records undetected.
+- The relay sees metadata: both peer IDs, their IP addresses, timing and
+  transfer size. It can drop, delay or cut a transfer. A cut transfer fails on
+  both sides and the receiver removes its unpublished partial file.
+- A relay with a different key than `--relay-key` is refused. A relay only
+  connects a sender to a peer that holds a reservation, and the receiver still
+  accepts only its expected peer, only through the relay.
+- There is no NAT traversal or direct-connection upgrade in this version: a
+  relayed transfer stays relayed.
+
+`cryprq relay-serve` runs a bounded relay. It needs only its own identity file
+(`cryprq --identity relay.key identity init`), loads no trust store and refuses
+test mode. Every limit is explicit, because the library defaults (2 minutes and
+128 KiB per circuit) are far below a file transfer:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--listen` (repeatable, required) | none | QUIC or TCP listen multiaddr |
+| `--external-address` (repeatable) | concrete listen addresses | Address peers use to reach the relay |
+| `--max-circuit-bytes` | 64 MiB | Bytes one circuit may carry before it is cut |
+| `--max-circuit-secs` | 600 | Seconds one circuit may stay open |
+| `--max-circuits` / `--max-reservations` | 16 / 32 | Concurrent circuits and reservations |
+
+A transfer larger than the relay's byte limit, or slower than its time limit,
+fails cleanly. Direct-file transfers acknowledge every 16 KiB chunk, so
+throughput through a relay is about 16 KiB per round trip; size the limits
+accordingly. The relay admits any peer that can reach it within these limits
+(no allowlist yet), so do not expose it publicly without approval. It logs
+operational events at `info` and peer IDs only at `debug`.
+
+`docker-compose.relay.yml` puts `node-a` and `node-c` on one internal network,
+`node-b` on another, and the relay on both, so the sides have no direct path:
+
+```bash
+docker build -t cryprq-web:latest -f Dockerfile.web .
+bash scripts/e2e-direct-relay-docker.sh
+```
+
+The script checks container posture and that a direct attempt cannot reach the
+other side. It then delivers files through the relay over QUIC and TCP (nonempty
+and empty) with matching SHA-256 receipts and `route=relay` on both sides. It
+rejects a relay with the wrong key, a sender asking for an unexpected peer, and
+a sender the receiver does not expect. It checks that a circuit cut by the
+relay's byte limit publishes nothing, and that `relay-serve` refuses test mode.
+It is single-host evidence: **WAN TEST NOT VERIFIED**.
+
 ## Authentication and receiver safety
 
 The transport reuses the existing Ed25519 identity to derive libp2p's peer ID.
@@ -257,6 +331,7 @@ cargo audit
 cargo build --release --locked -p cryprq
 CRYPRQ_E2E_KEEP_LOGS=1 python3 scripts/e2e-direct-file.py ./target/release/cryprq
 bash scripts/e2e-direct-docker.sh
+bash scripts/e2e-direct-relay-docker.sh
 bash scripts/e2e-authenticated-file-transfer.sh ./target/release/cryprq
 bash scripts/e2e-authenticated-vpn.sh ./target/release/cryprq
 bash scripts/e2e-tun-docker.sh

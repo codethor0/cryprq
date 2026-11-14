@@ -6,19 +6,30 @@
 //! application session before any file record is accepted.
 //!
 //! Each bounded request has one encrypted, sequence-bound reply. There is no
-//! discovery, retry, resume, relay, or implicit listener. A cancelled receiver
+//! discovery, retry, resume, or implicit listener. A cancelled receiver
 //! drops its sole file manager, removing an unpublished partial file. The output
 //! directory and its ancestors must remain under the operator's control.
+//!
+//! An explicit Circuit Relay v2 route is opt-in ([`Route::Relay`]). The relay's
+//! own key is pinned separately from the peer's, and the peer's transport key
+//! and the hybrid application session are authenticated end to end through it,
+//! so the relay forwards only ciphertext. There is no NAT traversal or
+//! direct-connection upgrade in this version.
 
 use crate::libp2p::{
     connection_limits::{self, ConnectionLimits},
+    multiaddr::Protocol,
+    relay,
     request_response::{self, Message, ProtocolSupport, ResponseChannel},
-    swarm::{dial_opts::DialOpts, ConnectionId, NetworkBehaviour, SwarmEvent},
+    swarm::{
+        behaviour::toggle::Toggle, dial_opts::DialOpts, ConnectionId, NetworkBehaviour, SwarmEvent,
+    },
     Multiaddr, PeerId, StreamProtocol, Swarm,
 };
 use crate::secure_vpn::{peer_id_of, transport_keypair};
 use anyhow::{anyhow, bail, Context, Result};
 use futures::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, StreamExt};
+use libp2p_core::ConnectedPoint;
 use node::auth_handshake::{Initiator, Responder, MAX_MESSAGE_LEN};
 use node::{FileMetadata, FileTransferManager, PeerPublicKey, Session, TunnelConfig};
 use sha2::{Digest, Sha256};
@@ -52,6 +63,22 @@ pub struct TransferReceipt {
     pub bytes: u64,
     pub sha256: [u8; 32],
     pub peer: PeerPublicKey,
+    /// Whether the authenticated connection ran through the configured relay.
+    pub relayed: bool,
+}
+
+/// How the peer is reached. Neither variant discovers addresses or trusts a key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Route {
+    /// An explicit IP multiaddr of the peer itself.
+    Direct(Multiaddr),
+    /// An explicit IP multiaddr of a Circuit Relay v2 server, and that relay's
+    /// independently pinned key. The peer is still identified only by its own
+    /// pinned key; the relay never becomes a trusted application peer.
+    Relay {
+        address: Multiaddr,
+        key: PeerPublicKey,
+    },
 }
 
 #[cfg(test)]
@@ -427,7 +454,7 @@ mod tests {
                 let peer = peer_id_of(&bob.identity.public_key()).unwrap();
                 // Transport really belongs to Alice, but application INIT may
                 // claim Mallory, who is also pinned. The expected key must win.
-                let mut transport = swarm(&alice, false).unwrap();
+                let mut transport = swarm(&alice, false, false).unwrap();
                 transport
                     .dial(DialOpts::peer_id(peer).addresses(vec![address]).build())
                     .unwrap();
@@ -462,7 +489,7 @@ mod tests {
         expected: PeerPublicKey,
     ) -> Swarm<Behaviour> {
         let peer = peer_id_of(&expected).unwrap();
-        let mut transport = swarm(config, false).unwrap();
+        let mut transport = swarm(config, false, false).unwrap();
         transport
             .dial(DialOpts::peer_id(peer).addresses(vec![address]).build())
             .unwrap();
@@ -619,7 +646,7 @@ mod tests {
         let attacking = async {
             let address = ready_rx.await.unwrap();
             let peer = peer_id_of(&bob.identity.public_key()).unwrap();
-            let mut transport = swarm(&alice, false).unwrap();
+            let mut transport = swarm(&alice, false, false).unwrap();
             transport
                 .dial(DialOpts::peer_id(peer).addresses(vec![address]).build())
                 .unwrap();
@@ -759,6 +786,268 @@ mod tests {
             .unwrap()
             .is_err());
     }
+
+    // ---- Opt-in relay route -------------------------------------------------
+
+    use crate::direct_relay::{serve_relay, RelayLimits};
+
+    fn relay_limits(max_circuit_bytes: u64) -> RelayLimits {
+        RelayLimits {
+            max_circuit_bytes,
+            max_circuit_duration: Duration::from_secs(60),
+            max_circuits: 4,
+            max_reservations: 4,
+        }
+    }
+
+    /// An in-process relay with its own identity. Aborted when dropped.
+    struct TestRelay {
+        address: Multiaddr,
+        key: PeerPublicKey,
+        task: tokio::task::JoinHandle<()>,
+    }
+    impl Drop for TestRelay {
+        fn drop(&mut self) {
+            self.task.abort();
+        }
+    }
+    impl TestRelay {
+        fn route(&self) -> Route {
+            Route::Relay {
+                address: self.address.clone(),
+                key: self.key,
+            }
+        }
+    }
+
+    async fn start_relay(listen: &str, max_circuit_bytes: u64) -> TestRelay {
+        let identity = NodeIdentity::from_secret_seed(&[9; 32]);
+        let key = identity.public_key();
+        let listen: Multiaddr = listen.parse().unwrap();
+        let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(async move {
+            let _ = serve_relay(
+                &identity,
+                vec![listen],
+                Vec::new(),
+                relay_limits(max_circuit_bytes),
+                Some(ready_tx),
+            )
+            .await;
+        });
+        let mut advertised = timeout(Duration::from_secs(5), ready_rx)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(advertised.len(), 1);
+        TestRelay {
+            address: advertised.remove(0),
+            key,
+            task,
+        }
+    }
+
+    async fn relayed_transfer(listen: &str, data: Vec<u8>) {
+        let relay = start_relay(listen, 1 << 20).await;
+        let dir = TestDir::new();
+        let output = dir.0.join("output");
+        std::fs::create_dir(&output).unwrap();
+        let path = dir.0.join("relayed.bin");
+        std::fs::write(&path, &data).unwrap();
+        let (alice, bob) = configs();
+        let (alice_key, bob_key) = (alice.identity.public_key(), bob.identity.public_key());
+        let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+        let receiving = receive_routed(
+            &bob,
+            relay.route(),
+            alice_key,
+            output.clone(),
+            Some(ready_tx),
+        );
+        let sending = async {
+            // The receiver reports its circuit address only after the
+            // relay accepted its reservation.
+            let listening = ready_rx.await.unwrap();
+            assert!(listening.iter().any(|p| p == Protocol::P2pCircuit));
+            send_file_routed(&alice, relay.route(), bob_key, path.clone())
+                .await
+                .unwrap()
+        };
+        let (received, sent) = timeout(Duration::from_secs(30), async {
+            tokio::join!(receiving, sending)
+        })
+        .await
+        .unwrap();
+        let received = received.unwrap();
+        assert!(received.relayed && sent.relayed);
+        assert_eq!((received.bytes, received.sha256), (sent.bytes, sent.sha256));
+        assert_eq!(received.bytes, data.len() as u64);
+        assert_eq!(std::fs::read(output.join("relayed.bin")).unwrap(), data);
+        assert_eq!(std::fs::read_dir(output).unwrap().count(), 1);
+    }
+
+    #[tokio::test]
+    async fn relayed_tcp_transfer_authenticates_end_to_end_with_multiple_chunks() {
+        relayed_transfer(
+            "/ip4/127.0.0.1/tcp/0",
+            (0..CHUNK_LEN * 2 + 17).map(|n| n as u8).collect(),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn relayed_quic_transfer_authenticates_end_to_end_with_multiple_chunks() {
+        relayed_transfer(
+            "/ip4/127.0.0.1/udp/0/quic-v1",
+            (0..CHUNK_LEN * 3).map(|n| (n * 7) as u8).collect(),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn relay_routes_are_validated_before_any_network_use() {
+        let dir = TestDir::new();
+        let path = dir.0.join("source.bin");
+        std::fs::write(&path, b"abc").unwrap();
+        let (alice, bob) = configs();
+        let bob_key = bob.identity.public_key();
+        let relay_key = NodeIdentity::from_secret_seed(&[9; 32]).public_key();
+        for (address, key) in [
+            ("/dns/relay.example/tcp/1", relay_key),
+            ("/ip4/127.0.0.1/tcp/1/p2p-circuit", relay_key),
+            ("/ip4/127.0.0.1/tcp/1", bob_key),
+            ("/ip4/127.0.0.1/tcp/1", alice.identity.public_key()),
+        ] {
+            let route = Route::Relay {
+                address: address.parse().unwrap(),
+                key,
+            };
+            let sent = timeout(
+                Duration::from_secs(5),
+                send_file_routed(&alice, route.clone(), bob_key, path.clone()),
+            )
+            .await
+            .unwrap();
+            assert!(sent.is_err(), "{address}");
+            let received = timeout(
+                Duration::from_secs(5),
+                receive_file_routed(&bob, route, alice.identity.public_key(), dir.0.clone()),
+            )
+            .await
+            .unwrap();
+            assert!(received.is_err(), "{address}");
+        }
+    }
+
+    #[test]
+    fn relay_limits_must_be_explicit_and_bounded() {
+        assert!(relay_limits(1 << 20).validate().is_ok());
+        let mut limits = relay_limits(0);
+        assert!(limits.validate().is_err());
+        limits.max_circuit_bytes = RelayLimits::MAX_CIRCUIT_BYTES + 1;
+        assert!(limits.validate().is_err());
+        let mut limits = relay_limits(1 << 20);
+        limits.max_circuit_duration = Duration::ZERO;
+        assert!(limits.validate().is_err());
+        let mut limits = relay_limits(1 << 20);
+        limits.max_circuits = 0;
+        assert!(limits.validate().is_err());
+    }
+
+    /// Runs a receiver through `relay` and a sender with the given route and
+    /// expected key; returns the sender's result and the output directory.
+    async fn relayed_attempt(
+        relay: &TestRelay,
+        sender_route: Route,
+        sender_expects: Option<PeerPublicKey>,
+        data: &[u8],
+    ) -> (Result<TransferReceipt>, TestDir) {
+        let dir = TestDir::new();
+        let output = dir.0.join("output");
+        std::fs::create_dir(&output).unwrap();
+        let path = dir.0.join("attempt.bin");
+        std::fs::write(&path, data).unwrap();
+        let (mut alice, bob) = configs();
+        let mallory = NodeIdentity::from_secret_seed(&[3; 32]).public_key();
+        alice.trusted_peers = TrustedPeers::from_keys([bob.identity.public_key(), mallory]);
+        let expected = sender_expects.unwrap_or_else(|| bob.identity.public_key());
+        let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+        let mut receiving = Box::pin(receive_routed(
+            &bob,
+            relay.route(),
+            alice.identity.public_key(),
+            output.clone(),
+            Some(ready_tx),
+        ));
+        let mut sending = Box::pin(async {
+            ready_rx.await.unwrap();
+            send_file_routed(&alice, sender_route, expected, path.clone()).await
+        });
+        let sent = timeout(Duration::from_secs(30), async {
+            tokio::select! {
+                sent = &mut sending => sent,
+                received = &mut receiving => {
+                    assert!(received.is_err(), "receiver must not succeed");
+                    sending.await
+                }
+            }
+        })
+        .await
+        .unwrap();
+        drop(receiving);
+        (sent, dir)
+    }
+
+    #[tokio::test]
+    async fn relay_with_a_different_key_than_pinned_is_refused() {
+        let relay = start_relay("/ip4/127.0.0.1/tcp/0", 1 << 20).await;
+        let impostor = NodeIdentity::from_secret_seed(&[8; 32]).public_key();
+        let route = Route::Relay {
+            address: relay.address.clone(),
+            key: impostor,
+        };
+        let (sent, dir) = relayed_attempt(&relay, route, None, b"abc").await;
+        assert!(sent.is_err());
+        assert_eq!(std::fs::read_dir(dir.0.join("output")).unwrap().count(), 0);
+        // A receiver pinning the wrong relay key cannot even reserve.
+        let (alice, bob) = configs();
+        let result = timeout(
+            Duration::from_secs(15),
+            receive_file_routed(
+                &bob,
+                Route::Relay {
+                    address: relay.address.clone(),
+                    key: impostor,
+                },
+                alice.identity.public_key(),
+                dir.0.join("output"),
+            ),
+        )
+        .await
+        .unwrap();
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn relay_does_not_deliver_to_an_unreserved_or_unexpected_target() {
+        let relay = start_relay("/ip4/127.0.0.1/tcp/0", 1 << 20).await;
+        // Bob holds the only reservation; the sender asks the relay for Mallory.
+        let mallory = NodeIdentity::from_secret_seed(&[3; 32]).public_key();
+        let (sent, dir) = relayed_attempt(&relay, relay.route(), Some(mallory), b"abc").await;
+        assert!(sent.is_err());
+        assert_eq!(std::fs::read_dir(dir.0.join("output")).unwrap().count(), 0);
+    }
+
+    #[tokio::test]
+    async fn relay_circuit_limit_cuts_the_transfer_without_publication() {
+        // The relay closes the circuit mid-transfer; nothing may be published
+        // and the receiver's partial file must be removed.
+        let relay = start_relay("/ip4/127.0.0.1/tcp/0", 64 * 1024).await;
+        let data: Vec<u8> = (0..CHUNK_LEN * 12).map(|n| n as u8).collect();
+        let (sent, dir) = relayed_attempt(&relay, relay.route(), None, &data).await;
+        assert!(sent.is_err());
+        assert_eq!(std::fs::read_dir(dir.0.join("output")).unwrap().count(), 0);
+    }
 }
 
 #[derive(Clone, Default)]
@@ -847,16 +1136,23 @@ impl request_response::Codec for Codec {
 struct Behaviour {
     files: request_response::Behaviour<Codec>,
     limits: connection_limits::Behaviour,
+    relay: Toggle<relay::client::Behaviour>,
 }
 
 #[derive(Debug)]
 enum Event {
     Files(request_response::Event<Vec<u8>, Vec<u8>>),
+    Relay(relay::client::Event),
 }
 
 impl From<request_response::Event<Vec<u8>, Vec<u8>>> for Event {
     fn from(event: request_response::Event<Vec<u8>, Vec<u8>>) -> Self {
         Self::Files(event)
+    }
+}
+impl From<relay::client::Event> for Event {
+    fn from(event: relay::client::Event) -> Self {
+        Self::Relay(event)
     }
 }
 impl From<Infallible> for Event {
@@ -865,28 +1161,91 @@ impl From<Infallible> for Event {
     }
 }
 
-fn swarm(config: &TunnelConfig, inbound: bool) -> Result<Swarm<Behaviour>> {
+fn swarm(config: &TunnelConfig, inbound: bool, relayed: bool) -> Result<Swarm<Behaviour>> {
+    // A relayed route adds exactly one outgoing connection, to the relay. The
+    // sender's relayed connection to the peer is also outgoing; the
+    // receiver's arrives as one incoming circuit.
+    let extra = u32::from(relayed);
     let limits = ConnectionLimits::default()
         .with_max_pending_incoming(Some(if inbound { 4 } else { 0 }))
-        .with_max_pending_outgoing(Some(1))
+        .with_max_pending_outgoing(Some(1 + extra))
         .with_max_established_incoming(Some(if inbound { 1 } else { 0 }))
-        .with_max_established_outgoing(Some(1))
+        .with_max_established_outgoing(Some(1 + extra))
         .with_max_established_per_peer(Some(1))
-        .with_max_established(Some(1));
-    let behaviour = Behaviour {
-        files: request_response::Behaviour::with_codec(
-            Codec,
-            [(PROTOCOL, ProtocolSupport::Full)],
-            request_response::Config::default()
-                .with_request_timeout(IO_TIMEOUT)
-                .with_max_concurrent_streams(1),
-        ),
-        limits: connection_limits::Behaviour::new(limits),
-    };
-    crate::libp2p::build_swarm(transport_keypair(&config.identity)?, behaviour, |c| {
-        c.with_idle_connection_timeout(IO_TIMEOUT * 2)
-    })
+        .with_max_established(Some(1 + extra));
+    let files = request_response::Behaviour::with_codec(
+        Codec,
+        [(PROTOCOL, ProtocolSupport::Full)],
+        request_response::Config::default()
+            .with_request_timeout(IO_TIMEOUT)
+            .with_max_concurrent_streams(1),
+    );
+    let limits = connection_limits::Behaviour::new(limits);
+    let keypair = transport_keypair(&config.identity)?;
+    let configure =
+        |c: crate::libp2p::swarm::Config| c.with_idle_connection_timeout(IO_TIMEOUT * 2);
+    if relayed {
+        crate::libp2p::build_relay_client_swarm(
+            keypair,
+            |client| Behaviour {
+                files,
+                limits,
+                relay: Toggle::from(Some(client)),
+            },
+            configure,
+        )
+    } else {
+        crate::libp2p::build_swarm(
+            keypair,
+            Behaviour {
+                files,
+                limits,
+                relay: Toggle::from(None),
+            },
+            configure,
+        )
+    }
     .map_err(|_| anyhow!("cannot initialize direct-file transport"))
+}
+
+/// The relay's peer ID, from its separately pinned key, which must not be the
+/// local identity or the expected peer.
+fn relay_peer(
+    config: &TunnelConfig,
+    expected: PeerPublicKey,
+    key: PeerPublicKey,
+) -> Result<PeerId> {
+    if key == config.identity.public_key() || key == expected {
+        bail!("relay key must differ from the local identity and the expected peer");
+    }
+    peer_id_of(&key)
+}
+
+/// `<relay address>/p2p/<relay>/p2p-circuit`.
+fn circuit(address: &Multiaddr, relay: PeerId) -> Multiaddr {
+    address
+        .clone()
+        .with(Protocol::P2p(relay))
+        .with(Protocol::P2pCircuit)
+}
+
+fn through_relay(endpoint: &ConnectedPoint) -> bool {
+    let circuit = |address: &Multiaddr| address.iter().any(|p| p == Protocol::P2pCircuit);
+    match endpoint {
+        ConnectedPoint::Dialer { address, .. } => circuit(address),
+        ConnectedPoint::Listener {
+            local_addr,
+            send_back_addr,
+        } => circuit(local_addr) || circuit(send_back_addr),
+    }
+}
+
+fn route_label(relayed: bool) -> &'static str {
+    if relayed {
+        "relay"
+    } else {
+        "direct"
+    }
 }
 
 fn validate_peer(config: &TunnelConfig, expected: PeerPublicKey) -> Result<PeerId> {
@@ -899,8 +1258,7 @@ fn validate_peer(config: &TunnelConfig, expected: PeerPublicKey) -> Result<PeerI
     peer_id_of(&expected)
 }
 
-fn validate_address(address: &Multiaddr) -> Result<()> {
-    use crate::libp2p::multiaddr::Protocol;
+pub(crate) fn validate_address(address: &Multiaddr) -> Result<()> {
     let mut parts = address.iter();
     if !matches!(parts.next(), Some(Protocol::Ip4(_) | Protocol::Ip6(_))) {
         bail!("direct-file address must begin with an explicit IP address");
@@ -959,7 +1317,13 @@ struct Request {
     id: request_response::InboundRequestId,
 }
 
-async fn next_request(swarm: &mut Swarm<Behaviour>, peer: PeerId) -> Result<Request> {
+/// The next request from `peer`. Any other connection is closed, except the
+/// one to the configured relay, which carries the peer's circuit.
+async fn next_request(
+    swarm: &mut Swarm<Behaviour>,
+    peer: PeerId,
+    relay: Option<PeerId>,
+) -> Result<Request> {
     timeout(IO_TIMEOUT, async {
         loop {
             match swarm.select_next_some().await {
@@ -986,7 +1350,9 @@ async fn next_request(swarm: &mut Swarm<Behaviour>, peer: PeerId) -> Result<Requ
                 SwarmEvent::ConnectionClosed { peer_id, .. } if peer_id == peer => {
                     bail!("direct-file peer disconnected")
                 }
-                SwarmEvent::ConnectionEstablished { peer_id, .. } if peer_id != peer => {
+                SwarmEvent::ConnectionEstablished { peer_id, .. }
+                    if peer_id != peer && Some(peer_id) != relay =>
+                {
                     let _ = swarm.disconnect_peer_id(peer_id);
                 }
                 _ => {}
@@ -1114,7 +1480,7 @@ impl Receiver {
         Ok(response)
     }
 
-    fn receipt(&self, peer: PeerPublicKey) -> Result<TransferReceipt> {
+    fn receipt(&self, peer: PeerPublicKey, relayed: bool) -> Result<TransferReceipt> {
         if !self.complete {
             bail!("direct-file transfer is incomplete");
         }
@@ -1123,6 +1489,7 @@ impl Receiver {
             bytes: metadata.size,
             sha256: metadata.hash,
             peer,
+            relayed,
         })
     }
 }
@@ -1193,8 +1560,33 @@ pub async fn send_file(
     expected: PeerPublicKey,
     path: PathBuf,
 ) -> Result<TransferReceipt> {
+    send_file_routed(config, Route::Direct(address), expected, path).await
+}
+
+/// [`send_file`] over an explicit [`Route`]. With [`Route::Relay`], the peer is
+/// dialed only through that relay's circuit, never directly.
+pub async fn send_file_routed(
+    config: &TunnelConfig,
+    route: Route,
+    expected: PeerPublicKey,
+    path: PathBuf,
+) -> Result<TransferReceipt> {
     let peer = validate_peer(config, expected)?;
-    validate_address(&address)?;
+    let (dial, relay) = match &route {
+        Route::Direct(address) => {
+            validate_address(address)?;
+            (address.clone(), None)
+        }
+        Route::Relay { address, key } => {
+            validate_address(address)?;
+            let relay = relay_peer(config, expected, *key)?;
+            (
+                circuit(address, relay).with(Protocol::P2p(peer)),
+                Some(relay),
+            )
+        }
+    };
+    let relayed = relay.is_some();
     let (mut file, details) = open_source(&path).await?;
     if details.len() > MAX_FILE_BYTES {
         bail!("direct-file source must be a regular file of at most 1 GiB");
@@ -1229,8 +1621,8 @@ pub async fn send_file(
     }
     file.seek(io::SeekFrom::Start(0)).await?;
     let metadata = FileMetadata::new(filename, hashed, hasher.finalize().into());
-    let mut swarm = swarm(config, false)?;
-    swarm.dial(DialOpts::peer_id(peer).addresses(vec![address]).build())?;
+    let mut swarm = swarm(config, false, relayed)?;
+    swarm.dial(DialOpts::peer_id(peer).addresses(vec![dial]).build())?;
     let mut initiator = Initiator::new(&config.identity, &config.trusted_peers, &expected)?;
     let session = timeout(config.handshake_timeout, async {
         let response = exchange(&mut swarm, peer, initiator.init_message().to_vec()).await?;
@@ -1240,7 +1632,10 @@ pub async fn send_file(
     })
     .await
     .context("direct-file application handshake timed out")??;
-    log::info!("event=direct_file_authenticated role=initiator peer={peer}");
+    log::info!(
+        "event=direct_file_authenticated role=initiator peer={peer} route={}",
+        route_label(relayed)
+    );
     let mut sequence = 0u64;
     let record = session.seal(
         STREAM_ID,
@@ -1277,6 +1672,7 @@ pub async fn send_file(
         bytes: metadata.size,
         sha256: metadata.hash,
         peer: expected,
+        relayed,
     })
 }
 
@@ -1292,6 +1688,18 @@ pub async fn receive_file(
     receive_inner(config, address, expected, output_dir, None).await
 }
 
+/// [`receive_file`] over an explicit [`Route`]. With [`Route::Relay`], the
+/// receiver makes a reservation on that relay and accepts only the expected
+/// peer's circuit through it; it opens no direct listener.
+pub async fn receive_file_routed(
+    config: &TunnelConfig,
+    route: Route,
+    expected: PeerPublicKey,
+    output_dir: PathBuf,
+) -> Result<TransferReceipt> {
+    receive_routed(config, route, expected, output_dir, None).await
+}
+
 async fn receive_inner(
     config: &TunnelConfig,
     address: Multiaddr,
@@ -1299,15 +1707,36 @@ async fn receive_inner(
     output_dir: PathBuf,
     ready: Option<tokio::sync::oneshot::Sender<Multiaddr>>,
 ) -> Result<TransferReceipt> {
+    receive_routed(config, Route::Direct(address), expected, output_dir, ready).await
+}
+
+async fn receive_routed(
+    config: &TunnelConfig,
+    route: Route,
+    expected: PeerPublicKey,
+    output_dir: PathBuf,
+    ready: Option<tokio::sync::oneshot::Sender<Multiaddr>>,
+) -> Result<TransferReceipt> {
     let peer = validate_peer(config, expected)?;
-    validate_address(&address)?;
+    let (listen, relay) = match &route {
+        Route::Direct(address) => {
+            validate_address(address)?;
+            (address.clone(), None)
+        }
+        Route::Relay { address, key } => {
+            validate_address(address)?;
+            let relay = relay_peer(config, expected, *key)?;
+            (circuit(address, relay), Some(relay))
+        }
+    };
+    let relayed = relay.is_some();
     let output = std::fs::symlink_metadata(&output_dir)
         .context("direct-file output directory must already exist")?;
     if !output.is_dir() || output.file_type().is_symlink() {
         bail!("direct-file output must be an existing directory, not a symlink");
     }
-    let mut swarm = swarm(config, true)?;
-    swarm.listen_on(address)?;
+    let mut swarm = swarm(config, true, relayed)?;
+    swarm.listen_on(listen)?;
     let mut ready = ready;
     let connection: ConnectionId = timeout(LISTEN_TIMEOUT, async {
         loop {
@@ -1321,11 +1750,22 @@ async fn receive_inner(
                 SwarmEvent::ConnectionEstablished {
                     peer_id,
                     connection_id,
+                    endpoint,
                     ..
-                } if peer_id == peer => return Ok(connection_id),
+                } if peer_id == peer => {
+                    // The peer must arrive over the selected route only.
+                    if through_relay(&endpoint) == relayed {
+                        return Ok(connection_id);
+                    }
+                    let _ = swarm.close_connection(connection_id);
+                }
+                SwarmEvent::ConnectionEstablished { peer_id, .. } if Some(peer_id) == relay => {}
                 SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                     let _ = swarm.disconnect_peer_id(peer_id);
                 }
+                SwarmEvent::Behaviour(Event::Relay(
+                    relay::client::Event::ReservationReqAccepted { .. },
+                )) => log::info!("event=direct_file_relay_reserved"),
                 SwarmEvent::ListenerError { .. } | SwarmEvent::ListenerClosed { .. } => {
                     bail!("direct-file listener failed")
                 }
@@ -1337,7 +1777,7 @@ async fn receive_inner(
     .context("direct-file listener timed out waiting for the expected peer")??;
     let session = timeout(config.handshake_timeout, async {
         let mut responder = Responder::new(&config.identity);
-        let request = next_request(&mut swarm, peer).await?;
+        let request = next_request(&mut swarm, peer, relay).await?;
         if request.bytes.len() > MAX_MESSAGE_LEN {
             bail!("oversized direct-file handshake");
         }
@@ -1346,17 +1786,20 @@ async fn receive_inner(
             bail!("direct-file transport/application identity mismatch");
         }
         reply(&mut swarm, request, response)?;
-        let request = next_request(&mut swarm, peer).await?;
+        let request = next_request(&mut swarm, peer, relay).await?;
         let (confirm, keys) = responder.handle_finish(&request.bytes)?;
         reply(&mut swarm, request, confirm)?;
         Ok::<_, anyhow::Error>(Session::from_handshake(keys))
     })
     .await
     .context("direct-file application handshake timed out")??;
-    log::info!("event=direct_file_authenticated role=responder peer={peer}");
+    log::info!(
+        "event=direct_file_authenticated role=responder peer={peer} route={}",
+        route_label(relayed)
+    );
     let mut receiver = Receiver::new(output_dir);
     loop {
-        let request = next_request(&mut swarm, peer).await?;
+        let request = next_request(&mut swarm, peer, relay).await?;
         let response = receiver.record(&session, &request.bytes)?;
         let final_id = request.id;
         reply(&mut swarm, request, response)?;
@@ -1384,7 +1827,7 @@ async fn receive_inner(
                                     "direct-file peer closed before completion reply was flushed"
                                 );
                             }
-                            return receiver.receipt(expected);
+                            return receiver.receipt(expected, relayed);
                         }
                         _ => {}
                     }
@@ -1394,7 +1837,7 @@ async fn receive_inner(
             .context(
                 "verified file published, but completion acknowledgment was not confirmed",
             )??;
-            return receiver.receipt(expected);
+            return receiver.receipt(expected, relayed);
         }
     }
 }

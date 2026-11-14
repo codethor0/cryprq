@@ -57,10 +57,18 @@ jobs:
         CRYPRQ_DIRECT_IMAGE: cryprq-web:latest
         TMPDIR: ${{ runner.temp }}
 
+    # Two internal networks joined only by a bounded relay, so delivery must
+    # use the relay. One Docker host: not WAN or NAT-traversal evidence.
+    - name: Relayed direct file transfer across two isolated networks
+      run: timeout 600 bash scripts/e2e-direct-relay-docker.sh
+      env:
+        CRYPRQ_DIRECT_IMAGE: cryprq-web:latest
+        TMPDIR: ${{ runner.temp }}
+
     - name: Collect direct Docker E2E logs
       if: failure()
       run: |
-        for log in "$RUNNER_TEMP"/cryprq-direct-docker-e2e.*/*.log; do
+        for log in "$RUNNER_TEMP"/cryprq-direct-docker-e2e.*/*.log "$RUNNER_TEMP"/cryprq-relay-docker-e2e.*/*.log; do
           [ -f "$log" ] && { echo "=== $log ==="; cat "$log"; }
         done || true
 
