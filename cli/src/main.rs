@@ -200,6 +200,30 @@ enum Command {
         #[arg(long, default_value = ".")]
         output_dir: PathBuf,
     },
+    /// Send one file over an authenticated direct libp2p connection (opt-in)
+    DirectSendFile {
+        /// Reachable receiver multiaddr (QUIC or TCP)
+        #[arg(long)]
+        peer: String,
+        /// File path to send
+        #[arg(long)]
+        file: PathBuf,
+        /// Explicit pinned receiver key (ed25519:<hex>)
+        #[arg(long, value_name = "KEY")]
+        peer_key: String,
+    },
+    /// Receive one verified file over an explicitly enabled direct listener
+    DirectReceiveFile {
+        /// Controlled listener multiaddr (QUIC or TCP)
+        #[arg(long)]
+        listen: String,
+        /// Existing directory for the verified file
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Explicit pinned sender key (ed25519:<hex>)
+        #[arg(long, value_name = "KEY")]
+        peer_key: String,
+    },
     /// Manage this node's long-term identity
     Identity {
         #[command(subcommand)]
@@ -227,6 +251,34 @@ async fn main() -> Result<()> {
             Command::ReceiveFile { listen, output_dir } => {
                 let paths = TrustPaths::resolve(args.identity, args.trusted_peers);
                 return handle_receive_file(listen, output_dir, args.test_mode, paths).await;
+            }
+            Command::DirectSendFile {
+                peer,
+                file,
+                peer_key,
+            } => {
+                let paths = TrustPaths::resolve(args.identity, args.trusted_peers);
+                let (config, expected) = direct_file_config(paths, &peer_key, args.test_mode)?;
+                let address = peer.parse().context("invalid direct receiver multiaddr")?;
+                return await_direct_file(p2p::direct_file::send_file(
+                    &config, address, expected, file,
+                ))
+                .await;
+            }
+            Command::DirectReceiveFile {
+                listen,
+                output_dir,
+                peer_key,
+            } => {
+                let paths = TrustPaths::resolve(args.identity, args.trusted_peers);
+                let (config, expected) = direct_file_config(paths, &peer_key, args.test_mode)?;
+                let address = listen
+                    .parse()
+                    .context("invalid direct listener multiaddr")?;
+                return await_direct_file(p2p::direct_file::receive_file(
+                    &config, address, expected, output_dir,
+                ))
+                .await;
             }
             Command::Identity { action } => {
                 let paths = TrustPaths::resolve(args.identity, args.trusted_peers)?;
@@ -661,6 +713,49 @@ fn expected_peer(peer_key: Option<&str>, trusted: &TrustedPeers) -> Result<PeerP
         (Some(only), None) => Ok(*only),
         _ => anyhow::bail!("several peers are pinned; select the receiver with --peer-key"),
     }
+}
+
+fn require_authenticated_direct_mode(test_mode: bool, test_environment: bool) -> Result<()> {
+    if test_mode || test_environment {
+        anyhow::bail!(
+            "direct file transfer requires authenticated mode; disable --test-mode and {}",
+            node::TEST_MODE_ENV
+        );
+    }
+    Ok(())
+}
+
+fn direct_file_config(
+    paths: Result<TrustPaths>,
+    peer_key: &str,
+    test_mode: bool,
+) -> Result<(TunnelConfig, PeerPublicKey)> {
+    require_authenticated_direct_mode(test_mode, node::test_mode_enabled())?;
+    let config = paths?.load()?;
+    let expected = expected_peer(Some(peer_key), &config.trusted_peers)?;
+    if !config.trusted_peers.contains(&expected) {
+        anyhow::bail!("--peer-key must be explicitly pinned in the trusted peers file");
+    }
+    if expected == config.identity.public_key() {
+        anyhow::bail!("--peer-key must identify a different node");
+    }
+    Ok((config, expected))
+}
+
+async fn await_direct_file(
+    transfer: impl std::future::Future<Output = Result<p2p::direct_file::TransferReceipt>>,
+) -> Result<()> {
+    let receipt = match first_of(transfer, shutdown_signal(), true).await {
+        Either::Left(result) => result?,
+        Either::Right(()) => anyhow::bail!("direct file transfer cancelled"),
+    };
+    println!(
+        "route=direct peer_id={} bytes={} sha256={}",
+        p2p::secure_vpn::peer_id_of(&receipt.peer)?,
+        receipt.bytes,
+        hex::encode(receipt.sha256)
+    );
+    Ok(())
 }
 
 async fn handle_send_file(
@@ -1167,4 +1262,103 @@ async fn handle_receive_file_old(listen_addr: String, output_dir: PathBuf) -> Re
     start_listener(&listen_addr).await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod direct_cli_tests {
+    use super::*;
+    use clap::error::ErrorKind;
+
+    const PIN: &str = "ed25519:0c1b336e4ee966446e887542d217f88058356342717c799623bb05262b1ae43c";
+
+    #[test]
+    fn direct_commands_require_explicit_address_key_and_file_destination() {
+        let cases = [
+            vec![
+                "cryprq",
+                "direct-send-file",
+                "--peer",
+                "/ip4/127.0.0.1/udp/20440/quic-v1",
+                "--peer-key",
+                PIN,
+                "--file",
+                "source.bin",
+            ],
+            vec![
+                "cryprq",
+                "direct-receive-file",
+                "--listen",
+                "/ip4/127.0.0.1/tcp/20440",
+                "--peer-key",
+                PIN,
+                "--output-dir",
+                "received",
+            ],
+        ];
+        for arguments in cases {
+            assert!(Args::try_parse_from(&arguments).is_ok());
+            for start in [2, 4, 6] {
+                let mut missing = arguments.clone();
+                missing.drain(start..start + 2);
+                let error = Args::try_parse_from(missing).expect_err("required direct argument");
+                assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
+            }
+        }
+    }
+
+    #[test]
+    fn direct_commands_keep_explicit_identity_and_trust_paths() {
+        let args = Args::try_parse_from([
+            "cryprq",
+            "direct-receive-file",
+            "--listen",
+            "/ip4/127.0.0.1/tcp/20440",
+            "--peer-key",
+            PIN,
+            "--output-dir",
+            "received",
+            "--identity",
+            "receiver.key",
+            "--trusted-peers",
+            "receiver.trust",
+        ])
+        .expect("explicit direct receive command");
+        assert_eq!(args.identity, Some(PathBuf::from("receiver.key")));
+        assert_eq!(args.trusted_peers, Some(PathBuf::from("receiver.trust")));
+        assert!(matches!(
+            args.command,
+            Some(Command::DirectReceiveFile { .. })
+        ));
+    }
+
+    #[test]
+    fn direct_transfer_rejects_either_insecure_test_mode_control() {
+        assert!(require_authenticated_direct_mode(false, false).is_ok());
+        for (flag, environment) in [(true, false), (false, true), (true, true)] {
+            assert!(require_authenticated_direct_mode(flag, environment).is_err());
+        }
+        let args = Args::try_parse_from([
+            "cryprq",
+            "--test-mode",
+            "direct-send-file",
+            "--peer",
+            "/ip4/127.0.0.1/udp/20440/quic-v1",
+            "--peer-key",
+            PIN,
+            "--file",
+            "source.bin",
+        ])
+        .expect("legacy test-mode flag placement");
+        assert!(require_authenticated_direct_mode(args.test_mode, false).is_err());
+        // The security guard runs before identity files are read or a listener
+        // can be created, including when the legacy test-mode flag was parsed.
+        let error = direct_file_config(
+            Err(anyhow::anyhow!("identity files must not be read")),
+            PIN,
+            true,
+        )
+        .err()
+        .expect("test mode rejected before loading identity files");
+        assert!(error.to_string().contains("requires authenticated mode"));
+    }
 }

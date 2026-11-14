@@ -1,7 +1,10 @@
 # Internet connectivity roadmap
 
-This document lists goals. None of them is implemented, and nothing here is a
-statement about what CrypRQ does today.
+This document separates the additive Phase 1 direct-file candidate from the
+remaining connectivity goals. The candidate adds explicit direct QUIC/TCP file
+commands; it does not establish that transfer across separate internet networks
+works. **WAN TEST NOT VERIFIED.** See the [direct transfer guide](DIRECT_FILE_TRANSFER.md)
+for its interface, security boundaries and validation record.
 
 ## Where the project stands
 
@@ -9,7 +12,7 @@ statement about what CrypRQ does today.
   two processes on one machine and between containers on one Docker network.
   **Connectivity across the internet (WAN) has not been validated**: no test
   covers NAT, firewalls, packet loss, reordering or changing addresses.
-- There are two separate network paths in the code, and they should not be
+- There are separate network paths in the code, and they should not be
   confused:
   - **The authenticated UDP transfer** used by `send-file` and `receive-file`
     (and by the browser portal). It runs the CrypRQ handshake directly over a
@@ -18,8 +21,15 @@ statement about what CrypRQ does today.
   - **The libp2p transport** (QUIC and TCP) used by the legacy connection mode
     and by the `--vpn` link. It provides connection handling, but no relay,
     hole punching or peer discovery component is included in the build.
-- A device is reached by an IPv4 address and UDP port that the other side must
-  already know and be able to reach.
+  - **The opt-in direct-file candidate**, `direct-send-file` and
+    `direct-receive-file`, carries the existing authenticated application
+    handshake and encrypted file records over libp2p QUIC/TCP. It requires an
+    explicit IP multiaddr and pinned expected identity on both ends, transfers
+    one file and returns an encrypted receiver receipt after size/hash
+    verification and atomic publication. Local and hosted results must be read
+    from the candidate's validation record, not inferred from this roadmap.
+- Direct modes require an address and port the sender already knows and can
+  reach. No command provisions public endpoints or changes host networking.
 
 ## Goals
 
@@ -28,11 +38,16 @@ threat analysis and tests before it is described as working.
 
 ### 1. Direct connectivity over the internet
 
-Validate the existing paths between hosts on different networks with public or
-forwarded addresses: IPv4 and IPv6, realistic loss and delay, address changes
-during a session. Decide whether file transfer stays on its own UDP path or
-moves onto the libp2p transport. Until this is done, every later item rests on
-an untested base.
+The Phase 1 candidate adds a separate libp2p direct-file path while preserving
+the existing UDP file commands and portal. Validate this path between two
+authorized hosts on genuinely different internet networks with an already
+reachable address. Record the exact revision, application authentication,
+route and SHA-256 evidence using the [WAN recipe](DIRECT_FILE_TRANSFER.md#separate-network-wan-test-recipe).
+No WAN infrastructure is approved for the current implementation session, so
+that milestone remains unverified. Loopback and a shared Docker host do not
+satisfy it. IPv6 reachability, realistic loss/delay and changing addresses also
+need their own evidence; no universal NAT-success claim follows from a direct
+test.
 
 ### 2. NAT traversal
 
@@ -52,12 +67,14 @@ of the design.
 
 ### 4. Delivery acknowledgements and retries
 
-File transfer currently has no acknowledgement and no retransmission: a sender
-that finishes has not proven delivery. The goal is an authenticated
-acknowledgement from the receiver after it has verified the file, bounded
-retransmission of lost data, and resumption of an interrupted transfer, all
-inside the existing authenticated session and without weakening replay
-protection.
+The existing UDP file commands and portal have no application acknowledgement
+or retransmission: a sender that finishes has not proven delivery. The
+direct-file candidate adds ordered encrypted replies and a final receiver
+receipt after verified publication; QUIC/TCP supplies transport reliability.
+If the last receipt is lost, the receiver may already have published the file
+while the sender reports failure. Application retries, transfer recovery and
+authenticated resumption remain future work and require separate review. They
+must not weaken replay protection or overwrite existing files.
 
 ### 5. Optional encrypted store-and-forward
 

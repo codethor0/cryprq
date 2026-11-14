@@ -166,6 +166,7 @@ struct IncomingTransfer {
     last_progress: Instant,
     cleanup_pending: bool,
     cleanup_error: Option<std::io::ErrorKind>,
+    redacted_logs: bool,
     #[allow(dead_code)]
     chunks_received: Vec<u32>,
 }
@@ -173,10 +174,17 @@ struct IncomingTransfer {
 impl Drop for IncomingTransfer {
     fn drop(&mut self) {
         if !self.try_cleanup() {
-            log::error!(
-                "Receiver dropped with undeleted temporary file; operator cleanup required: {:?}",
-                self.temporary_path
-            );
+            if self.redacted_logs {
+                log::error!(
+                    "Receiver dropped with undeleted temporary file; operator cleanup required: error_kind={:?}",
+                    self.cleanup_error
+                );
+            } else {
+                log::error!(
+                    "Receiver dropped with undeleted temporary file; operator cleanup required: {:?}",
+                    self.temporary_path
+                );
+            }
         }
     }
 }
@@ -191,11 +199,15 @@ impl IncomingTransfer {
             Err(error) => {
                 // Persistent failures remain charged without producing a log storm.
                 if self.cleanup_error != Some(error.kind()) {
-                    log::warn!(
-                        "Temporary cleanup pending for {:?}: {}",
-                        self.temporary_path,
-                        error
-                    );
+                    if self.redacted_logs {
+                        log::warn!("Temporary cleanup pending: error_kind={:?}", error.kind());
+                    } else {
+                        log::warn!(
+                            "Temporary cleanup pending for {:?}: {}",
+                            self.temporary_path,
+                            error
+                        );
+                    }
                     self.cleanup_error = Some(error.kind());
                 }
                 false
@@ -234,6 +246,7 @@ pub struct FileTransferManager {
     cleanup_policy: CleanupPolicy,
     cleanup_spawner: CleanupSpawner,
     cleanup_worker: Mutex<Option<CleanupWorker>>,
+    redacted_logs: bool,
 }
 
 impl Drop for FileTransferManager {
@@ -262,6 +275,14 @@ impl FileTransferManager {
         )
     }
 
+    /// Create a receiver whose logs omit peer-supplied filenames, filesystem
+    /// paths and OS error details. File safety and admission limits are unchanged.
+    pub fn new_redacted(output_dir: PathBuf) -> Self {
+        let mut manager = Self::new(output_dir);
+        manager.redacted_logs = true;
+        manager
+    }
+
     fn with_cleanup_options(
         output_dir: PathBuf,
         cleanup_policy: CleanupPolicy,
@@ -275,6 +296,7 @@ impl FileTransferManager {
             cleanup_policy,
             cleanup_spawner,
             cleanup_worker: Mutex::new(None),
+            redacted_logs: false,
         }
     }
 
@@ -290,6 +312,7 @@ impl FileTransferManager {
         let stop = Arc::new((Mutex::new(false), Condvar::new()));
         let worker_stop = Arc::clone(&stop);
         let policy = self.cleanup_policy;
+        let redacted_logs = self.redacted_logs;
         let handle = (self.cleanup_spawner)(Box::new(move || loop {
             let stopped = worker_stop
                 .0
@@ -311,7 +334,11 @@ impl FileTransferManager {
                     Self::expire_inactive(&mut transfers, Instant::now(), policy.idle)
                 }
                 Err(error) => {
-                    log::error!("File cleanup state lock poisoned: {error}");
+                    if redacted_logs {
+                        log::error!("File cleanup state lock poisoned");
+                    } else {
+                        log::error!("File cleanup state lock poisoned: {error}");
+                    }
                     break;
                 }
             };
@@ -414,6 +441,7 @@ impl FileTransferManager {
             last_progress: clock(),
             cleanup_pending: false,
             cleanup_error: None,
+            redacted_logs: self.redacted_logs,
             chunks_received: Vec::new(),
         };
 
@@ -423,9 +451,13 @@ impl FileTransferManager {
             return Self::finish(stream_id, &mut incoming);
         }
 
-        log::info!(
-            "Started incoming file transfer: stream_id={stream_id}, filename={filename}, size={size}"
-        );
+        if self.redacted_logs {
+            log::info!("Started incoming file transfer: stream_id={stream_id}, size={size}");
+        } else {
+            log::info!(
+                "Started incoming file transfer: stream_id={stream_id}, filename={filename}, size={size}"
+            );
+        }
 
         Ok(())
     }
@@ -533,11 +565,15 @@ impl FileTransferManager {
             // fails if the destination appeared meanwhile; rename could overwrite it.
             std::fs::hard_link(&transfer.temporary_path, &transfer.output_path)
                 .context("Failed to publish verified file without overwriting destination")?;
-            log::info!(
-                "File transfer complete: stream_id={}, filename={}, sha256=verified",
-                stream_id,
-                transfer.metadata.filename
-            );
+            if transfer.redacted_logs {
+                log::info!("File transfer complete: stream_id={stream_id}, sha256=verified");
+            } else {
+                log::info!(
+                    "File transfer complete: stream_id={}, filename={}, sha256=verified",
+                    stream_id,
+                    transfer.metadata.filename
+                );
+            }
             Ok(())
         })();
         transfer.cleanup_pending = true;
@@ -559,9 +595,13 @@ impl FileTransferManager {
         let filename = transfer.metadata.filename.clone();
         transfer.cleanup_pending = true;
         let removed = transfer.try_cleanup();
-        log::warn!(
-            "File transfer rejected: filename={filename}, reason={reason}, removed={removed}"
-        );
+        if transfer.redacted_logs {
+            log::warn!("File transfer rejected: stream_id={stream_id}, removed={removed}");
+        } else {
+            log::warn!(
+                "File transfer rejected: filename={filename}, reason={reason}, removed={removed}"
+            );
+        }
         if removed {
             incoming.remove(&stream_id);
         }
