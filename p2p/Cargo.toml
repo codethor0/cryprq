@@ -41,3 +41,8 @@ async-trait = "0.1"
 futures = "0.3"
 node = { path = "../node" }
 sha2 = "0.10"
+
+[target.'cfg(unix)'.dependencies]
+# Already in Cargo.lock via tokio; used only for O_NOFOLLOW | O_NONBLOCK when
+# a direct-file source is opened, so a swapped FIFO or symlink cannot block or redirect it.
+libc = "0.2"

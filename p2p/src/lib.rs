@@ -39,6 +39,7 @@ pub mod libp2p;
 pub mod packet_forwarder;
 
 // Authenticated VPN link: CrypRQ handshake and records over libp2p
+pub mod direct_file;
 pub mod secure_vpn;
 pub use packet_forwarder::Libp2pPacketForwarder;
 

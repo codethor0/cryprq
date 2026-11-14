@@ -95,12 +95,19 @@ jobs:
       env:
         TMPDIR: ${{ runner.temp }}
 
+    - name: Direct file transfer, two processes (QUIC and TCP)
+      run: python3 scripts/e2e-direct-file.py ./target/release/cryprq
+      env:
+        TMPDIR: ${{ runner.temp }}
+
     - name: Upload logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: vpn-e2e-logs
-        path: ${{ runner.temp }}/cryprq-*e2e.*
+        path: |
+          ${{ runner.temp }}/cryprq-*e2e.*
+          ${{ runner.temp }}/cryprq-direct-e2e-*
         if-no-files-found: ignore
 
   vpn-tun-containers:

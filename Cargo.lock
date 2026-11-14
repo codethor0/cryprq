@@ -2246,6 +2246,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "libc",
  "libp2p-connection-limits",
  "libp2p-core",
  "libp2p-identity",

@@ -27,6 +27,7 @@ Snapshot: **November 2026**.
 | --- | --- | --- |
 | Authenticated handshake | Implemented | Pinned Ed25519 identities, ML-KEM-768 + X25519, transcript binding and key confirmation in both directions. Unit tests and two-process tests |
 | Authenticated file transfer | Implemented | UDP tunnel between pinned peers; the receiver verifies size and SHA-256, publishes atomically without overwriting, rejects unsafe names and symlinks, and bounds size, concurrent transfers and reserved storage |
+| Opt-in direct file transfer (`direct-send-file`, `direct-receive-file`) | Phase 1 candidate | One file over direct QUIC/TCP with the existing application handshake, explicit peer pinning and an encrypted receiver receipt. Validation is recorded in the [direct transfer guide](docs/DIRECT_FILE_TRANSFER.md). **WAN TEST NOT VERIFIED** |
 | Authenticated VPN link (`--vpn`) | Implemented as a **point-to-point link** | Tested between two processes and between Linux TUN devices in containers. Installs no routes, no DNS settings and no leak protection. macOS TUN devices are **untested** |
 | Browser portal | Authenticated CLI adapter | Separate device identities and explicit peer pinning; bounded uploads; receiver-verified inbox and downloads. See [portal validation](docs/WEB_VALIDATION_RUN.md) |
 | Legacy libp2p/QUIC listener and dialer | Prototype transport | A connection is **not** an authenticated hybrid tunnel and carries no tunnel traffic |
@@ -103,7 +104,35 @@ Replace the documentation-only address and key placeholders with the actual rece
 
 The exact wire layout, key schedule, identity-file format, test-mode rules, and constraints are in the [handshake v2 design](docs/HANDSHAKE_V2.md).
 
-**Current transfer limitations:** one receiver session per process; no application-level delivery acknowledgment or retransmission. The receiver verifies the announced size and SHA-256 and publishes atomically; a sender completing transmission still does not prove that the receiver published the file.
+**Existing UDP transfer limitations:** one receiver session per process; no application-level delivery acknowledgment or retransmission. The receiver verifies the announced size and SHA-256 and publishes atomically; a sender completing transmission still does not prove that the receiver published the file.
+
+### Opt-in direct file transfer candidate
+
+`direct-send-file` and `direct-receive-file` use the existing mutually
+authenticated hybrid application session over libp2p QUIC or TCP. Each command
+requires an explicit expected `--peer-key` that is already pinned in its trust
+file. The receiver explicitly chooses its listener and existing output directory;
+both commands exit after one verified file. Neither `--test-mode` nor
+`CRYPRQ_TEST_MODE` is allowed for this mode.
+
+```bash
+# Receiver B: SENDER_KEY is the sender's independently checked, pinned public key.
+./target/release/cryprq --identity ./b/identity.key --trusted-peers ./b/trusted_peers \
+  direct-receive-file --listen /ip4/127.0.0.1/udp/20440/quic-v1 \
+  --peer-key "$SENDER_KEY" --output-dir ./b/inbox
+
+# Sender A: RECEIVER_KEY is the receiver's independently checked, pinned public key.
+./target/release/cryprq --identity ./a/identity.key --trusted-peers ./a/trusted_peers \
+  direct-send-file --peer /ip4/127.0.0.1/udp/20440/quic-v1 \
+  --peer-key "$RECEIVER_KEY" --file ./example.txt
+```
+
+These commands show a local test, not internet evidence. TCP uses an explicit
+`/ip4/ADDRESS/tcp/PORT` address instead. A reachable address and permission to use
+the endpoint must already exist for a WAN test; CrypRQ does not configure ports,
+firewalls, routers or public hosting. There is no NAT traversal, relay, discovery
+or resumption. The old commands, portal and VPN keep their existing behavior.
+See [direct transfer setup, security boundaries and WAN test recipe](docs/DIRECT_FILE_TRANSFER.md).
 
 ## Security model and boundaries
 
@@ -158,6 +187,7 @@ The two-process security tests:
 cargo build --release --locked -p cryprq
 bash scripts/e2e-authenticated-file-transfer.sh ./target/release/cryprq
 bash scripts/e2e-authenticated-vpn.sh ./target/release/cryprq
+python3 scripts/e2e-direct-file.py ./target/release/cryprq
 ```
 
 The device test needs Docker and runs both endpoints on real TUN devices in two containers on an internal network, without touching the host's network:
@@ -185,7 +215,8 @@ GitHub workflows: [CI](https://github.com/codethor0/cryprq/actions/workflows/ci.
 - [File-transfer test plan](docs/FILE_TRANSFER_TEST_PLAN.md) and [VPN routing/leak test plan](docs/VPN_LEAK_AND_ROUTING_TEST_PLAN.md): verification checklists.
 - [Release checklist](docs/RELEASE_CHECKLIST.md) and [troubleshooting guide](docs/TROUBLESHOOTING_SUPPORT_BUNDLE.md): release and operational references; validate against the revision being tested.
 - [CI gates](docs/CI_VPN_GATES.md) and [E2E coverage map](docs/E2E_COVERAGE_MAP.md): what CI runs and which test asserts which claim.
-- [Internet connectivity roadmap](docs/INTERNET_CONNECTIVITY_ROADMAP.md): future goals for connectivity beyond a local network; none of it is implemented.
+- [Direct file transfer](docs/DIRECT_FILE_TRANSFER.md): the opt-in Phase 1 candidate, local validation and a separate-network WAN recipe; WAN remains unverified.
+- [Internet connectivity roadmap](docs/INTERNET_CONNECTIVITY_ROADMAP.md): direct-connectivity evidence still needed and future NAT traversal, relay and reliability work.
 
 ## Contributing and branch safety
 
