@@ -171,9 +171,13 @@ docker stop -t 10 "$RX" >/dev/null
 pass "isolation: node-a cannot reach node-b without the relay"
 
 # --- Relayed delivery ----------------------------------------------------------
-for spec in quic:payload.bin tcp:payload.bin tcp:empty.bin; do
-  transport="${spec%%:*}"; file="${spec#*:}"
-  label="relay-$transport-${file%.bin}"
+# Two QUIC deliveries back to back with the same identities: each receiver
+# process exits right after it finishes, and must close its QUIC connection to
+# the relay, or the relay can route the next circuit into the dead one.
+round=0
+for spec in quic:payload.bin quic:payload.bin tcp:payload.bin tcp:empty.bin; do
+  transport="${spec%%:*}"; file="${spec#*:}"; round=$((round + 1))
+  label="relay-$round-$transport-${file%.bin}"
   circuits_before="$(docker logs "$RELAY" 2>&1 | grep -c 'event=relay_circuit_opened' || true)"
   start_receiver "$label" "$transport" "$KEY_A"
   sent="$(send_relayed node-a "$transport" "$KEY_B" "$KEY_R" "$file" "$label")" || fail "$label: sender failed"
@@ -195,7 +199,11 @@ for spec in quic:payload.bin tcp:payload.bin tcp:empty.bin; do
 done
 
 # --- Rejections: nothing is published --------------------------------------
-start_receiver wrong-relay-key quic "$KEY_A"
+# These receivers are stopped with SIGTERM, which drops their state without a
+# graceful close; they reserve over TCP, whose close the kernel delivers, so a
+# stopped receiver leaves no reservation behind for the next step. (Over QUIC
+# the relay would hold it until the 10 s idle timeout; see the guide.)
+start_receiver wrong-relay-key tcp "$KEY_A"
 if send_relayed node-a quic "$KEY_B" "$KEY_C" payload.bin wrong-relay-key >/dev/null; then
   fail "wrong-relay-key: sender accepted a relay with a different key"
 fi
@@ -203,7 +211,7 @@ docker stop -t 10 "$RX" >/dev/null
 [ -z "$(inbox wrong-relay-key)" ] || fail "wrong-relay-key: file published"
 pass "wrong-relay-key: a relay that is not the pinned relay is refused"
 
-start_receiver wrong-target quic "$KEY_A"
+start_receiver wrong-target tcp "$KEY_A"
 if send_relayed node-a quic "$KEY_C" "$KEY_R" payload.bin wrong-target >/dev/null; then
   fail "wrong-target: the relay delivered to an unexpected peer"
 fi
@@ -211,7 +219,7 @@ docker stop -t 10 "$RX" >/dev/null
 [ -z "$(inbox wrong-target)" ] || fail "wrong-target: file published"
 pass "wrong-target: the relay does not connect an unreserved, unexpected peer"
 
-start_receiver wrong-sender quic "$KEY_A"
+start_receiver wrong-sender tcp "$KEY_A"
 if send_relayed node-c quic "$KEY_B" "$KEY_R" payload.bin wrong-sender >/dev/null; then
   fail "wrong-sender: an unexpected identity delivered through the relay"
 fi
@@ -219,12 +227,22 @@ docker stop -t 10 "$RX" >/dev/null
 [ -z "$(inbox wrong-sender)" ] || fail "wrong-sender: file published"
 pass "wrong-sender: the receiver rejects an identity it does not expect"
 
+circuits_before="$(docker logs "$RELAY" 2>&1 | grep -c 'event=relay_circuit_opened' || true)"
 start_receiver circuit-limit tcp "$KEY_A"
 if send_relayed node-a tcp "$KEY_B" "$KEY_R" large.bin circuit-limit >/dev/null; then
   fail "circuit-limit: 2 MiB crossed a 1 MiB circuit"
 fi
 wait_exit 30
+docker logs "$RX" >"$WORK/circuit-limit-receiver.log" 2>&1
 [ "$(exit_code)" != 0 ] || fail "circuit-limit: receiver reported success"
+# The failure must be the cut, not a refused circuit: the circuit opened and
+# both sides authenticated before the relay closed it.
+circuits_after="$(docker logs "$RELAY" 2>&1 | grep -c 'event=relay_circuit_opened' || true)"
+[ "$circuits_after" -gt "$circuits_before" ] || fail "circuit-limit: the circuit never opened"
+grep -q 'event=direct_file_authenticated role=initiator .*route=relay' "$WORK/circuit-limit-sender.log" \
+  || fail "circuit-limit: the transfer never started"
+grep -q 'event=direct_file_authenticated role=responder .*route=relay' "$WORK/circuit-limit-receiver.log" \
+  || fail "circuit-limit: the receiver never authenticated"
 [ -z "$(inbox circuit-limit)" ] || fail "circuit-limit: partial or unverified file left in the inbox"
 pass "circuit-limit: a circuit cut mid-transfer publishes nothing and leaves no partial file"
 

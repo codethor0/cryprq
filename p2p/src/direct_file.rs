@@ -849,6 +849,10 @@ mod tests {
 
     async fn relayed_transfer(listen: &str, data: Vec<u8>) {
         let relay = start_relay(listen, 1 << 20).await;
+        relayed_transfer_on(&relay, data).await;
+    }
+
+    async fn relayed_transfer_on(relay: &TestRelay, data: Vec<u8>) {
         let dir = TestDir::new();
         let output = dir.0.join("output");
         std::fs::create_dir(&output).unwrap();
@@ -902,6 +906,18 @@ mod tests {
             (0..CHUNK_LEN * 3).map(|n| (n * 7) as u8).collect(),
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn relay_serves_repeated_quic_transfers_between_the_same_identities() {
+        // Functional coverage for back-to-back reservations by one identity.
+        // In-process, a dropped QUIC endpoint still sends its close, so the
+        // stale-reservation case after an abrupt process exit is covered by
+        // scripts/e2e-direct-relay-docker.sh, not here.
+        let relay = start_relay("/ip4/127.0.0.1/udp/0/quic-v1", 1 << 20).await;
+        for round in 0..3u8 {
+            relayed_transfer_on(&relay, vec![round; CHUNK_LEN + 1]).await;
+        }
     }
 
     #[tokio::test]
@@ -1300,8 +1316,18 @@ async fn exchange(swarm: &mut Swarm<Behaviour>, peer: PeerId, request: Vec<u8>) 
                 SwarmEvent::ConnectionClosed { peer_id, .. } if peer_id == peer => {
                     bail!("direct-file peer disconnected")
                 }
-                SwarmEvent::OutgoingConnectionError { .. } => {
-                    bail!("direct-file peer is unreachable or has a mismatched identity")
+                SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+                    // The dial error names addresses and peer IDs only, which
+                    // the operator supplied; it lets an unreachable relay be
+                    // told apart from an identity mismatch.
+                    let target = if peer_id == Some(peer) {
+                        "peer"
+                    } else {
+                        "relay"
+                    };
+                    bail!(
+                        "direct-file {target} is unreachable or has a mismatched identity: {error}"
+                    )
                 }
                 _ => {}
             }
@@ -1622,6 +1648,7 @@ pub async fn send_file_routed(
     file.seek(io::SeekFrom::Start(0)).await?;
     let metadata = FileMetadata::new(filename, hashed, hasher.finalize().into());
     let mut swarm = swarm(config, false, relayed)?;
+    let result: Result<TransferReceipt> = async {
     swarm.dial(DialOpts::peer_id(peer).addresses(vec![dial]).build())?;
     let mut initiator = Initiator::new(&config.identity, &config.trusted_peers, &expected)?;
     let session = timeout(config.handshake_timeout, async {
@@ -1674,6 +1701,29 @@ pub async fn send_file_routed(
         peer: expected,
         relayed,
     })
+    }
+    .await;
+    if relayed {
+        close_all(&mut swarm).await;
+    }
+    result
+}
+
+/// Close every connection and let the transport signal it, so a relay drops
+/// this peer's reservation at once. Otherwise a QUIC connection to the relay
+/// stays open on the relay's side until its idle timeout (10 s), and the relay
+/// may route the next circuit for this identity into it. Bounded to 2 s.
+async fn close_all(swarm: &mut Swarm<Behaviour>) {
+    let peers: Vec<PeerId> = swarm.connected_peers().copied().collect();
+    for peer in peers {
+        let _ = swarm.disconnect_peer_id(peer);
+    }
+    let _ = timeout(Duration::from_secs(2), async {
+        while swarm.connected_peers().next().is_some() {
+            swarm.select_next_some().await;
+        }
+    })
+    .await;
 }
 
 /// Explicit one-shot listener accepting only `expected`, which must already be
@@ -1736,108 +1786,118 @@ async fn receive_routed(
         bail!("direct-file output must be an existing directory, not a symlink");
     }
     let mut swarm = swarm(config, true, relayed)?;
-    swarm.listen_on(listen)?;
-    let mut ready = ready;
-    let connection: ConnectionId = timeout(LISTEN_TIMEOUT, async {
-        loop {
-            match swarm.select_next_some().await {
-                SwarmEvent::NewListenAddr { address, .. } => {
-                    log::info!("event=direct_file_listening address={address}");
-                    if let Some(ready) = ready.take() {
-                        let _ = ready.send(address);
-                    }
-                }
-                SwarmEvent::ConnectionEstablished {
-                    peer_id,
-                    connection_id,
-                    endpoint,
-                    ..
-                } if peer_id == peer => {
-                    // The peer must arrive over the selected route only.
-                    if through_relay(&endpoint) == relayed {
-                        return Ok(connection_id);
-                    }
-                    let _ = swarm.close_connection(connection_id);
-                }
-                SwarmEvent::ConnectionEstablished { peer_id, .. } if Some(peer_id) == relay => {}
-                SwarmEvent::ConnectionEstablished { peer_id, .. } => {
-                    let _ = swarm.disconnect_peer_id(peer_id);
-                }
-                SwarmEvent::Behaviour(Event::Relay(
-                    relay::client::Event::ReservationReqAccepted { .. },
-                )) => log::info!("event=direct_file_relay_reserved"),
-                SwarmEvent::ListenerError { .. } | SwarmEvent::ListenerClosed { .. } => {
-                    bail!("direct-file listener failed")
-                }
-                _ => {}
-            }
-        }
-    })
-    .await
-    .context("direct-file listener timed out waiting for the expected peer")??;
-    let session = timeout(config.handshake_timeout, async {
-        let mut responder = Responder::new(&config.identity);
-        let request = next_request(&mut swarm, peer, relay).await?;
-        if request.bytes.len() > MAX_MESSAGE_LEN {
-            bail!("oversized direct-file handshake");
-        }
-        let response = responder.handle_init(&request.bytes, &config.trusted_peers)?;
-        if responder.claimed_peer() != Some(expected) {
-            bail!("direct-file transport/application identity mismatch");
-        }
-        reply(&mut swarm, request, response)?;
-        let request = next_request(&mut swarm, peer, relay).await?;
-        let (confirm, keys) = responder.handle_finish(&request.bytes)?;
-        reply(&mut swarm, request, confirm)?;
-        Ok::<_, anyhow::Error>(Session::from_handshake(keys))
-    })
-    .await
-    .context("direct-file application handshake timed out")??;
-    log::info!(
-        "event=direct_file_authenticated role=responder peer={peer} route={}",
-        route_label(relayed)
-    );
-    let mut receiver = Receiver::new(output_dir);
-    loop {
-        let request = next_request(&mut swarm, peer, relay).await?;
-        let response = receiver.record(&session, &request.bytes)?;
-        let final_id = request.id;
-        reply(&mut swarm, request, response)?;
-        if receiver.complete {
-            // Drive response flushing and wait for the sender, which closes only
-            // after authenticating the final reply. A transport failure remains
-            // a reported failure even if a verified file was already published.
-            timeout(IO_TIMEOUT, async {
-                let mut flushed = false;
-                loop {
-                    match swarm.select_next_some().await {
-                        SwarmEvent::Behaviour(Event::Files(
-                            request_response::Event::ResponseSent { request_id, .. },
-                        )) if request_id == final_id => flushed = true,
-                        SwarmEvent::Behaviour(Event::Files(
-                            request_response::Event::InboundFailure { request_id, .. },
-                        )) if request_id == final_id => {
-                            bail!("direct-file completion reply failed")
+    let result: Result<TransferReceipt> = async {
+        swarm.listen_on(listen)?;
+        let mut ready = ready;
+        let connection: ConnectionId = timeout(LISTEN_TIMEOUT, async {
+            loop {
+                match swarm.select_next_some().await {
+                    SwarmEvent::NewListenAddr { address, .. } => {
+                        log::info!("event=direct_file_listening address={address}");
+                        if let Some(ready) = ready.take() {
+                            let _ = ready.send(address);
                         }
-                        SwarmEvent::ConnectionClosed { connection_id, .. }
-                            if connection_id == connection =>
-                        {
-                            if !flushed {
-                                bail!(
+                    }
+                    SwarmEvent::ConnectionEstablished {
+                        peer_id,
+                        connection_id,
+                        endpoint,
+                        ..
+                    } if peer_id == peer => {
+                        // The peer must arrive over the selected route only.
+                        if through_relay(&endpoint) == relayed {
+                            return Ok(connection_id);
+                        }
+                        let _ = swarm.close_connection(connection_id);
+                    }
+                    SwarmEvent::ConnectionEstablished { peer_id, .. } if Some(peer_id) == relay => {
+                    }
+                    SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+                        let _ = swarm.disconnect_peer_id(peer_id);
+                    }
+                    SwarmEvent::Behaviour(Event::Relay(
+                        relay::client::Event::ReservationReqAccepted { .. },
+                    )) => log::info!("event=direct_file_relay_reserved"),
+                    SwarmEvent::ListenerError { .. } | SwarmEvent::ListenerClosed { .. } => {
+                        bail!("direct-file listener failed")
+                    }
+                    _ => {}
+                }
+            }
+        })
+        .await
+        .context("direct-file listener timed out waiting for the expected peer")??;
+        let session = timeout(config.handshake_timeout, async {
+            let mut responder = Responder::new(&config.identity);
+            let request = next_request(&mut swarm, peer, relay).await?;
+            if request.bytes.len() > MAX_MESSAGE_LEN {
+                bail!("oversized direct-file handshake");
+            }
+            let response = responder.handle_init(&request.bytes, &config.trusted_peers)?;
+            if responder.claimed_peer() != Some(expected) {
+                bail!("direct-file transport/application identity mismatch");
+            }
+            reply(&mut swarm, request, response)?;
+            let request = next_request(&mut swarm, peer, relay).await?;
+            let (confirm, keys) = responder.handle_finish(&request.bytes)?;
+            reply(&mut swarm, request, confirm)?;
+            Ok::<_, anyhow::Error>(Session::from_handshake(keys))
+        })
+        .await
+        .context("direct-file application handshake timed out")??;
+        log::info!(
+            "event=direct_file_authenticated role=responder peer={peer} route={}",
+            route_label(relayed)
+        );
+        let mut receiver = Receiver::new(output_dir);
+        loop {
+            let request = next_request(&mut swarm, peer, relay).await?;
+            let response = receiver.record(&session, &request.bytes)?;
+            let final_id = request.id;
+            reply(&mut swarm, request, response)?;
+            if receiver.complete {
+                // Drive response flushing and wait for the sender, which closes only
+                // after authenticating the final reply. A transport failure remains
+                // a reported failure even if a verified file was already published.
+                timeout(IO_TIMEOUT, async {
+                    let mut flushed = false;
+                    loop {
+                        match swarm.select_next_some().await {
+                            SwarmEvent::Behaviour(Event::Files(
+                                request_response::Event::ResponseSent { request_id, .. },
+                            )) if request_id == final_id => flushed = true,
+                            SwarmEvent::Behaviour(Event::Files(
+                                request_response::Event::InboundFailure { request_id, .. },
+                            )) if request_id == final_id => {
+                                bail!("direct-file completion reply failed")
+                            }
+                            SwarmEvent::ConnectionClosed { connection_id, .. }
+                                if connection_id == connection =>
+                            {
+                                if !flushed {
+                                    bail!(
                                     "direct-file peer closed before completion reply was flushed"
                                 );
+                                }
+                                return receiver.receipt(expected, relayed);
                             }
-                            return receiver.receipt(expected, relayed);
+                            _ => {}
                         }
-                        _ => {}
                     }
-                }
-            })
-            .await
-            .context(
-                "verified file published, but completion acknowledgment was not confirmed",
-            )??;
-            return receiver.receipt(expected, relayed);
+                })
+                .await
+                .context(
+                    "verified file published, but completion acknowledgment was not confirmed",
+                )??;
+                return receiver.receipt(expected, relayed);
+            }
         }
     }
+    .await;
+    // Any unpublished partial was already removed when the receiver state was
+    // dropped at the end of the block above.
+    if relayed {
+        close_all(&mut swarm).await;
+    }
+    result
 }

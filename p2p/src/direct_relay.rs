@@ -136,15 +136,21 @@ pub async fn serve_relay(
     for address in external {
         swarm.add_external_address(address);
     }
-    let mut pending = listen.len();
+    // Ready once every listener has reported an address. A wildcard listener
+    // reports one address per interface, so count listeners, not addresses.
+    let mut pending = std::collections::HashSet::new();
     for address in listen {
-        swarm.listen_on(address)?;
+        pending.insert(swarm.listen_on(address)?);
     }
+    let mut announced = false;
     let mut ready = ready;
     log::info!("event=relay_starting peer_id={local}");
     loop {
         match swarm.select_next_some().await {
-            SwarmEvent::NewListenAddr { address, .. } => {
+            SwarmEvent::NewListenAddr {
+                listener_id,
+                address,
+            } => {
                 use crate::libp2p::multiaddr::Protocol;
                 if advertise_listen {
                     match address.iter().next() {
@@ -158,8 +164,9 @@ pub async fn serve_relay(
                     }
                 }
                 log::info!("event=relay_listening address={address}");
-                pending = pending.saturating_sub(1);
-                if pending == 0 {
+                pending.remove(&listener_id);
+                if pending.is_empty() && !announced {
+                    announced = true;
                     let advertised: Vec<Multiaddr> = swarm.external_addresses().cloned().collect();
                     if advertised.is_empty() {
                         bail!(
@@ -204,6 +211,7 @@ fn log_relay_event(event: &relay::Event) {
         CircuitClosed { error, .. } => {
             log::info!("event=relay_circuit_closed error={}", error.is_some())
         }
-        _ => {}
+        // Includes failures to reach a reserved peer; carries peer IDs, so debug.
+        other => log::debug!("relay event: {other:?}"),
     }
 }

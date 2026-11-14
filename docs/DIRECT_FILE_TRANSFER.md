@@ -173,6 +173,11 @@ Security boundaries:
   accepts only its expected peer, only through the relay.
 - There is no NAT traversal or direct-connection upgrade in this version: a
   relayed transfer stays relayed.
+- Both commands close their relay connection when they finish or fail. A
+  command stopped with Ctrl-C or SIGTERM cannot, so a receiver that reserved
+  over QUIC stays reserved on the relay until QUIC's 10-second idle timeout.
+  A receiver restarted with the same identity within that window may see its
+  first relayed attempt fail; retry after 10 seconds, or reserve over TCP.
 
 `cryprq relay-serve` runs a bounded relay. It needs only its own identity file
 (`cryprq --identity relay.key identity init`), loads no trust store and refuses

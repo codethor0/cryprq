@@ -26,7 +26,7 @@ x-node: &node
   cpus: 1.0
   pids_limit: 64
   environment:
-    RUST_LOG: info
+    RUST_LOG: ${CRYPRQ_E2E_RUST_LOG:-info}
 
 services:
   relay:
